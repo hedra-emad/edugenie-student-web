@@ -1,16 +1,41 @@
-export const AuthFooter = () => {
+import Link from "next/link";
+ 
+export default function Footer() {
   return (
-    <footer className="mt-12 w-full max-w-7xl flex flex-col md:flex-row justify-between items-center gap-4 px-6 text-[13px] text-gray-400 pb-8">
-      <div className="flex items-center gap-2">
-        <span className="font-bold text-[#2e2a91] text-lg">EduGenie</span>
-        <span className="hidden md:inline text-gray-200">|</span>
-        <span>© 2024 EduGenie AI. Visionary Learning Systems.</span>
-      </div>
-      <div className="flex gap-6 font-medium">
-        <a href="#" className="hover:text-[#2e2a91] transition-colors">Privacy Policy</a>
-        <a href="#" className="hover:text-[#2e2a91] transition-colors">Terms of Service</a>
-        <a href="#" className="hover:text-[#2e2a91] transition-colors text-gray-500 font-bold">Instructor Portal</a>
+    <footer className="w-full border-t border-gray-200 bg-white px-6 py-4">
+      <div className="mx-auto flex max-w-screen-xl items-center justify-between">
+        {/* Left: Brand + copyright */}
+        <div className="flex flex-col gap-0.5">
+          <span className="text-base font-bold text-indigo-700 tracking-tight">
+            EduGenie
+          </span>
+          <span className="text-xs text-gray-500">
+            © 2026 EduGenie AI. Visionary Learning Systems.
+          </span>
+        </div>
+ 
+        {/* Right: Nav links */}
+        <nav className="flex items-center gap-6">
+          <Link
+            href="/privacy-policy"
+            className="text-sm font-medium text-gray-700 hover:text-indigo-700 transition-colors duration-150"
+          >
+            Privacy Policy
+          </Link>
+          <Link
+            href="/terms-of-service"
+            className="text-sm font-medium text-gray-700 hover:text-indigo-700 transition-colors duration-150"
+          >
+            Terms of Service
+          </Link>
+          <Link
+            href="/instructor-portal"
+            className="text-sm font-medium text-gray-700 hover:text-indigo-700 transition-colors duration-150"
+          >
+            Instructor Portal
+          </Link>
+        </nav>
       </div>
     </footer>
   );
-};
+}

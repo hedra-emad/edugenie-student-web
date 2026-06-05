@@ -1,8 +1,8 @@
 // src/app/login/page.tsx
-import { LoginForm } from '@/components/auth/LoginForm';
-import { AuthToggle } from '@/components/ui/AuthToggle';
-import { SocialLogin } from '@/components/auth/SocialLogin';
-import { AuthFooter } from '@/components/layout/Footer';
+import { LoginForm } from "@/components/auth/LoginForm";
+import { AuthToggle } from "@/components/ui/AuthToggle";
+import { SocialLogin } from "@/components/auth/SocialLogin";
+// import  Footer  from "@/components/layout/Footer.tsx";
 
 export default function LoginPage() {
   return (
@@ -21,7 +21,7 @@ export default function LoginPage() {
         <SocialLogin />
       </div>
       <div className="w-full max-w-6xl mt-12">
-        <AuthFooter />
+        {/* <Footer/> */}
       </div>
     </div>
   );
