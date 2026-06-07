@@ -2,7 +2,7 @@
 import { LoginForm } from "@/components/auth/LoginForm";
 import { AuthToggle } from "@/components/ui/AuthToggle";
 import { SocialLogin } from "@/components/auth/SocialLogin";
-// import  Footer  from "@/components/layout/Footer.tsx";
+// import  Footer  from "@/components/layout/Footer";
 
 export default function LoginPage() {
   return (
