@@ -6,7 +6,7 @@ export default function Footer() {
       <div className="mx-auto flex max-w-screen-xl items-center justify-between">
         {/* Left: Brand + copyright */}
         <div className="flex flex-col gap-0.5">
-          <span className="text-base font-bold text-indigo-700 tracking-tight">
+          <span className="text-xl font-bold text-[#3B1892] tracking-tight">
             EduGenie
           </span>
           <span className="text-xs text-gray-500">

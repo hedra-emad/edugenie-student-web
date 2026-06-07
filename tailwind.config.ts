@@ -10,8 +10,8 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          primary: "#2e2a91",     
-          light: "#4f46e5",      
+          primary: "#3B1892",     
+          light: "#5B3DB8",      
           inputBg: "#f9fafb",     
           softBlue: "#eff6ff",    
         },

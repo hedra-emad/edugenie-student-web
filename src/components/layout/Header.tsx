@@ -28,7 +28,7 @@ export default function Header({ user = null }: HeaderProps) {
       <div className="mx-auto flex max-w-screen-xl items-center justify-between gap-4 px-6 py-3">
 
         {/* ── Left: Logo ── */}
-        <Link href="/" className="text-xl font-bold text-indigo-700 tracking-tight shrink-0">
+        <Link href="/" className="text-xl font-bold text-[#3B1892] tracking-tight shrink-0">
           EduGenie
         </Link>
 
@@ -49,7 +49,7 @@ export default function Header({ user = null }: HeaderProps) {
         <div className="flex items-center gap-3">
 
           {/* Search */}
-          <div className="hidden sm:flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-100 transition-all">
+          {/* <div className="hidden sm:flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-100 transition-all">
             <svg
               className="h-4 w-4 text-gray-400 shrink-0"
               fill="none"
@@ -70,7 +70,7 @@ export default function Header({ user = null }: HeaderProps) {
               placeholder="Search courses…"
               className="w-40 bg-transparent text-sm text-gray-700 placeholder-gray-400 outline-none"
             />
-          </div>
+          </div> */}
 
           {/* Logged OUT → Login + Sign Up */}
           {!user && (
@@ -83,7 +83,7 @@ export default function Header({ user = null }: HeaderProps) {
               </Link>
               <Link
                 href="https://edugenie-dashboard.vercel.app/register"
-                className="rounded-lg bg-indigo-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors duration-150"
+                className="rounded-lg bg-[#3B1892] px-4 py-1.5 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors duration-150"
               >
                 Sign Up
               </Link>
@@ -176,7 +176,7 @@ export default function Header({ user = null }: HeaderProps) {
               <Link href="/login" className="flex-1 text-center rounded-lg border border-gray-200 py-2 text-sm font-medium text-gray-700 hover:border-indigo-400 transition-colors">
                 Login
               </Link>
-              <Link href="/signup" className="flex-1 text-center rounded-lg bg-indigo-600 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors">
+              <Link href="/signup" className="flex-1 text-center rounded-lg bg-[#3B1892] py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors">
                 Sign Up
               </Link>
             </div>

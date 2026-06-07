@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Hanken_Grotesk, Inter } from "next/font/google";
 import "./globals.css";
-import Footer from "@/components/layout/Footer.tsx"
-import Header from "@/components/layout/Header.tsx"
+import Footer from "@/components/layout/Footer";
+import Header from "@/components/layout/Header";
+
 
 const hankenGrotesk = Hanken_Grotesk({
   variable: "--font-hanken-grotesk",
