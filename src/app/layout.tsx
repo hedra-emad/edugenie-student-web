@@ -3,7 +3,7 @@ import { Hanken_Grotesk, Inter } from "next/font/google";
 import "./globals.css";
 import Footer from "@/components/layout/Footer";
 import Header from "@/components/layout/Header";
-
+import QueryProvider from "../app/providers/QueryProvider";
 
 const hankenGrotesk = Hanken_Grotesk({
   variable: "--font-hanken-grotesk",
@@ -35,7 +35,9 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
        <Header/>
-        {children}
+        <QueryProvider>
+          {children}
+        </QueryProvider>
         <Footer />
         </body>
       

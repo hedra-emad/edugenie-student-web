@@ -165,6 +165,65 @@ function MiniCourseCard({ course }: { course: MiniCourse }) {
   );
 }
 
+// function SearchBar() {
+
+//   const [query, setQuery] = useState("");
+
+//   const handleSearch = (e: React.FormEvent) => {
+//     e.preventDefault();
+//     if (query.trim()) {
+//       window.location.href = `/courses?q=${encodeURIComponent(query.trim())}`;
+//     }
+//   };
+
+//   return (
+//     <form
+//       onSubmit={handleSearch}
+//       className="
+//         flex items-center gap-2
+//         bg-white rounded-2xl shadow-2xl shadow-black/30
+//         p-2 pl-5
+//       "
+//     >
+//       {/* Search Icon */}
+//       <svg
+//         className="w-5 h-5 text-slate-400 flex-shrink-0"
+//         fill="none"
+//         viewBox="0 0 24 24"
+//         stroke="currentColor"
+//         strokeWidth={2}
+//       >
+//         <circle cx="11" cy="11" r="8" />
+//         <path d="m21 21-4.35-4.35" />
+//       </svg>
+
+//       {/* Input */}
+//       <input
+//         type="text"
+//         value={query}
+//         onChange={(e) => setQuery(e.target.value)}
+//         placeholder="What do you want to learn today?"
+//         className="
+//           flex-1 text-slate-800 text-[15px] bg-transparent outline-none
+//           placeholder:text-slate-400 font-medium
+//         "
+//       />
+
+//       {/* Button */}
+//       <button
+//         type="submit"
+//         className="
+//           bg-[#3B1892] hover:bg-violet-600 active:bg-violet-800
+//           text-white text-sm font-bold
+//           px-6 py-3 rounded-xl transition-colors duration-150
+//           whitespace-nowrap flex-shrink-0
+//         "
+//       >
+//         Search Courses
+//       </button>
+//     </form>
+//   );
+// }
 function SearchBar() {
   const [query, setQuery] = useState("");
 
@@ -179,14 +238,15 @@ function SearchBar() {
     <form
       onSubmit={handleSearch}
       className="
-        flex items-center gap-2
+        flex items-center
         bg-white rounded-2xl shadow-2xl shadow-black/30
-        p-2 pl-5
+        p-1.5 pl-3 sm:p-2 sm:pl-5
+        w-full
       "
     >
       {/* Search Icon */}
       <svg
-        className="w-5 h-5 text-slate-400 flex-shrink-0"
+        className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 flex-shrink-0"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -203,8 +263,8 @@ function SearchBar() {
         onChange={(e) => setQuery(e.target.value)}
         placeholder="What do you want to learn today?"
         className="
-          flex-1 text-slate-800 text-[15px] bg-transparent outline-none
-          placeholder:text-slate-400 font-medium
+          flex-1 min-w-0 text-slate-800 text-[14px] sm:text-[15px] bg-transparent outline-none
+          placeholder:text-slate-400 font-medium px-2 sm:px-3
         "
       />
 
@@ -213,12 +273,15 @@ function SearchBar() {
         type="submit"
         className="
           bg-[#3B1892] hover:bg-violet-600 active:bg-violet-800
-          text-white text-sm font-bold
-          px-6 py-3 rounded-xl transition-colors duration-150
+          text-white font-bold
+          text-[12px] sm:text-sm
+          px-3 py-2.5 sm:px-6 sm:py-3 
+          rounded-xl transition-colors duration-150
           whitespace-nowrap flex-shrink-0
         "
       >
-        Search Courses
+        <span className="sm:hidden">Search</span>
+        <span className="hidden sm:inline">Search Courses</span> 
       </button>
     </form>
   );
