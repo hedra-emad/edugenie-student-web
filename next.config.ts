@@ -10,21 +10,42 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-
-  images: {
+ images: {
     remotePatterns: [
-      //  Cloudinary — للصور الحقيقية
+      // Cloudinary — صور الكورسات / الأفاتار
       {
         protocol: "https",
         hostname: "res.cloudinary.com",
+        pathname: "/**",
       },
-      //  example.com — placeholder مؤقت في الـ dev
+      // الـ API نفسه لو بيرجع صور مرفوعة محليًا عليه
       {
         protocol: "https",
-        hostname: "example.com",
+        hostname: "edugenie-api.vercel.app",
+        pathname: "/**",
+      },
+      // أي صور placeholder بتيجي من unsplash (شائعة في mock data)
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+        pathname: "/**",
       },
     ],
   },
+  // images: {
+  //   remotePatterns: [
+  //     //  Cloudinary — used for course images
+  //     {
+  //       protocol: "https",
+  //       hostname: "res.cloudinary.com",
+  //     },
+  //     //  example.com — placeholder for development
+  //     {
+  //       protocol: "https",
+  //       hostname: "example.com",
+  //     },
+  //   ],
+  // },
 };
 
 export default nextConfig;
