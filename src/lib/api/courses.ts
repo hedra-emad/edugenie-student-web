@@ -1,9 +1,10 @@
 import { Course, CourseFilters, CoursesApiResponse } from "@/types/course";
 // import { log } from "util";
 
-const BASE_URL =
+const REMOTE_API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "https://edugenie-api.vercel.app";
-
+ 
+const BASE_URL = typeof window === "undefined" ? REMOTE_API_URL : "/api/proxy";
 // ─── Build query string from filters
 
 export function buildCoursesQuery(filters: CourseFilters): string {
