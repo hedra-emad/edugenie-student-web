@@ -1,16 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import {
-  Bot,
-  Target,
-  Trophy,
-  Map,
-  Zap,
-  Globe,
-  LucideIcon,
-} from "lucide-react";
-// ─── Types ────────────────────────────────────────────────────────────────────
+import { Bot, Target, Trophy, Map, Zap, Globe, LucideIcon } from "lucide-react";
+// ─── Types
 
 interface Stat {
   value: string;
@@ -27,7 +19,7 @@ interface Feature {
   accentText: string; // tailwind text color for icon
 }
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
+// ─── Data
 
 const STATS: Stat[] = [
   { value: "50", suffix: "K+", label: "Active Students" },
@@ -93,7 +85,7 @@ const FEATURES: Feature[] = [
   },
 ];
 
-// ─── Animated Counter ─────────────────────────────────────────────────────────
+// ─── Animated Counter
 
 function useCountUp(target: number, duration = 1600, started: boolean) {
   const [count, setCount] = useState(0);
@@ -135,10 +127,10 @@ function StatCard({ stat, started }: { stat: Stat; started: boolean }) {
   );
 }
 
-// ─── Feature Card 
+// ─── Feature Card
 
 function FeatureCard({ feature, index }: { feature: Feature; index: number }) {
-       const Icon = feature.icon;
+  const Icon = feature.icon;
   return (
     <div
       className="
@@ -171,12 +163,12 @@ function FeatureCard({ feature, index }: { feature: Feature; index: number }) {
           ${feature.accent}
         `}
       >
-         <Icon
-    className={`
+        <Icon
+          className={`
       w-6 h-6
       ${feature.accentText}
     `}
-  />
+        />
       </div>
 
       {/* Text */}
@@ -192,7 +184,7 @@ function FeatureCard({ feature, index }: { feature: Feature; index: number }) {
   );
 }
 
-// ─── Main Section ─────────────────────────────────────────────────────────────
+// ─── Main Section
 
 export default function WhyChooseUs() {
   const sectionRef = useRef<HTMLElement>(null);

@@ -9,6 +9,7 @@ import {
   TrendingUp,
   Award,
   Heart,
+  Link,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -462,7 +463,7 @@ function CourseCard({ course }: { course: Course }) {
             {course.rating.toFixed(1)}
           </span>
           <span className="text-xs text-slate-400 leading-none">
-            ({course.reviews.toLocaleString()})
+            ({course.reviews.toLocaleString("en-US")})
           </span>
         </div>
       </div>
@@ -542,7 +543,7 @@ export default function FeaturedCourses() {
             </p>
           </div>
 
-          <a
+          <Link
             href="/courses"
             className="
               text-sm font-bold text-violet-600 hover:text-violet-800
@@ -551,7 +552,7 @@ export default function FeaturedCourses() {
             "
           >
             View All Courses →
-          </a>
+          </Link>
         </div>
 
         {/* ── FILTER TABS ── */}

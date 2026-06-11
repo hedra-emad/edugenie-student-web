@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Types
 
 interface Instructor {
   id: number;
@@ -33,7 +33,7 @@ interface Testimonial {
   course: string;
 }
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
+// ─── Data
 
 const INSTRUCTORS: Instructor[] = [
   {
@@ -139,7 +139,7 @@ const TESTIMONIALS: Testimonial[] = [
   },
 ];
 
-// ─── Star Rating ──────────────────────────────────────────────────────────────
+// ─── Star Rating
 
 function Stars({
   rating,
@@ -165,7 +165,7 @@ function Stars({
   );
 }
 
-// ─── Instructor Card ──────────────────────────────────────────────────────────
+// ─── Instructor Card
 
 function InstructorCard({ instructor }: { instructor: Instructor }) {
   const [imgError, setImgError] = useState(false);
@@ -254,7 +254,7 @@ function InstructorCard({ instructor }: { instructor: Instructor }) {
             {instructor.rating.toFixed(1)}
           </span>
           <span className="text-xs text-slate-400 leading-none">
-            ({instructor.reviews.toLocaleString()})
+            ({instructor.reviews.toLocaleString("en-US")})
           </span>
         </div>
 
@@ -325,7 +325,7 @@ function InstructorCard({ instructor }: { instructor: Instructor }) {
   );
 }
 
-// ─── Testimonial Card ─────────────────────────────────────────────────────────
+// ─── Testimonial Card
 
 function TestimonialCard({ t }: { t: Testimonial }) {
   return (
@@ -374,7 +374,7 @@ function TestimonialCard({ t }: { t: Testimonial }) {
   );
 }
 
-// ─── Main Section ─────────────────────────────────────────────────────────────
+// ─── Main Section
 
 export default function InstructorsSpotlight() {
   return (
