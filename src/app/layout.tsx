@@ -21,6 +21,9 @@ export const metadata: Metadata = {
   title: "EduGenie – Join the Future of Learning",
   description:
     "AI-driven e-learning platform for students and instructors. Sign in or create your account.",
+     icons: {
+    icon: '/favicon-modified.png',
+  },
 };
 
 export default function RootLayout({

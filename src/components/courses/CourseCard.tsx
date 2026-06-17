@@ -44,6 +44,28 @@ interface Props {
   course: Course;
 }
 
+function getSafeImageSrc(src: string | null | undefined): string | null {
+  if (!src) return null;
+  const trimmed = src.trim();
+  if (!trimmed) return null;
+  if (trimmed.startsWith("/")) return trimmed;
+  if (!/^https?:\/\//i.test(trimmed)) return null;
+  try {
+    const { hostname } = new URL(trimmed);
+    if (hostname === "example.com") return null;
+    if (
+      hostname === "res.cloudinary.com" ||
+      hostname === "edugenie-api.vercel.app" ||
+      hostname === "images.unsplash.com"
+    ) {
+      return trimmed;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export default function CourseCard({ course }: Props) {
   const [imgError, setImgError] = useState(false);
   const [wished, setWished] = useState(false);
@@ -72,6 +94,9 @@ export default function CourseCard({ course }: Props) {
     typeof course.categoryId === "object" && course.categoryId?.name
       ? course.categoryId.name
       : "Course";
+
+  const safeThumbnail = getSafeImageSrc(course.thumbnail);
+  // console.log("COURSE CARD IMAGE:", course.title, course.thumbnail);
   return (
     <Link href={`/courses/${course._id}`} className="group block">
       <article
@@ -86,9 +111,9 @@ export default function CourseCard({ course }: Props) {
       >
         {/* ── Thumbnail — fixed 168px ── */}
         <div className="relative h-[168px] w-full flex-shrink-0 overflow-hidden bg-slate-100">
-          {!imgError && course.thumbnail ? (
+          {!imgError && safeThumbnail ? (
             <Image
-              src={course.thumbnail}
+              src={safeThumbnail}
               alt={course.title}
               fill
               sizes="(max-width:640px) 100vw,(max-width:1024px) 50vw,33vw"

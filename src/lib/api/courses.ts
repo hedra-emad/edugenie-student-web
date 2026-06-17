@@ -97,12 +97,19 @@ export async function fetchCategories(): Promise<CategoryOption[]> {
 }
 export async function fetchAllCourses(): Promise<Course[]> {
   const url = `${BASE_URL}/courses?page=1&limit=1000`;
-
+  // console.log("REQUEST URL:", url);
   const res = await fetch(url, {
     credentials: "include",
     headers: { "Content-Type": "application/json" },
     cache: "no-store",
   });
+  // ----------
+  // console.log("URL:", url);
+  // console.log("STATUS:", res.status);
+  
+  // const text = await res.text();
+  // console.log("RESPONSE:", text);
+  // // --------
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({}));
