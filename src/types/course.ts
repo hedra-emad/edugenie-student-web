@@ -1,4 +1,4 @@
-// ─── Enums (مطابقة الـ ERD)
+//  Enums (Match ERD)
 
 export type CourseLevel = "beginner" | "intermediate" | "advanced";
 export type CourseStatus = "draft" | "published" | "archived";
@@ -20,11 +20,17 @@ export interface Category {
 
 export interface Instructor {
   _id: string;
-  name?: string; // optional — مش دايماً بييجي
+  name?: string; // optional
   avatar?: string;
   averageIntructorRating?: number;
 }
-
+export interface InstructorProfile {
+  _id: string;
+  name: string;
+  avatar?: string;
+  bio?: string;
+  averageIntructorRating?: number;
+}
 export interface Course {
   _id: string;
   title: string;
@@ -36,7 +42,7 @@ export interface Course {
   requirements?: string[];
   instructorId: Instructor;
   categoryId: Category;
-  courseStatus: CourseStatus;
+  status: CourseStatus;
   ratingAverage?: number;
   totalLessons?: number;
   totalEnrollments?: number;
@@ -44,6 +50,38 @@ export interface Course {
   totalHours?: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CourseDetails {
+  _id: string;
+  title: string;
+  description: string;
+  price: number;
+  thumbnail: string;
+  level: CourseLevel;
+  categoryId: Category;
+  ratingAverage?: number;
+  sections: Section[];
+  instructor: InstructorProfile;
+  isFullyOwned: boolean;
+}
+export interface Lesson {
+  _id: string;
+  sectionId: string;
+  title: string;
+  videoDuration: number;
+}
+
+export interface Section {
+  _id: string;
+  title: string;
+  description?: string;
+  expectedOutcomes?: string[];
+  isBasicSection: boolean;
+  totalHour?: number;
+  price: number;
+  lessons: Lesson[];
+  isOwned: boolean;
 }
 
 // ─── API Response

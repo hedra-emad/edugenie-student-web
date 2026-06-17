@@ -4,7 +4,7 @@ import { BookOpen } from "lucide-react";
 import CourseCard from "./CourseCard";
 import { Course } from "@/types/course";
 
-// ─── Skeleton Card ────────────────────────────────────────────────────────────
+// ─── Skeleton Card 
 
 function SkeletonCard() {
   return (
@@ -63,7 +63,7 @@ function EmptyState({ onReset }: { onReset: () => void }) {
   );
 }
 
-// ─── CoursesGrid ──────────────────────────────────────────────────────────────
+// ─── CoursesGrid 
 
 interface Props {
   courses:    Course[];

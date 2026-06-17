@@ -5,26 +5,22 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
-        source:      "/api/proxy/:path*",
+        source: "/api/proxy/:path*",
         destination: "https://edugenie-api.vercel.app/:path*",
       },
     ];
   },
- images: {
+  images: {
     remotePatterns: [
-      // Cloudinary — صور الكورسات / الأفاتار
-      {
-        protocol: "https",
-        hostname: "res.cloudinary.com",
-        pathname: "/**",
-      },
-      // الـ API نفسه لو بيرجع صور مرفوعة محليًا عليه
+      // Cloudinary —
+      { protocol: "https", hostname: "res.cloudinary.com", pathname: "/**" },
+      // edugenie-api.vercel.app — used for course images
       {
         protocol: "https",
         hostname: "edugenie-api.vercel.app",
         pathname: "/**",
       },
-      // أي صور placeholder بتيجي من unsplash (شائعة في mock data)
+      // images.unsplash.com — used for course images
       {
         protocol: "https",
         hostname: "images.unsplash.com",
@@ -32,20 +28,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // images: {
-  //   remotePatterns: [
-  //     //  Cloudinary — used for course images
-  //     {
-  //       protocol: "https",
-  //       hostname: "res.cloudinary.com",
-  //     },
-  //     //  example.com — placeholder for development
-  //     {
-  //       protocol: "https",
-  //       hostname: "example.com",
-  //     },
-  //   ],
-  // },
 };
 
 export default nextConfig;
