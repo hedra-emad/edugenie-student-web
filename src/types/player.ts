@@ -1,7 +1,5 @@
 // src/types/player.ts
-
 export type LessonState = "locked" | "available" | "in_progress" | "completed";
-
 export interface PlayerLesson {
   _id: string;
   title: string;

@@ -38,8 +38,8 @@ export default async function LearnPage({
     getCourseForPlayer(courseId, token),
     getResumePosition(courseId, token),
   ]);
-  console.log("token:", token);
-  console.log("course:", course);
+  // console.log("token:", token);
+  // console.log("course:", course);
   // Hard redirect if the course doesn't exist or is inaccessible
   if (!course) redirect("/courses");
 
