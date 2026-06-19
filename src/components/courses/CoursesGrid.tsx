@@ -87,7 +87,7 @@ export default function CoursesGrid({
         ? Array.from({ length: limit }).map((_, i) => <SkeletonCard key={i} />)
         : courses.length === 0
           ? <EmptyState onReset={onReset} />
-          : courses.map((course) => <CourseCard key={course._id} course={course} />)
+          : courses.map((course) => <CourseCard key={course.id} course={course} />)
       }
     </div>
   );

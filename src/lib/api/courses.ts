@@ -61,7 +61,7 @@ export async function fetchCourses(
 
   return {
     success: json.success ?? true,
-    data: json.data ?? [],
+    data: json?.data?.data ?? [],
     pagination: {
       currentPage,
       totalPages,
@@ -76,7 +76,7 @@ export async function fetchCourses(
 // ─── Fetch categories for filter dropdown
 
 export interface CategoryOption {
-  _id: string;
+  id: string;
   name: string;
   slug: string;
 }
@@ -120,5 +120,5 @@ export async function fetchAllCourses(): Promise<Course[]> {
   }
 
   const json = await res.json();
-  return json.data ?? [];
+  return json?.data?.data ?? [];
 }

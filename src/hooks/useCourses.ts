@@ -35,7 +35,11 @@ function parseFiltersFromUrl(params: URLSearchParams): CourseFilters {
 }
 
 function applyFilters(courses: Course[], filters: CourseFilters): Course[] {
-  let result = [...courses];
+ if (!Array.isArray(courses)) {
+  return [];
+}
+
+let result = [...courses];
 
   if (filters.search.trim()) {
     const q = filters.search.toLowerCase();
@@ -49,7 +53,7 @@ function applyFilters(courses: Course[], filters: CourseFilters): Course[] {
   if (filters.category) {
     result = result.filter((c) => {
       const catId =
-        typeof c.categoryId === "string" ? c.categoryId : c.categoryId?._id;
+        typeof c.categoryId === "string" ? c.categoryId : c.categoryId?.id;
       return catId === filters.category;
     });
   }

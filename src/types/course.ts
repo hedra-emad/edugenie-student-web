@@ -13,26 +13,26 @@ export type SortOption =
 // ─── Core Entities
 
 export interface Category {
-  _id: string;
+  id: string;
   name?: string;
   slug: string;
 }
 
 export interface Instructor {
-  _id: string;
+  id: string;
   name?: string; // optional
   avatar?: string;
   averageIntructorRating?: number;
 }
 export interface InstructorProfile {
-  _id: string;
+  id: string;
   name: string;
   avatar?: string;
   bio?: string;
   averageIntructorRating?: number;
 }
 export interface Course {
-  _id: string;
+  id: string;
   title: string;
   description: string;
   price: number;
@@ -53,7 +53,7 @@ export interface Course {
 }
 
 export interface CourseDetails {
-  _id: string;
+  id: string;
   title: string;
   description: string;
   price: number;
@@ -66,14 +66,14 @@ export interface CourseDetails {
   isFullyOwned: boolean;
 }
 export interface Lesson {
-  _id: string;
+  id: string;
   sectionId: string;
   title: string;
   videoDuration: number;
 }
 
 export interface Section {
-  _id: string;
+  id: string;
   title: string;
   description?: string;
   expectedOutcomes?: string[];
