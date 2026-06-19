@@ -34,6 +34,7 @@ function getSafeImageSrc(src: string | null | undefined): string | null {
 // ─── Types
 interface SectionWithOwned extends Section {
   isOwned?: boolean;
+  price?: number;
 }
 
 type BtnState = "enrolled" | "disabled" | "partial" | "full";
@@ -55,13 +56,8 @@ function formatDuration(totalHours: number) {
 }
 
 // Split course price equally across sections that have no individual price
-function getSectionPrice(
-  index: number,
-  totalSections: number,
-  coursePrice: number,
-): number {
-  // placeholder — will use section.price from API when backend adds it
-  return Math.round(coursePrice / totalSections);
+function getSectionPrice(section: SectionWithOwned): number {
+  return section.price ?? 0;
 }
 
 function getBtnState(
@@ -209,12 +205,11 @@ export default function EnrollCard({ course }: { course: Course }) {
     selectedIds.has(getSectionId(s)),
   );
   const selectedTotal = selectedList.reduce(
-    (acc, s, _, arr) =>
-      acc + getSectionPrice(arr.indexOf(s), arr.length, course.price),
+    (acc, s) => acc + getSectionPrice(s),
     0,
   );
   const fullTotal = availableSections.reduce(
-    (acc, _, i, arr) => acc + getSectionPrice(i, arr.length, course.price),
+    (acc, s) => acc + getSectionPrice(s),
     0,
   );
 
@@ -339,7 +334,7 @@ export default function EnrollCard({ course }: { course: Course }) {
             <div className="flex flex-col gap-2">
               {sections.map((section, i) => {
                 const sectionId = getSectionId(section);
-                const price = getSectionPrice(i, sections.length, course.price);
+                const price = getSectionPrice(section);
                 const isOwned = section.isOwned ?? false;
                 return (
                   <SectionRow
@@ -395,7 +390,6 @@ export default function EnrollCard({ course }: { course: Course }) {
 
         {/* Placement test */}
         {!course.isEnrolled && (
-         
           <button
             onClick={toggleAllSections}
             className="
