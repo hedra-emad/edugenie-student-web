@@ -152,7 +152,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPlayer(
     setDuration(0);
     maxWatchedTimeRef.current = lesson.watchedDuration;
     setShowSpeedMenu(false);
-  }, [lesson._id, lesson.watchedDuration]);
+  }, [lesson.id, lesson.watchedDuration]);
 
   // ── Apply speed when it changes ───────────────────────────────────────────
   useEffect(() => {
@@ -160,7 +160,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPlayer(
   }, [speed]);
 
   // ── Progress hook ─────────────────────────────────────────────────────────
-  useVideoProgress(lesson._id, videoRef as React.RefObject<HTMLVideoElement>, {
+  useVideoProgress(lesson.id, videoRef as React.RefObject<HTMLVideoElement>, {
     onProgressResponse: (res) => {
       onProgressResponse?.(res);
       if (res.lessonState === "completed") onLessonComplete?.();
@@ -283,7 +283,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPlayer(
       <div className="relative w-full aspect-video bg-slate-900">
         <video
           ref={videoRef}
-          key={lesson._id}
+          key={lesson.id}
           src={lesson.videoUrl}
           className="w-full h-full object-contain"
           onLoadedMetadata={handleLoadedMetadata}

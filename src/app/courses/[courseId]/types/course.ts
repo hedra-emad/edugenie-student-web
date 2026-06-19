@@ -1,7 +1,7 @@
 // types/course.ts
 
 export interface Lesson {
-  _id: string;
+  id: string;
   title: string;
   videoUrl: string;
   videoPublicId: string;
@@ -11,7 +11,7 @@ export interface Lesson {
 }
 
 export interface Section {
-  _id: string;
+  id: string;
   title: string;
   description: string;
   expectedOutcomes: string[];
@@ -22,21 +22,21 @@ export interface Section {
 }
 
 export interface Instructor {
-  _id: string;
+  id: string;
   firstName: string;
   lastName: string;
   avatar: string;
 }
 
 export interface Category {
-  _id: string;
+  id: string;
   name: string;
   iconUrl: string;
   slug: string;
 }
 
 export interface Course {
-  _id: string;
+  id: string;
   title: string;
   description: string;
   price: number;

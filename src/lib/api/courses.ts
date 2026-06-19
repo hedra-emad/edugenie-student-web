@@ -76,7 +76,7 @@ export async function fetchCourses(
 // ─── Fetch categories for filter dropdown
 
 export interface CategoryOption {
-  _id: string;
+  id: string;
   name: string;
   slug: string;
 }

@@ -21,7 +21,7 @@ function extractCoursePayload(json: unknown): Record<string, unknown> | null {
   if (!root) return null;
 
   const candidate = asRecord(root.course ?? root.data) ?? root;
-  if (!(candidate._id || candidate.id) || !candidate.title) return null;
+  if (!(candidate.id || candidate.id) || !candidate.title) return null;
 
   return candidate;
 }
@@ -46,7 +46,7 @@ function normalizeCourse(raw: Record<string, unknown>): Course {
     asRecord(raw.categoryId) ?? asRecord(raw.category) ?? {};
 
   return {
-    _id: String(raw._id ?? raw.id),
+    id: String(raw.id ?? raw.id),
     title: String(raw.title),
     description:
       typeof raw.description === "string" ? raw.description : "",
@@ -65,14 +65,14 @@ function normalizeCourse(raw: Record<string, unknown>): Course {
           ? raw.status
           : "",
     instructorId: {
-      _id: String(instructorRaw._id ?? instructorRaw.id ?? ""),
+      id: String(instructorRaw.id ?? instructorRaw.id ?? ""),
       firstName,
       lastName,
       avatar:
         typeof instructorRaw.avatar === "string" ? instructorRaw.avatar : "",
     },
     categoryId: {
-      _id: String(categoryRaw._id ?? categoryRaw.id ?? ""),
+      id: String(categoryRaw.id ?? categoryRaw.id ?? ""),
       name: typeof categoryRaw.name === "string" ? categoryRaw.name : "Course",
       iconUrl:
         typeof categoryRaw.iconUrl === "string" ? categoryRaw.iconUrl : "",

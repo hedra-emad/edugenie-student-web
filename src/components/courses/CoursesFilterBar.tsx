@@ -197,9 +197,9 @@ export default function CoursesFilterBar({
             {categories.map((c) => (
               <option
                 key={
-                  (c as CategoryOption & { id?: string }).id ?? c._id ?? c.slug
+                  (c as CategoryOption & { id?: string }).id ?? c.id ?? c.slug
                 }
-                value={c._id}
+                value={c.id}
               >
                 {c.name}
               </option>
@@ -310,7 +310,7 @@ export default function CoursesFilterBar({
             {filters.category && (
               <Chip
                 label={
-                  categories.find((c) => c._id === filters.category)?.name ??
+                  categories.find((c) => c.id === filters.category)?.name ??
                   "Category"
                 }
                 onRemove={() => onFilterChange({ category: "" })}

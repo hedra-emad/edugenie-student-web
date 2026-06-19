@@ -111,11 +111,11 @@ export default function SectionAccordion({
           )}
 
           {section.lessons.map((lesson, lIdx) => (
-            <div key={lesson._id} className={!section.isOwned ? "opacity-60" : ""}>
+            <div key={lesson.id} className={!section.isOwned ? "opacity-60" : ""}>
               <LessonItem
                 lesson={lesson}
                 index={globalLessonIndex + lIdx}
-                isActive={lesson._id === activeLessonId}
+                isActive={lesson.id === activeLessonId}
                 isForceLockedBySection={!section.isOwned}
                 onClick={onLessonClick}
               />

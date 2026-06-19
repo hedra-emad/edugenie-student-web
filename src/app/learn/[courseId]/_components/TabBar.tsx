@@ -7,7 +7,7 @@ import NotesSidebar from "./NotesSidebar";
 
 interface Props {
   lesson: PlayerLesson;
-  nextLesson: { _id: string; title: string; videoDuration: number } | null;
+  nextLesson: { id: string; title: string; videoDuration: number } | null;
   getCurrentTime: () => number;
   onSeekTo: (seconds: number) => void;
   onNextLesson: () => void;
@@ -127,7 +127,7 @@ export default function TabBar({
 
         {activeTab === "notes" && (
           <NotesSidebar
-            lessonId={lesson._id}
+            lessonId={lesson.id}
             getCurrentTime={getCurrentTime}
             onSeekTo={onSeekTo}
           />

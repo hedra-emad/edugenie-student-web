@@ -53,8 +53,8 @@ export default async function LearnPage({
     resume?.lessonId ??
     allLessons.find(
       (l) => l.state === "in_progress" || l.state === "available",
-    )?._id ??
-    allLessons[0]?._id ??
+    )?.id ??
+    allLessons[0]?.id ??
     "";
 
   const initialWatchedDuration = resume?.watchedDuration ?? 0;

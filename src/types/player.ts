@@ -1,7 +1,7 @@
 // src/types/player.ts
 export type LessonState = "locked" | "available" | "in_progress" | "completed";
 export interface PlayerLesson {
-  _id: string;
+  id: string;
   title: string;
   videoUrl: string;
   videoPublicId: string;
@@ -12,7 +12,7 @@ export interface PlayerLesson {
 }
 
 export interface PlayerSection {
-  _id: string;
+  id: string;
   title: string;
   description: string;
   isOwned: boolean;
@@ -21,7 +21,7 @@ export interface PlayerSection {
 }
 
 export interface PlayerCourse {
-  _id: string;
+  id: string;
   title: string;
   thumbnail: string;
   totalLessons: number;
@@ -43,14 +43,14 @@ export interface ProgressPayload {
 export interface ProgressResponse {
   lessonState: LessonState;
   nextLessonUnlocked: boolean;
-  nextLesson: { _id: string; title: string } | null;
+  nextLesson: { id: string; title: string } | null;
   sectionCompleted: boolean;
   quizRequired: boolean;
   quizSectionId: string | null;
 }
 
 export interface Note {
-  _id: string;
+  id: string;
   content: string;
   timestamp: number; // seconds into the video
   createdAt: string;

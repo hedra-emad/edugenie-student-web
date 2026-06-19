@@ -48,7 +48,7 @@ export async function getCourseForPlayer(
       (json.course as Record<string, unknown>) ??
       (json.data as Record<string, unknown>) ??
       json;
-      const id = String(raw.id ?? raw._id ?? "");
+      const id = String(raw.id ?? raw.id ?? "");
     if (!id || !raw.title) return null;
 
     const sections = Array.isArray(raw.sections)
@@ -61,7 +61,7 @@ export async function getCourseForPlayer(
         : sections.reduce((a, s) => a + s.lessons.length, 0);
 
     return {
-      _id: String(raw._id),
+      id: String(raw.id),
       title: String(raw.title),
       thumbnail: typeof raw.thumbnail === "string" ? raw.thumbnail : "",
       totalLessons,
@@ -146,8 +146,8 @@ export async function saveProgress(
       nextLessonUnlocked: Boolean(raw.nextLessonUnlocked),
       nextLesson:
         raw.nextLesson &&
-        typeof (raw.nextLesson as Record<string, unknown>)._id === "string"
-          ? (raw.nextLesson as { _id: string; title: string })
+        typeof (raw.nextLesson as Record<string, unknown>).id === "string"
+          ? (raw.nextLesson as { id: string; title: string })
           : null,
       sectionCompleted: Boolean(raw.sectionCompleted),
       quizRequired: Boolean(raw.quizRequired),
@@ -180,7 +180,7 @@ export async function getNotes(lessonId: string): Promise<Note[]> {
 
     return notes.map(
       (n: Record<string, unknown>): Note => ({
-        _id: String(n._id),
+        id: String(n.id),
         content: typeof n.content === "string" ? n.content : "",
         timestamp: typeof n.timestamp === "number" ? n.timestamp : 0,
         createdAt: typeof n.createdAt === "string" ? n.createdAt : "",
@@ -219,7 +219,7 @@ export async function saveNote(
       json;
 
     return {
-      _id: String(raw._id),
+      id: String(raw.id),
       content: typeof raw.content === "string" ? raw.content : content,
       timestamp: typeof raw.timestamp === "number" ? raw.timestamp : timestamp,
       createdAt: typeof raw.createdAt === "string" ? raw.createdAt : new Date().toISOString(),
@@ -257,7 +257,7 @@ function normaliseLesson(raw: Record<string, unknown>) {
   ) as import("@/types/player").LessonState;
 
   return {
-    _id: String(raw.id),
+    id: String(raw.id),
     title: typeof raw.title === "string" ? raw.title : "Lesson",
     videoUrl: typeof raw.videoUrl === "string" ? raw.videoUrl : "",
     videoPublicId:

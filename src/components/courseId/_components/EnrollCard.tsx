@@ -39,11 +39,11 @@ interface SectionWithOwned extends Section {
 type BtnState = "enrolled" | "disabled" | "partial" | "full";
 
 function getSectionId(section: Section) {
-  return (section as Section & { id?: string }).id ?? section._id;
+  return (section as Section & { id?: string }).id ?? section.id;
 }
 
 function getCourseId(course: Course) {
-  return (course as Course & { id?: string }).id ?? course._id;
+  return (course as Course & { id?: string }).id ?? course.id;
 }
 
 // ─── Helpers

@@ -5,11 +5,11 @@ import { useState } from "react";
 import type { Lesson, Section } from "../../../app/courses/[courseId]/types/course";
 
 function getSectionId(section: Section) {
-  return (section as Section & { id?: string }).id ?? section._id;
+  return (section as Section & { id?: string }).id ?? section.id;
 }
 
 function getLessonId(lesson: Lesson) {
-  return (lesson as Lesson & { id?: string }).id ?? lesson._id;
+  return (lesson as Lesson & { id?: string }).id ?? lesson.id;
 }
 
 function formatSeconds(s: number) {

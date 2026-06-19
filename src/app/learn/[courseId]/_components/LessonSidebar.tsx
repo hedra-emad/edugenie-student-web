@@ -53,8 +53,8 @@ export default function LessonSidebar({
   );
 
   const activeSectionId = course.sections.find((s) =>
-    s.lessons.some((l) => l._id === activeLessonId),
-  )?._id;
+    s.lessons.some((l) => l.id === activeLessonId),
+  )?.id;
 
   const sectionStartIndexes = course.sections.map((_, index) => {
     return (
@@ -81,12 +81,12 @@ export default function LessonSidebar({
       <div className="flex-1 overflow-y-auto">
         {course.sections.map((section, index) => (
           <SectionAccordion
-            key={section._id}
+            key={section.id}
             section={section}
             courseId={course.id}
             activeLessonId={activeLessonId}
             globalLessonIndex={sectionStartIndexes[index]}
-            defaultOpen={section._id === activeSectionId}
+            defaultOpen={section.id === activeSectionId}
             onLessonClick={onLessonClick}
           />
         ))}

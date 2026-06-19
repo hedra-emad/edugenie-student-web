@@ -53,7 +53,7 @@ let result = [...courses];
   if (filters.category) {
     result = result.filter((c) => {
       const catId =
-        typeof c.categoryId === "string" ? c.categoryId : c.categoryId?._id;
+        typeof c.categoryId === "string" ? c.categoryId : c.categoryId?.id;
       return catId === filters.category;
     });
   }

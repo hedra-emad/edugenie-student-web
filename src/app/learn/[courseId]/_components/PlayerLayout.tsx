@@ -29,7 +29,7 @@ export default function PlayerLayout({
   const findLesson = useCallback(
     (lessonId: string): PlayerLesson | null => {
       for (const section of course.sections) {
-        const found = section.lessons.find((l) => l._id === lessonId);
+        const found = section.lessons.find((l) => l.id === lessonId);
         if (found) return found;
       }
       return null;
@@ -51,7 +51,7 @@ export default function PlayerLayout({
     const initial = new Set<string>();
     for (const section of course.sections) {
       for (const lesson of section.lessons) {
-        if (lesson.state === "completed") initial.add(lesson._id);
+        if (lesson.state === "completed") initial.add(lesson.id);
       }
     }
     return initial;
@@ -68,12 +68,12 @@ export default function PlayerLayout({
       if (res.lessonState === "completed") {
         setCompletedLessons((prev) => {
           const next = new Set(prev);
-          next.add(activeLesson._id);
+          next.add(activeLesson.id);
           return next;
         });
       }
     },
-    [activeLesson._id, course.id, router],
+    [activeLesson.id, course.id, router],
   );
 
   // ── Lesson navigation ─────────────────────────────────────────────────────
@@ -91,7 +91,7 @@ export default function PlayerLayout({
     const allLessons = course.sections.flatMap((s) =>
       s.isOwned ? s.lessons : [],
     );
-    const idx = allLessons.findIndex((l) => l._id === activeLesson._id);
+    const idx = allLessons.findIndex((l) => l.id === activeLesson.id);
     if (idx === -1) return null;
     const candidate = allLessons[idx + 1];
     if (!candidate) return null;
@@ -123,7 +123,7 @@ export default function PlayerLayout({
   // Build nextLesson info for TabBar (needs duration)
   const nextLessonForTab = nextLesson
     ? {
-        _id: nextLesson._id,
+        id: nextLesson.id,
         title: nextLesson.title,
         videoDuration: nextLesson.videoDuration,
       }
@@ -154,7 +154,7 @@ export default function PlayerLayout({
                 onLessonComplete={() => {
                   setCompletedLessons((prev) => {
                     const next = new Set(prev);
-                    next.add(activeLesson._id);
+                    next.add(activeLesson.id);
                     return next;
                   });
                 }}
@@ -214,7 +214,7 @@ export default function PlayerLayout({
           <div className="hidden lg:block bg-white rounded-2xl border border-slate-200 overflow-hidden max-h-[400px] overflow-y-auto">
             <LessonSidebar
               course={course}
-              activeLessonId={activeLesson._id}
+              activeLessonId={activeLesson.id}
               onLessonClick={handleLessonClick}
             />
           </div>
@@ -223,7 +223,7 @@ export default function PlayerLayout({
           <div className="lg:hidden bg-white rounded-2xl border border-slate-200 overflow-hidden max-h-[320px] overflow-y-auto">
             <LessonSidebar
               course={course}
-              activeLessonId={activeLesson._id}
+              activeLessonId={activeLesson.id}
               onLessonClick={handleLessonClick}
             />
           </div>
@@ -250,7 +250,7 @@ export default function PlayerLayout({
           <div className="flex-1 overflow-y-auto">
             <LessonSidebar
               course={course}
-              activeLessonId={activeLesson._id}
+              activeLessonId={activeLesson.id}
               onLessonClick={handleLessonClick}
             />
           </div>

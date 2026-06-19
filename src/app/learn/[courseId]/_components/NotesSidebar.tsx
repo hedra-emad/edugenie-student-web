@@ -68,7 +68,7 @@ export default function NotesSidebar({ lessonId, getCurrentTime, onSeekTo }: Pro
   };
 
   const handleDelete = (noteId: string) => {
-    setNotes((prev) => prev.filter((n) => n._id !== noteId));
+    setNotes((prev) => prev.filter((n) => n.id !== noteId));
     // Fire-and-forget delete — no dedicated delete endpoint specified
   };
 
@@ -134,7 +134,7 @@ export default function NotesSidebar({ lessonId, getCurrentTime, onSeekTo }: Pro
         <div className="flex flex-col gap-3">
           {notes.map((note) => (
             <div
-              key={note._id}
+              key={note.id}
               className="group bg-slate-50 border border-slate-200 rounded-xl p-4"
             >
               <div className="flex items-start justify-between gap-2 mb-2">
@@ -149,7 +149,7 @@ export default function NotesSidebar({ lessonId, getCurrentTime, onSeekTo }: Pro
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleDelete(note._id)}
+                  onClick={() => handleDelete(note.id)}
                   className="text-slate-300 hover:text-red-400 transition-colors opacity-0
                              group-hover:opacity-100"
                   aria-label="Delete note"
