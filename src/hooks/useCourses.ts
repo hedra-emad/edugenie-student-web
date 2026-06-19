@@ -35,7 +35,11 @@ function parseFiltersFromUrl(params: URLSearchParams): CourseFilters {
 }
 
 function applyFilters(courses: Course[], filters: CourseFilters): Course[] {
-  let result = [...courses];
+ if (!Array.isArray(courses)) {
+  return [];
+}
+
+let result = [...courses];
 
   if (filters.search.trim()) {
     const q = filters.search.toLowerCase();

@@ -2,7 +2,15 @@
 "use client";
 
 import { useState } from "react";
-import type { Section } from "../../../app/courses/[courseId]/types/course";
+import type { Lesson, Section } from "../../../app/courses/[courseId]/types/course";
+
+function getSectionId(section: Section) {
+  return (section as Section & { id?: string }).id ?? section._id;
+}
+
+function getLessonId(lesson: Lesson) {
+  return (lesson as Lesson & { id?: string }).id ?? lesson._id;
+}
 
 function formatSeconds(s: number) {
   const m = Math.floor(s / 60);
@@ -51,16 +59,12 @@ interface Props {
 }
 
 export default function CourseCurriculum({ sections, isEnrolled }: Props) {
-  const [openIds, setOpenIds] = useState<Set<string>>(
-    () => new Set(sections[0] ? [sections[0]._id] : [])
+  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
+    () => (sections[0] ? getSectionId(sections[0]) : null),
   );
 
   const toggle = (id: string) =>
-    setOpenIds((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
+    setSelectedSectionId((prev) => (prev === id ? null : id));
 
   const totalLessons  = sections.reduce((a, s) => a + s.lessons.length, 0);
   const totalDuration = sections.reduce(
@@ -80,17 +84,18 @@ export default function CourseCurriculum({ sections, isEnrolled }: Props) {
 
       <div className="flex flex-col gap-2">
         {sections.map((section, sIdx) => {
-          const isOpen      = openIds.has(section._id);
+          const sectionId = getSectionId(section);
+          const isOpen = selectedSectionId === sectionId;
           const secDuration = section.lessons.reduce((a, l) => a + l.videoDuration, 0);
 
           return (
             <div
-              key={section._id}
+              key={sectionId}
               className="border border-slate-200 rounded-xl overflow-hidden"
             >
               {/* Section header */}
               <button
-                onClick={() => toggle(section._id)}
+                onClick={() => toggle(sectionId)}
                 className="
                   w-full flex items-center gap-3 px-4 py-3.5 text-left
                   bg-slate-50 hover:bg-slate-100
@@ -143,7 +148,7 @@ export default function CourseCurriculum({ sections, isEnrolled }: Props) {
 
                       return (
                         <div
-                          key={lesson._id}
+                          key={getLessonId(lesson)}
                           className={`
                             flex items-center gap-3 px-4 py-3
                             transition-colors

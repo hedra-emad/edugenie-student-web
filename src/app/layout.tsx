@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Hanken_Grotesk, Inter } from "next/font/google";
 import "./globals.css";
-import Footer from "@/components/layout/Footer";
-import Header from "@/components/layout/Header";
+import SiteShell from "@/components/layout/SiteShell";
 import QueryProvider from "../app/providers/QueryProvider";
 
 const hankenGrotesk = Hanken_Grotesk({
@@ -37,12 +36,12 @@ export default function RootLayout({
       className={`${hankenGrotesk.variable} ${inter.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-       <Header/>
         <QueryProvider>
-          {children}
+          <SiteShell>
+            {children}
+          </SiteShell>
         </QueryProvider>
-        <Footer />
-        </body>
+      </body>
       
     </html>
   );

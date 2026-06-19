@@ -98,7 +98,7 @@ export default function CourseCard({ course }: Props) {
   const safeThumbnail = getSafeImageSrc(course.thumbnail);
   // console.log("COURSE CARD IMAGE:", course.title, course.thumbnail);
   return (
-    <Link href={`/courses/${course._id}`} className="group block">
+    <Link href={`/courses/${course.id}`} className="group block">
       <article
         className="
           bg-white rounded-2xl border border-slate-200 overflow-hidden

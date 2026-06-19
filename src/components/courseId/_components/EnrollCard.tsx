@@ -38,6 +38,14 @@ interface SectionWithOwned extends Section {
 
 type BtnState = "enrolled" | "disabled" | "partial" | "full";
 
+function getSectionId(section: Section) {
+  return (section as Section & { id?: string }).id ?? section._id;
+}
+
+function getCourseId(course: Course) {
+  return (course as Course & { id?: string }).id ?? course._id;
+}
+
 // ─── Helpers
 function formatDuration(totalHours: number) {
   const h = Math.floor(totalHours);
@@ -181,7 +189,7 @@ export default function EnrollCard({ course }: { course: Course }) {
   // );
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   useEffect(() => {
-    setSelectedIds(new Set(availableSections.map((s) => s._id)));
+    setSelectedIds(new Set(availableSections.map((s) => getSectionId(s))));
   }, [availableSections]);
 
   const toggle = (id: string) =>
@@ -197,7 +205,9 @@ export default function EnrollCard({ course }: { course: Course }) {
     selectedIds,
     availableSections,
   );
-  const selectedList = availableSections.filter((s) => selectedIds.has(s._id));
+  const selectedList = availableSections.filter((s) =>
+    selectedIds.has(getSectionId(s)),
+  );
   const selectedTotal = selectedList.reduce(
     (acc, s, _, arr) =>
       acc + getSectionPrice(arr.indexOf(s), arr.length, course.price),
@@ -239,18 +249,19 @@ export default function EnrollCard({ course }: { course: Course }) {
   })();
 
   function handleCTA() {
+    const courseId = getCourseId(course);
     if (btnState === "disabled" || pending) return;
     if (btnState === "enrolled") {
-      startTransition(() => router.push(`/learn/${course._id}`));
+      startTransition(() => router.push(`/learn/${courseId}`));
       return;
     }
     if (btnState === "full") {
-      startTransition(() => router.push(`/checkout/${course._id}?type=full`));
+      startTransition(() => router.push(`/checkout/${courseId}?type=full`));
       return;
     }
-    const ids = selectedList.map((s) => s._id).join(",");
+    const ids = selectedList.map((s) => getSectionId(s)).join(",");
     startTransition(() =>
-      router.push(`/checkout/${course._id}?type=sections&ids=${ids}`),
+      router.push(`/checkout/${courseId}?type=sections&ids=${ids}`),
     );
   }
   // button toggle all sections
@@ -259,7 +270,7 @@ export default function EnrollCard({ course }: { course: Course }) {
       setSelectedIds(new Set<string>());
     } else {
       setSelectedIds(
-        new Set<string>(availableSections.map((s) => String(s._id))),
+        new Set<string>(availableSections.map((s) => getSectionId(s))),
       );
     }
   };
@@ -272,6 +283,7 @@ export default function EnrollCard({ course }: { course: Course }) {
             src={safeThumbnail}
             alt={course.title}
             fill
+            sizes="(max-width: 768px) 100vw, 33vw"
             className="object-cover"
           />
         )}
@@ -326,17 +338,18 @@ export default function EnrollCard({ course }: { course: Course }) {
             </p>
             <div className="flex flex-col gap-2">
               {sections.map((section, i) => {
+                const sectionId = getSectionId(section);
                 const price = getSectionPrice(i, sections.length, course.price);
                 const isOwned = section.isOwned ?? false;
                 return (
                   <SectionRow
-                    key={section._id}
+                    key={sectionId}
                     section={section}
                     index={i}
                     price={price}
-                    isChecked={isOwned || selectedIds.has(section._id)}
+                    isChecked={isOwned || selectedIds.has(sectionId)}
                     isOwned={isOwned}
-                    onToggle={() => toggle(section._id)}
+                    onToggle={() => toggle(sectionId)}
                   />
                 );
               })}

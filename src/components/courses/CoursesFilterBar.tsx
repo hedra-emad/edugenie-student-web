@@ -193,9 +193,14 @@ export default function CoursesFilterBar({
             value={filters.category}
             onChange={(v) => onFilterChange({ category: v })}
           >
-            <option value="">All Categories</option>
+            <option key="all-categories" value="">All Categories</option>
             {categories.map((c) => (
-              <option key={c._id} value={c._id}>
+              <option
+                key={
+                  (c as CategoryOption & { id?: string }).id ?? c._id ?? c.slug
+                }
+                value={c._id}
+              >
                 {c.name}
               </option>
             ))}
@@ -264,7 +269,7 @@ export default function CoursesFilterBar({
               onFilterChange({ minRating: v === "" ? "" : Number(v) })
             }
           >
-            <option value="">Any Rating</option>
+            <option key="any-rating" value="">Any Rating</option>
             {RATINGS.map((r) => (
               <option key={r} value={r}>
                 {"★".repeat(Math.floor(r))} {r}+
@@ -278,7 +283,7 @@ export default function CoursesFilterBar({
               onFilterChange({ maxDuration: v === "" ? "" : Number(v) })
             }
           >
-            <option value="">Any Duration</option>
+            <option key="any-duration" value="">Any Duration</option>
             {DURATIONS.map((d) => (
               <option key={d.value} value={d.value}>
                 {d.label}
