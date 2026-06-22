@@ -20,6 +20,7 @@ const nextConfig: NextConfig = {
         hostname: "edugenie-api.vercel.app",
         pathname: "/**",
       },
+      { protocol: "https", hostname: "upload.wikimedia.org", pathname: "/**" },
       // images.unsplash.com — used for course images
       {
         protocol: "https",
