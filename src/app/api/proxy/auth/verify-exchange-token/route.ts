@@ -26,10 +26,21 @@ export async function POST(request: Request) {
 
     console.log("Backend response:", JSON.stringify(responseBody, null, 2));
 
-    const jwt: string =
+    // 1. Try to get it from the JSON body (if backend sends it there)
+    let jwt: string =
       responseBody.data?.token ??
       responseBody.data?.accessToken ??
       responseBody.data?.jwt;
+
+    // 2. If it's not in the body, extract it from the Set-Cookie header
+    if (!jwt) {
+      const setCookieHeader = backendRes.headers.get("set-cookie");
+      if (setCookieHeader) {
+        // Our backend sets the cookie as 'jwt=eyJ...'
+        const match = setCookieHeader.match(/(?:^|;\s*)jwt=([^;]+)/i);
+        jwt = match?.[1] ?? "";
+      }
+    }
 
     if (!jwt) {
       return NextResponse.json({ error: "No token found in response" }, { status: 500 });
