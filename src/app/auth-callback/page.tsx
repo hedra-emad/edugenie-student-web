@@ -34,7 +34,7 @@ function AuthCallbackContent() {
         if (response.ok) {
           // Token verified successfully and HTTP-only cookie is set
           // router.replace("/"); // Redirect to the student home/dashboard page
-          router.replace("http://localhost:4200");
+          router.replace(dashboardUrl);
         } else {
           // Verification failed (invalid or expired token)
           window.location.href = `${dashboardUrl}/login?error=invalid_token`;
