@@ -53,8 +53,8 @@ export default function LoginPage() {
         queryClient.invalidateQueries({ queryKey: ["profile"] });
         router.push('/');
       } else {
-        // Pass the token directly from response body to avoid cookie timing race conditions in browser
-        const handoffResponse = await generateHandoffCodeAction(exchangeToken);
+        // Use Server Action so the cookie is read server-side — avoids browser race condition
+        const handoffResponse = await generateHandoffCodeAction();
         const code = handoffResponse?.code;
         const ANGULAR_URL = process.env.NEXT_PUBLIC_ANGULAR_APP_URL || 'https://edugenie-dashboard.vercel.app';
         window.location.href = `${ANGULAR_URL}/auth/redeem?code=${code}`;

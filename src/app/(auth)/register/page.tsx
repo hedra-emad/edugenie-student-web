@@ -95,8 +95,10 @@ export default function RegisterPage() {
           // but for simplicity we will just push.
           router.push('/login?registered=true');
         } else {
-          // Redirect to login page so they can log in and be handed off to the dashboard
-          router.push('/login?registered=true&role=' + returnedRole);
+          const handoffResponse = await handoffCode();
+          const code = handoffResponse?.data?.code;
+          const ANGULAR_URL = process.env.NEXT_PUBLIC_ANGULAR_APP_URL || 'https://edugenie-dashboard.vercel.app';
+          window.location.href = `${ANGULAR_URL}/auth/redeem?code=${code}`;
         }
       } catch (err: any) {
         console.error('Register error:', err);
