@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
+import { useCartContext } from "@/contexts/CartContext";
 
 interface User {
   name: string;
@@ -19,9 +20,55 @@ const navLinks = [
   { label: "About", href: "/about" },
 ];
 
+/** Renders the cart icon + badge for the given count. */
+function CartIcon({ count }: { count: number | null }) {
+  const hasBadge = count !== null && count >= 1;
+  const badgeText = count !== null && count > 99 ? "99+" : String(count ?? 0);
+  const ariaLabel =
+    hasBadge
+      ? count! > 99
+        ? "Cart, 99+ items"
+        : `Cart, ${count} item${count === 1 ? "" : "s"}`
+      : "Cart";
+
+  return (
+    <Link
+      href="/cart"
+      aria-label={ariaLabel}
+      className="relative flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-gray-600 hover:text-indigo-700 hover:bg-gray-100 transition-colors duration-150"
+    >
+      {/* Shopping cart SVG */}
+      <svg
+        className="h-5 w-5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm-8 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"
+        />
+      </svg>
+      {/* Badge */}
+      {hasBadge && (
+        <span
+          aria-hidden="true"
+          className="absolute -top-1 -right-1 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white"
+        >
+          {badgeText}
+        </span>
+      )}
+    </Link>
+  );
+}
+
 export default function Header({ user = null }: HeaderProps) {
   const [searchValue, setSearchValue] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  const { cartCount } = useCartContext();
 
   return (
     <header className="w-full border-b border-gray-200 bg-white">
@@ -45,8 +92,13 @@ export default function Header({ user = null }: HeaderProps) {
           ))}
         </nav>
 
-        {/* ── Right: Search + Auth ── */}
+        {/* ── Right: Cart Icon (desktop) + Search + Auth ── */}
         <div className="flex items-center gap-3">
+
+          {/* Cart icon — desktop (hidden on mobile; mobile version lives in the hamburger panel) */}
+          <div className="hidden md:flex">
+            <CartIcon count={cartCount} />
+          </div>
 
           {/* Search */}
           {/* <div className="hidden sm:flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-100 transition-all">
@@ -170,6 +222,12 @@ export default function Header({ user = null }: HeaderProps) {
               {link.label}
             </Link>
           ))}
+
+          {/* Cart icon — mobile */}
+          <div className="flex items-center gap-3 py-1">
+            <CartIcon count={cartCount} />
+            <span className="text-sm font-medium text-gray-700">Cart</span>
+          </div>
 
           {!user && (
             <div className="flex gap-2 pt-1">
