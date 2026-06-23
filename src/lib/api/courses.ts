@@ -3,8 +3,8 @@ import { Course, CourseFilters, CoursesApiResponse } from "@/types/course";
 
 const REMOTE_API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "https://edugenie-api.vercel.app";
- 
-const BASE_URL = typeof window === "undefined" ? REMOTE_API_URL : "/api/proxy";
+
+const BASE_URL = REMOTE_API_URL;
 // ─── Build query string from filters
 
 export function buildCoursesQuery(filters: CourseFilters): string {
@@ -46,7 +46,7 @@ export async function fetchCourses(
     const error = await res.json().catch(() => ({}));
     throw new Error(
       (error as { message?: string }).message ??
-        `Request failed: ${res.status}`,
+      `Request failed: ${res.status}`,
     );
   }
   const json = await res.json();
@@ -106,7 +106,7 @@ export async function fetchAllCourses(): Promise<Course[]> {
   // ----------
   // console.log("URL:", url);
   // console.log("STATUS:", res.status);
-  
+
   // const text = await res.text();
   // console.log("RESPONSE:", text);
   // // --------
@@ -115,7 +115,7 @@ export async function fetchAllCourses(): Promise<Course[]> {
     const error = await res.json().catch(() => ({}));
     throw new Error(
       (error as { message?: string }).message ??
-        `Request failed: ${res.status}`,
+      `Request failed: ${res.status}`,
     );
   }
 

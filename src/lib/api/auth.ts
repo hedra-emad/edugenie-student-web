@@ -1,7 +1,7 @@
 const REMOTE_API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "https://edugenie-api.vercel.app";
  
-const BASE_URL = typeof window === "undefined" ? REMOTE_API_URL : "/api/proxy";
+const BASE_URL = REMOTE_API_URL;
 const AUTH_API_URL = `${BASE_URL}/auth`;
 
 export async function login(credentials: Record<string, any>) {

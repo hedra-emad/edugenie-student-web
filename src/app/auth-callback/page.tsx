@@ -22,7 +22,7 @@ function AuthCallbackContent() {
       }
 
       try {
-        const response = await fetch("/api/proxy/auth/verify-exchange-token", {
+        const response = await fetch("/auth/verify-exchange-token", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

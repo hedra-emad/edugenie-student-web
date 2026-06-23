@@ -10,12 +10,9 @@ import type {
 const REMOTE_API =
   process.env.NEXT_PUBLIC_API_URL ?? "https://edugenie-api.vercel.app";
 
-/** Resolves the correct base URL.
- *  - Server-side: talk directly to the remote API (no CORS issue).
- *  - Client-side: route through the Next.js /api/proxy rewrite.
- */
+/** Resolves the correct base URL. */
 function baseUrl(): string {
-  return typeof window === "undefined" ? REMOTE_API : "/api/proxy";
+  return REMOTE_API;
 }
 
 // ─── Server-side helpers ──────────────────────────────────────────────────────
@@ -48,7 +45,7 @@ export async function getCourseForPlayer(
       (json.course as Record<string, unknown>) ??
       (json.data as Record<string, unknown>) ??
       json;
-      const id = String(raw.id ?? raw.id ?? "");
+    const id = String(raw.id ?? raw.id ?? "");
     if (!id || !raw.title) return null;
 
     const sections = Array.isArray(raw.sections)
@@ -138,15 +135,15 @@ export async function saveProgress(
     return {
       lessonState:
         (raw.lessonState as string) === "locked" ||
-        (raw.lessonState as string) === "available" ||
-        (raw.lessonState as string) === "in_progress" ||
-        (raw.lessonState as string) === "completed"
+          (raw.lessonState as string) === "available" ||
+          (raw.lessonState as string) === "in_progress" ||
+          (raw.lessonState as string) === "completed"
           ? (raw.lessonState as ProgressResponse["lessonState"])
           : "in_progress",
       nextLessonUnlocked: Boolean(raw.nextLessonUnlocked),
       nextLesson:
         raw.nextLesson &&
-        typeof (raw.nextLesson as Record<string, unknown>).id === "string"
+          typeof (raw.nextLesson as Record<string, unknown>).id === "string"
           ? (raw.nextLesson as { id: string; title: string })
           : null,
       sectionCompleted: Boolean(raw.sectionCompleted),
@@ -249,9 +246,9 @@ function normaliseSection(raw: Record<string, unknown>) {
 function normaliseLesson(raw: Record<string, unknown>) {
   const state = (
     raw.state === "locked" ||
-    raw.state === "available" ||
-    raw.state === "in_progress" ||
-    raw.state === "completed"
+      raw.state === "available" ||
+      raw.state === "in_progress" ||
+      raw.state === "completed"
       ? raw.state
       : "locked"
   ) as import("@/types/player").LessonState;

@@ -118,7 +118,7 @@ export function useVideoProgress(
       // Use sendBeacon for reliability during unload
       const body = JSON.stringify({ lessonId, watchedDuration, isCompleted });
       const base =
-        typeof window !== "undefined" ? "/api/proxy" : "";
+        typeof window !== "undefined" ? "/auth" : "";
       navigator.sendBeacon(`${base}/progress/lesson`, body);
     };
 

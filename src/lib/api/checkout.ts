@@ -5,7 +5,7 @@ const REMOTE_API =
   process.env.NEXT_PUBLIC_API_URL ?? "https://edugenie-api.vercel.app";
 
 function baseUrl(): string {
-  return typeof window === "undefined" ? REMOTE_API : "/api/proxy";
+  return REMOTE_API;
 }
 
 export async function getCart(token?: string): Promise<Cart | null> {
