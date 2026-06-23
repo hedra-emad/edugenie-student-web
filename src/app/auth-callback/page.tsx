@@ -14,7 +14,7 @@ function AuthCallbackContent() {
 
       // Fallback to local Angular dashboard URL if environment variable is missing
       const dashboardUrl =
-        process.env.NEXT_PUBLIC_DASHBOARD_URL || "http://localhost:4200";
+        process.env.NEXT_PUBLIC_DASHBOARD_URL || "https://edugenie-dashboard.vercel.app";
 
       if (!token) {
         window.location.href = `${dashboardUrl}/login?error=invalid_token`;
