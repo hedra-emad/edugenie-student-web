@@ -26,6 +26,7 @@ export async function login(credentials: Record<string, any>) {
 export async function register(payload: Record<string, any>) {
   const res = await fetch(`${AUTH_API_URL}/register`, {
     method: "POST",
+    credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
