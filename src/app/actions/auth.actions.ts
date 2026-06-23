@@ -9,9 +9,13 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://edugenie-api.vercel.
  * Runs on the server, so it reads the jwt cookie directly — bypassing
  * any browser cookie timing race conditions.
  */
-export async function generateHandoffCodeAction(): Promise<{ code: string; expiresIn: number }> {
-  const cookieStore = await cookies();
-  const jwt = cookieStore.get('jwt')?.value;
+export async function generateHandoffCodeAction(token?: string): Promise<{ code: string; expiresIn: number }> {
+  let jwt = token;
+
+  if (!jwt) {
+    const cookieStore = await cookies();
+    jwt = cookieStore.get('jwt')?.value;
+  }
 
   if (!jwt) {
     throw new Error('Not authenticated');

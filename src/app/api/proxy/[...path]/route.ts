@@ -40,6 +40,11 @@ async function handleRequest(req: NextRequest, params: Promise<{ path: string[] 
 
     const responseHeaders = new Headers(backendResponse.headers);
 
+    // Remove headers related to the original compressed body size and encoding
+    responseHeaders.delete("content-encoding");
+    responseHeaders.delete("content-length");
+    responseHeaders.delete("transfer-encoding");
+
     // Fix Set-Cookie domain issue for localhost
     const setCookieHeaders = backendResponse.headers.getSetCookie();
     if (setCookieHeaders && setCookieHeaders.length > 0) {
