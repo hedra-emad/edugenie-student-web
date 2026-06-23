@@ -3,6 +3,7 @@ import { Hanken_Grotesk, Inter } from "next/font/google";
 import "./globals.css";
 import SiteShell from "@/components/layout/SiteShell";
 import QueryProvider from "../app/providers/QueryProvider";
+import { CartProvider } from "@/contexts/CartContext";
 
 const hankenGrotesk = Hanken_Grotesk({
   variable: "--font-hanken-grotesk",
@@ -37,9 +38,11 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <QueryProvider>
-          <SiteShell>
-            {children}
-          </SiteShell>
+          <CartProvider>
+            <SiteShell>
+              {children}
+            </SiteShell>
+          </CartProvider>
         </QueryProvider>
       </body>
       
