@@ -56,7 +56,7 @@ export default function LoginPage() {
         // Use Server Action so the cookie is read server-side — avoids browser race condition
         const handoffResponse = await generateHandoffCodeAction();
         const code = handoffResponse?.code;
-        const ANGULAR_URL = process.env.NEXT_PUBLIC_ANGULAR_APP_URL || 'http://localhost:4200';
+        const ANGULAR_URL = process.env.NEXT_PUBLIC_ANGULAR_APP_URL || 'https://edugenie-dashboard.vercel.app';
         window.location.href = `${ANGULAR_URL}/auth/redeem?code=${code}`;
       }
     } catch (err: any) {

@@ -97,7 +97,7 @@ export default function RegisterPage() {
         } else {
           const handoffResponse = await handoffCode();
           const code = handoffResponse?.data?.code;
-          const ANGULAR_URL = process.env.NEXT_PUBLIC_ANGULAR_APP_URL || 'http://localhost:4200';
+          const ANGULAR_URL = process.env.NEXT_PUBLIC_ANGULAR_APP_URL || 'https://edugenie-dashboard.vercel.app';
           window.location.href = `${ANGULAR_URL}/auth/redeem?code=${code}`;
         }
       } catch (err: any) {
