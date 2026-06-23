@@ -19,7 +19,9 @@ export default function SiteShell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Header />
-      {children}
+      <div className="flex-1">
+        {children}
+      </div>
       <Footer />
     </>
   );

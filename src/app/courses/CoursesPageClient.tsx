@@ -26,7 +26,7 @@ export default function CoursesPageClient({ categories }: Props) {
   } = useCourses();
 
   return (
-    <main className="min-h-screen bg-[#f0f2f5]">
+    <main className="bg-[#f0f2f5]">
       {/* ── PAGE HEADER — dark, matches Hero ── */}
       <div className="relative bg-[#0d1117] overflow-hidden">
         {/* glow */}

@@ -3,16 +3,10 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { getProfile, logout } from "@/lib/api/auth";
+import { useRouter } from "next/navigation";
 import { useCartContext } from "@/contexts/CartContext";
-
-interface User {
-  name: string;
-  image?: string;
-}
-
-interface HeaderProps {
-  user?: User | null; // null = logged out
-}
 
 const navLinks = [
   { label: "Home", href: "/" },
@@ -65,17 +59,27 @@ function CartIcon({ count }: { count: number | null }) {
   );
 }
 
-export default function Header({ user = null }: HeaderProps) {
+export default function Header() {
   const [searchValue, setSearchValue] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const { cartCount } = useCartContext();
+
+  const { data: profileResponse, isLoading } = useQuery({
+    queryKey: ["profile"],
+    queryFn: getProfile,
+    retry: false,
+  });
+
+  const user = profileResponse?.data;
 
   return (
     <header className="w-full border-b border-gray-200 bg-white">
       <div className="mx-auto flex max-w-screen-xl items-center justify-between gap-4 px-6 py-3">
 
         {/* ── Left: Logo ── */}
-        <Link href="/" className="text-xl font-bold text-[#3B1892] tracking-tight shrink-0">
+        <Link href="/" className="text-xl font-bold text-primary tracking-tight shrink-0">
           EduGenie
         </Link>
 
@@ -128,14 +132,14 @@ export default function Header({ user = null }: HeaderProps) {
           {!user && (
             <div className="flex items-center gap-2">
               <Link
-                href="https://edugenie-dashboard.vercel.app/login"
+                href="/login"
                 className="text-sm font-medium text-gray-700 hover:text-indigo-700 transition-colors duration-150 px-3 py-1.5"
               >
                 Login
               </Link>
               <Link
-                href="https://edugenie-dashboard.vercel.app/register"
-                className="rounded-lg bg-[#3B1892] px-4 py-1.5 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors duration-150"
+                href="/register"
+                className="rounded-lg bg-primary px-4 py-1.5 text-sm font-semibold text-white hover:bg-primary-light transition-colors duration-150"
               >
                 Sign Up
               </Link>
@@ -147,29 +151,35 @@ export default function Header({ user = null }: HeaderProps) {
             <div className="flex items-center gap-3">
               {/* Avatar */}
               <div className="flex items-center gap-2">
-                {user.image ? (
+                {user.avatar ? (
                   <Image
-                    src={user.image}
-                    alt={user.name}
+                    src={user.avatar}
+                    alt={user.firstName || "User"}
                     width={32}
                     height={32}
                     className="h-8 w-8 rounded-full object-cover ring-2 ring-indigo-100"
                   />
                 ) : (
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-sm font-bold text-indigo-700 ring-2 ring-indigo-200">
-                    {user.name.charAt(0).toUpperCase()}
+                    {(user.firstName || user.email || "U").charAt(0).toUpperCase()}
                   </div>
                 )}
                 <span className="hidden sm:block text-sm font-medium text-gray-700">
-                  {user.name}
+                  {user.firstName} {user.lastName}
                 </span>
               </div>
 
               {/* Logout */}
               <button
-                onClick={() => {
-                 
-                  console.log("logout");
+                onClick={async () => {
+                  try {
+                    await logout();
+                    queryClient.setQueryData(["profile"], null);
+                    queryClient.removeQueries({ queryKey: ["profile"] });
+                    router.push("/login");
+                  } catch (e) {
+                    console.error("Logout failed", e);
+                  }
                 }}
                 className="text-sm font-medium text-gray-500 hover:text-red-500 transition-colors duration-150 px-2 py-1"
               >
@@ -229,14 +239,32 @@ export default function Header({ user = null }: HeaderProps) {
             <span className="text-sm font-medium text-gray-700">Cart</span>
           </div>
 
-          {!user && (
+          {!user ? (
             <div className="flex gap-2 pt-1">
               <Link href="/login" className="flex-1 text-center rounded-lg border border-gray-200 py-2 text-sm font-medium text-gray-700 hover:border-indigo-400 transition-colors">
                 Login
               </Link>
-              <Link href="/signup" className="flex-1 text-center rounded-lg bg-[#3B1892] py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors">
+              <Link href="/register" className="flex-1 text-center rounded-lg bg-primary py-2 text-sm font-semibold text-white hover:bg-primary-light transition-colors">
                 Sign Up
               </Link>
+            </div>
+          ) : (
+            <div className="flex gap-2 pt-1">
+              <button 
+                onClick={async () => {
+                  try {
+                    await logout();
+                    queryClient.setQueryData(["profile"], null);
+                    queryClient.removeQueries({ queryKey: ["profile"] });
+                    router.push("/login");
+                  } catch (e) {
+                    console.error("Logout failed", e);
+                  }
+                }} 
+                className="flex-1 text-center rounded-lg border border-red-200 py-2 text-sm font-medium text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors"
+              >
+                Logout
+              </button>
             </div>
           )}
         </div>
