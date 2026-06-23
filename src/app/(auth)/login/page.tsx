@@ -1,28 +1,147 @@
-// src/app/login/page.tsx
-import { LoginForm } from "@/components/auth/LoginForm";
-import { AuthToggle } from "@/components/ui/AuthToggle";
-import { SocialLogin } from "@/components/auth/SocialLogin";
-// import  Footer  from "@/components/layout/Footer";
+'use client';
+
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import AuthLayout from '@/components/auth/AuthLayout';
+import AuthLogo from '@/components/auth/AuthLogo';
+import AuthCard from '@/components/auth/AuthCard';
+import AuthTabs from '@/components/auth/AuthTabs';
+import AuthInput from '@/components/auth/AuthInput';
+import PasswordInput from '@/components/auth/PasswordInput';
+import RememberMe from '@/components/auth/RememberMe';
+import AuthButton from '@/components/auth/AuthButton';
+import AuthDivider from '@/components/auth/AuthDivider';
+import SocialLogin from '@/components/auth/SocialLogin';
+import { login, verifyExchangeToken } from '@/lib/api/auth';
+import { generateHandoffCodeAction } from '@/app/actions/auth.actions';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function LoginPage() {
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+
+  const handleTabChange = (tab: 'signin' | 'signup') => {
+    setActiveTab(tab);
+    if (tab === 'signup') {
+      router.push('/register');
+    }
+  };
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+    setIsLoading(true);
+
+    try {
+      const response = await login({ email, password, rememberMe });
+      const role = response?.data?.user?.role;
+      const exchangeToken = response?.data?.exchangeToken;
+      
+      if (role === 'student' && exchangeToken) {
+        // Backend generated an exchangeToken because it's a student.
+        // We must convert it to a session cookie before redirecting.
+        await verifyExchangeToken({ token: exchangeToken });
+      }
+      
+      if (!role || role === 'student') {
+        queryClient.invalidateQueries({ queryKey: ["profile"] });
+        router.push('/');
+      } else {
+        // Use Server Action so the cookie is read server-side — avoids browser race condition
+        const handoffResponse = await generateHandoffCodeAction();
+        const code = handoffResponse?.code;
+        const ANGULAR_URL = process.env.NEXT_PUBLIC_ANGULAR_APP_URL || 'http://localhost:4200';
+        window.location.href = `${ANGULAR_URL}/auth/redeem?code=${code}`;
+      }
+    } catch (err: any) {
+      console.error('Login error:', err);
+      const status = err?.status;
+
+      if (status === 401) {
+        setErrorMessage('Invalid email or password');
+      } else if (status === 429) {
+        setErrorMessage('Too many login attempts. Please try again in 15 minutes.');
+      } else if (!status || status === 0) {
+        setErrorMessage('Network error. Please check your connection');
+      } else {
+        setErrorMessage('Something went wrong. Please try again later');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-[#f8fafc] bg-[radial-gradient(circle_at_top_right,_#e0e7ff,_transparent_40%),radial-gradient(circle_at_bottom_left,_#f1f5f9,_transparent_40%)] flex flex-col items-center justify-center p-4 md:p-8">
-      <div className="text-center mb-10">
-        <h1 className="text-3xl md:text-5xl font-bold text-[#1e1b4b] mb-2 tracking-tight">
-          EduGenie
-        </h1>
-        <p className="text-slate-500 text-xs md:text-sm font-medium">
-          Intelligent learning for the modern mind.
-        </p>
-      </div>
-      <div className="bg-white/70 backdrop-blur-xl p-6 md:p-10 rounded-[30px] md:rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.05)] w-full max-w-[480px] border border-white">
-        <AuthToggle />
-        <LoginForm />
-        <SocialLogin />
-      </div>
-      <div className="w-full max-w-6xl mt-12">
-        {/* <Footer/> */}
-      </div>
-    </div>
+    <AuthLayout>
+      <AuthLogo />
+      <AuthCard>
+        <div className="auth-card-header">
+          <AuthTabs activeTab={activeTab} onTabChange={handleTabChange} />
+        </div>
+
+        {errorMessage && (
+          <div className="auth-error flex items-start gap-2 rounded-xl border border-error bg-error/10 px-3 py-2 text-sm text-error shadow-sm mb-4 animate-in slide-in-from-top-2 fade-in duration-300">
+             <svg className="w-4 h-4 mt-[2px] shrink-0 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+             </svg>
+             <span className="leading-relaxed">{errorMessage}</span>
+          </div>
+        )}
+
+        <form onSubmit={onSubmit} className="auth-card-form space-y-2 sm:space-y-3 max-[360px]:space-y-2">
+          <div className="auth-step-region space-y-2 sm:space-y-3 max-[360px]:space-y-2">
+            <AuthInput
+              id="email"
+              type="email"
+              label="Email Address"
+              placeholder="name@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              showSuccess={email.length > 5 && email.includes('@')}
+              icon={
+                <svg className="h-5 w-5 text-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              }
+            />
+
+            <PasswordInput
+              id="password"
+              label="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+
+            <div>
+              <RememberMe checked={rememberMe} onChange={setRememberMe} />
+            </div>
+          </div>
+
+          <div className="auth-card-actions mt-2">
+            <AuthButton type="submit" loading={isLoading} disabled={!email || !password}>
+              Sign In
+            </AuthButton>
+          </div>
+        </form>
+
+        <div className="auth-card-social mt-4">
+          <AuthDivider>or continue with</AuthDivider>
+          <div className="mt-4">
+            <SocialLogin 
+              onGoogle={() => console.log('Google login')} 
+              onGithub={() => console.log('Github login')} 
+            />
+          </div>
+        </div>
+      </AuthCard>
+    </AuthLayout>
   );
 }
