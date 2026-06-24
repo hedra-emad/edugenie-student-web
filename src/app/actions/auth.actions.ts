@@ -2,7 +2,8 @@
 
 import { cookies } from 'next/headers';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://edugenie-api.vercel.app';
+const BASE_API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://edugenie-api.vercel.app';
+const API_URL = BASE_API_URL.endsWith('/api') ? BASE_API_URL : `${BASE_API_URL}/api`;
 
 /**
  * Server Action: Generates a handoff code for instructor/admin users.

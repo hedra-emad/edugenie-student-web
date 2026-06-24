@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const NESTJS_URL = process.env.NESTJS_API_URL!;
+const BASE_URL = process.env.NESTJS_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://edugenie-api.vercel.app';
+const SERVER_API_URL = BASE_URL.endsWith('/api') ? BASE_URL : `${BASE_URL}/api`;
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   const resolvedParams = await params;
@@ -26,7 +27,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ p
 async function forwardRequest(req: NextRequest, pathSegments: string[], method: string) {
   const path = pathSegments.join('/');
   const search = req.nextUrl.search;
-  const url = `${NESTJS_URL}/api/${path}${search}`;
+  const url = `${SERVER_API_URL}/${path}${search}`;
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
