@@ -4,12 +4,11 @@ import { decodeJwt } from "@/lib/decode-jwt";
 const STUDENT_ONLY_PATHS = ["/cart", "/checkout"];
 const PUBLIC_AUTH_PATHS = ["/login", "/register"];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const token = request.cookies.get("jwt")?.value;
   const { pathname } = request.nextUrl;
 
   if (!token) {
-    // Unauthenticated — only block student-only pages
     if (STUDENT_ONLY_PATHS.some((p) => pathname.startsWith(p))) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
