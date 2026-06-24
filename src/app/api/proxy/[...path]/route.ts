@@ -29,16 +29,12 @@ async function forwardRequest(
 ): Promise<NextResponse> {
   const path = pathSegments.join('/');
   const search = req.nextUrl.search;
-  const url = `${NESTJS_URL}/api/${path}${search}`;
-
-
+  const url = `${SERVER_API_URL}/${path}${search}`;
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
 
-  // Extract jwt cookie and forward as Bearer token
-  // (server-to-server fetch has no cookie jar, so we build the header manually)
   const cookieHeader = req.headers.get('cookie') ?? '';
   const jwtToken =
     cookieHeader
@@ -60,13 +56,11 @@ async function forwardRequest(
   const backendRes = await fetch(url, init);
   const body = await backendRes.text();
 
-  // Build response
   const res = new NextResponse(body, {
     status: backendRes.status,
     headers: { 'Content-Type': 'application/json' },
   });
 
-  // Rewrite Set-Cookie from NestJS so it lands on the correct domain (localhost in dev)
   const setCookie = backendRes.headers.get('set-cookie');
   if (setCookie) {
     const jwtMatch = setCookie.match(/jwt=([^;]+)/);
