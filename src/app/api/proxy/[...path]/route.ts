@@ -2,20 +2,25 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const NESTJS_URL = process.env.NESTJS_API_URL!;
 
-export async function GET(req: NextRequest, { params }: { params: { path: string[] } }) {
-  return forwardRequest(req, params.path, 'GET');
+export async function GET(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+  const resolvedParams = await params;
+  return forwardRequest(req, resolvedParams.path, 'GET');
 }
-export async function POST(req: NextRequest, { params }: { params: { path: string[] } }) {
-  return forwardRequest(req, params.path, 'POST');
+export async function POST(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+  const resolvedParams = await params;
+  return forwardRequest(req, resolvedParams.path, 'POST');
 }
-export async function PUT(req: NextRequest, { params }: { params: { path: string[] } }) {
-  return forwardRequest(req, params.path, 'PUT');
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+  const resolvedParams = await params;
+  return forwardRequest(req, resolvedParams.path, 'PUT');
 }
-export async function PATCH(req: NextRequest, { params }: { params: { path: string[] } }) {
-  return forwardRequest(req, params.path, 'PATCH');
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+  const resolvedParams = await params;
+  return forwardRequest(req, resolvedParams.path, 'PATCH');
 }
-export async function DELETE(req: NextRequest, { params }: { params: { path: string[] } }) {
-  return forwardRequest(req, params.path, 'DELETE');
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
+  const resolvedParams = await params;
+  return forwardRequest(req, resolvedParams.path, 'DELETE');
 }
 
 async function forwardRequest(req: NextRequest, pathSegments: string[], method: string) {
