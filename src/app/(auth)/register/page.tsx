@@ -81,10 +81,12 @@ export default function RegisterPage() {
         password,
         role,
         ...(role === 'student' && {
-          level: level || undefined,
+          level: level ? level.toLowerCase() : undefined,
           interests: interests.length > 0 ? interests : [],
         })
       };
+      
+      console.log('DEBUG: Register Payload being sent:', payload);
 
       try {
         const response = await register(payload);

@@ -1,7 +1,4 @@
-const REMOTE_API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "https://edugenie-api.vercel.app";
- 
-const BASE_URL = typeof window === "undefined" ? REMOTE_API_URL : "/api/proxy";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://edugenie-api.vercel.app";
 const AUTH_API_URL = `${BASE_URL}/auth`;
 
 export async function login(credentials: Record<string, any>) {
@@ -19,7 +16,7 @@ export async function login(credentials: Record<string, any>) {
     (errObj as any).error = error;
     throw errObj;
   }
-  
+
   return res.json();
 }
 
@@ -38,7 +35,7 @@ export async function register(payload: Record<string, any>) {
     (errObj as any).error = error;
     throw errObj;
   }
-  
+
   return res.json();
 }
 
@@ -52,7 +49,7 @@ export async function logout() {
   if (!res.ok) {
     throw new Error("Logout failed");
   }
-  
+
   return res.json();
 }
 
@@ -84,7 +81,7 @@ export async function handoffCode() {
     (errObj as any).error = error;
     throw errObj;
   }
-  
+
   return res.json();
 }
 
@@ -103,7 +100,7 @@ export async function redeemCode(payload: { code: string }) {
     (errObj as any).error = error;
     throw errObj;
   }
-  
+
   return res.json();
 }
 
@@ -122,6 +119,6 @@ export async function verifyExchangeToken(payload: { token: string }) {
     (errObj as any).error = error;
     throw errObj;
   }
-  
+
   return res.json();
 }
