@@ -12,7 +12,7 @@ import AuthButton from '@/components/auth/AuthButton';
 import AuthDivider from '@/components/auth/AuthDivider';
 import SocialLogin from '@/components/auth/SocialLogin';
 import RoleSelector from '@/components/auth/RoleSelector';
-import { register, handoffCode } from '@/lib/api/auth';
+import { register, login, handoffCode } from '@/lib/api/auth';
 
 const AVAILABLE_INTERESTS = ['AI & ML', 'Design', 'Business', 'Web Dev', 'Data Science'];
 
@@ -90,18 +90,9 @@ export default function RegisterPage() {
 
       try {
         const response = await register(payload);
-        const returnedRole = response?.data?.user?.role || role;
         
-        if (returnedRole === 'student') {
-          // You can use a URL param or state management for a real app, 
-          // but for simplicity we will just push.
-          router.push('/login?registered=true');
-        } else {
-          const handoffResponse = await handoffCode();
-          const code = handoffResponse?.data?.code;
-          const ANGULAR_URL = process.env.NEXT_PUBLIC_ANGULAR_APP_URL || 'https://edugenie-dashboard.vercel.app';
-          window.location.href = `${ANGULAR_URL}/auth/redeem?code=${code}`;
-        }
+        // Always redirect to login after successful registration
+        router.push('/login?registered=true');
       } catch (err: any) {
         console.error('Register error:', err);
         const status = err?.status;
