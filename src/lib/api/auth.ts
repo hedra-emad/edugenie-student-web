@@ -1,11 +1,15 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://edugenie-api.vercel.app";
+// On the server (SSR), call NestJS directly.
+// In the browser, go through /api/proxy so cookies stay same-domain.
+const NESTJS_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://edugenie-api.vercel.app';
+const BASE_URL = typeof window === 'undefined' ? `${NESTJS_URL}/api` : '/api/proxy';
 const AUTH_API_URL = `${BASE_URL}/auth`;
+const USERS_API_URL = `${BASE_URL}/users`;
 
 export async function login(credentials: Record<string, any>) {
   const res = await fetch(`${AUTH_API_URL}/login`, {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(credentials),
   });
 
@@ -22,9 +26,9 @@ export async function login(credentials: Record<string, any>) {
 
 export async function register(payload: Record<string, any>) {
   const res = await fetch(`${AUTH_API_URL}/register`, {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
 
@@ -41,37 +45,31 @@ export async function register(payload: Record<string, any>) {
 
 export async function logout() {
   const res = await fetch(`${AUTH_API_URL}/logout`, {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
   });
 
-  if (!res.ok) {
-    throw new Error("Logout failed");
-  }
-
+  if (!res.ok) throw new Error('Logout failed');
   return res.json();
 }
 
 export async function getProfile() {
-  const res = await fetch(`${BASE_URL}/users/profile`, {
-    method: "GET",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
+  const res = await fetch(`${USERS_API_URL}/profile`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
   });
 
-  if (!res.ok) {
-    throw new Error("Not authenticated");
-  }
-
+  if (!res.ok) throw new Error('Not authenticated');
   return res.json();
 }
 
 export async function handoffCode() {
   const res = await fetch(`${AUTH_API_URL}/handoff-code`, {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
   });
 
   if (!res.ok) {
@@ -87,9 +85,9 @@ export async function handoffCode() {
 
 export async function redeemCode(payload: { code: string }) {
   const res = await fetch(`${AUTH_API_URL}/redeem-code`, {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
 
@@ -106,9 +104,9 @@ export async function redeemCode(payload: { code: string }) {
 
 export async function verifyExchangeToken(payload: { token: string }) {
   const res = await fetch(`${AUTH_API_URL}/verify-exchange-token`, {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
 
