@@ -10,6 +10,7 @@ import EnrollCard from "../../../components/courseId/_components/EnrollCard";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL ?? "https://edugenie-api.vercel.app";
+const SERVER_API_URL = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
@@ -105,7 +106,7 @@ async function getCourse(id: string): Promise<Course | null> {
 
   try {
     const res = await fetch(
-      `${API_BASE}/courses/${encodeURIComponent(id)}`,
+      `${SERVER_API_URL}/courses/${encodeURIComponent(id)}`,
       { cache: "no-store" },
     );
 

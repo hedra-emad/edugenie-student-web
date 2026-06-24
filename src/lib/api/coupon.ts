@@ -4,8 +4,10 @@ import type { CouponValidationResponse } from "@/types/coupon";
 const REMOTE_API =
   process.env.NEXT_PUBLIC_API_URL ?? "https://edugenie-api.vercel.app";
 
+const SERVER_API_URL = REMOTE_API.endsWith("/api") ? REMOTE_API : `${REMOTE_API}/api`;
+
 function baseUrl(): string {
-  return typeof window === "undefined" ? REMOTE_API : "/api/proxy";
+  return typeof window === "undefined" ? SERVER_API_URL : "/api/proxy";
 }
 
 export async function validateCoupon(
