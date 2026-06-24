@@ -2,10 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
 import { Clock, Users, BookOpen, Heart } from "lucide-react";
 
 import { Course, CourseLevel } from "@/types/course";
+import { addToCartAction } from "@/app/actions/cart.actions";
 
 // ─── Helpers
 
@@ -66,9 +68,78 @@ function getSafeImageSrc(src: string | null | undefined): string | null {
   }
 }
 
+// ─── SVG helpers ─────────────────────────────────────────────────────────────
+
+function CartIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="9" cy="21" r="1" />
+      <circle cx="20" cy="21" r="1" />
+      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+    </svg>
+  );
+}
+
+function Spinner() {
+  return (
+    <svg
+      className="animate-spin w-4 h-4"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
+      <circle
+        className="opacity-25"
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="3"
+      />
+      <path
+        className="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8v8H4z"
+      />
+    </svg>
+  );
+}
+
 export default function CourseCard({ course }: Props) {
+  const router = useRouter();
   const [imgError, setImgError] = useState(false);
   const [wished, setWished] = useState(false);
+  const [cartError, setCartError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  function handleAddToCart(e: React.MouseEvent) {
+    e.preventDefault();
+    if (isPending) return;
+
+    startTransition(async () => {
+      const result = await addToCartAction({
+        courseId: course.id,
+        type: "full_course",
+      });
+
+      if (result.success) {
+        router.push("/cart");
+      } else {
+        setCartError(result.error ?? "Could not add to cart");
+        setTimeout(() => setCartError(null), 3000);
+      }
+    });
+  }
 
   const discount =
     course.price > 0
@@ -265,41 +336,50 @@ export default function CourseCard({ course }: Props) {
           </div>
         </div>
 
-        {/* ── Footer — h-[60px] ── */}
+        {/* ── Footer ── */}
         <div
           className="
-          h-[60px] flex items-center justify-between gap-2
-          px-4 mt-3 border-t border-slate-100 flex-shrink-0
+          flex flex-col
+          px-4 mt-3 border-t border-slate-100 flex-shrink-0 pb-4
         "
         >
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-[17px] font-black text-slate-900 leading-none tracking-tight">
-              ${course.price}
-            </span>
-            {discount > 0 && (
-              <span
-                className="text-[10px] font-bold bg-emerald-100 text-emerald-700
-                               px-1.5 py-[3px] rounded-full whitespace-nowrap"
-              >
-                {discount}% OFF
+          <div className="flex items-center justify-between gap-2 pt-3">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-[17px] font-black text-slate-900 leading-none tracking-tight">
+                ${course.price.toFixed(2)}
               </span>
-            )}
+              {discount > 0 && (
+                <span
+                  className="text-[10px] font-bold bg-emerald-100 text-emerald-700
+                                 px-1.5 py-[3px] rounded-full whitespace-nowrap"
+                >
+                  {discount}% OFF
+                </span>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={handleAddToCart}
+              disabled={isPending}
+              aria-label="Add to cart"
+              className="
+                bg-[#3B1892] text-white rounded-xl px-4 py-2 text-sm font-semibold
+                hover:bg-[#2f1275] transition-colors duration-150
+                flex items-center gap-1.5 flex-shrink-0
+                disabled:opacity-50 disabled:cursor-not-allowed
+              "
+            >
+              {isPending ? <Spinner /> : <CartIcon />}
+              <span className="whitespace-nowrap">Add to Cart</span>
+            </button>
           </div>
 
-          <button
-            type="button"
-            onClick={(e) => e.preventDefault()}
-            className="
-              bg-[#3B1892] hover:bg-violet-700 text-white
-              text-xs font-bold px-4 py-2 rounded-full flex-shrink-0
-              transition-all duration-200
-              hover:shadow-[0_4px_14px_rgba(124,58,237,0.45)]
-              hover:-translate-y-px active:scale-95
-              whitespace-nowrap
-            "
-          >
-            Enroll Now →
-          </button>
+          {cartError && (
+            <p className="text-red-500 text-xs mt-1.5" role="alert">
+              {cartError}
+            </p>
+          )}
         </div>
       </article>
     </Link>

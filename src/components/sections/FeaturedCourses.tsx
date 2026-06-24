@@ -1,7 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
 import {
   Flame,
   Sparkles,
@@ -9,8 +11,10 @@ import {
   TrendingUp,
   Award,
   Heart,
-  Link,
 } from "lucide-react";
+
+import { Course as ApiCourse } from "@/types/course";
+import { addToCartAction } from "@/app/actions/cart.actions";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -24,7 +28,8 @@ type CategoryVariant =
   | "cloud"
   | "security";
 
-interface Course {
+// Internal display type used by the static-data cards
+interface StaticCourse {
   id: number;
   title: string;
   instructor: string;
@@ -37,10 +42,9 @@ interface Course {
   originalPrice: number;
   category: string;
   categoryVariant: CategoryVariant;
-  image: string; // ← صورة الكورس
-  fallbackGradient: string; // ← لو الصورة مش موجودة
+  image: string;
+  fallbackGradient: string;
   badge: BadgeVariant;
-  // badgeLabel: string;
 }
 
 type FilterKey =
@@ -62,7 +66,7 @@ const FILTERS: FilterKey[] = [
   "Cloud & DevOps",
 ];
 
-const COURSES: Course[] = [
+const COURSES: StaticCourse[] = [
   {
     id: 1,
     title: "Full-Stack NestJS + TypeScript — Zero to Production",
@@ -317,12 +321,22 @@ function WishlistButton() {
   );
 }
 
-function CourseCard({ course }: { course: Course }) {
+function CourseCard({ course }: { course: StaticCourse }) {
+  const router = useRouter();
   const [imgError, setImgError] = useState(false);
+  const [cartError, setCartError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
   const BadgeIcon = BADGE_ICONS[course.badge];
   const discount = Math.round(
     ((course.originalPrice - course.price) / course.originalPrice) * 100,
   );
+
+  // Static cards link to /courses — no courseId to POST
+  // They will remain "Enroll Now" links until real API data replaces them
+  function handleAddToCart(e: React.MouseEvent) {
+    e.stopPropagation();
+    router.push("/courses");
+  }
 
   return (
     <article
@@ -478,10 +492,10 @@ function CourseCard({ course }: { course: Course }) {
         {/* Price block */}
         <div className="flex items-baseline gap-1 flex-wrap">
           <span className="text-[17px] font-black text-slate-900 leading-none tracking-tight">
-            ${course.price}
+            ${course.price.toFixed(2)}
           </span>
           <span className="text-xs text-slate-400 line-through leading-none">
-            ${course.originalPrice}
+            ${course.originalPrice.toFixed(2)}
           </span>
           <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-1.5 py-[3px] rounded-full whitespace-nowrap">
             {discount}% OFF
@@ -491,13 +505,13 @@ function CourseCard({ course }: { course: Course }) {
         {/* Enroll button */}
         <button
           type="button"
-          onClick={(e) => e.stopPropagation()}
+          onClick={handleAddToCart}
+          disabled={isPending}
           className="
-            bg-[#3B1892] hover:bg-violet-700 text-white
+            bg-[#3B1892] hover:bg-[#2f1275] text-white
             text-xs font-bold px-4 py-2 rounded-full flex-shrink-0
-            transition-all duration-200
-            hover:shadow-[0_4px_14px_rgba(124,58,237,0.45)]
-            hover:-translate-y-px active:scale-95
+            transition-colors duration-150
+            disabled:opacity-50 disabled:cursor-not-allowed
             whitespace-nowrap
           "
         >
@@ -508,10 +522,149 @@ function CourseCard({ course }: { course: Course }) {
   );
 }
 
+// ─── Real API course card ─────────────────────────────────────────────────────
+
+function ApiCourseCard({ course }: { course: ApiCourse }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [cartError, setCartError] = useState<string | null>(null);
+
+  function handleAddToCart(e: React.MouseEvent) {
+    e.preventDefault();
+    if (isPending) return;
+    startTransition(async () => {
+      const result = await addToCartAction({
+        courseId: course.id,
+        type: "full_course",
+      });
+      if (result.success) {
+        router.push("/cart");
+      } else {
+        setCartError(result.error ?? "Could not add to cart");
+        setTimeout(() => setCartError(null), 3000);
+      }
+    });
+  }
+
+  const instructorName =
+    typeof course.instructorId === "object" && course.instructorId?.name
+      ? course.instructorId.name
+      : "";
+  const instructorInitials =
+    instructorName
+      .split(" ")
+      .map((w: string) => w[0] ?? "")
+      .slice(0, 2)
+      .join("")
+      .toUpperCase() || "IN";
+
+  const categoryName =
+    typeof course.categoryId === "object" && course.categoryId?.name
+      ? course.categoryId.name
+      : "Course";
+
+  return (
+    <Link href={`/courses/${course.id}`} className="group block">
+      <article
+        className="
+          bg-white rounded-2xl border border-slate-200 overflow-hidden
+          flex flex-col
+          shadow-[0_2px_12px_rgba(0,0,0,0.07)]
+          hover:-translate-y-1.5 hover:shadow-[0_14px_40px_rgba(0,0,0,0.13)]
+          transition-all duration-300 cursor-pointer
+        "
+      >
+        {/* Thumbnail */}
+        <div className="relative h-[168px] w-full flex-shrink-0 overflow-hidden bg-slate-100">
+          {course.thumbnail ? (
+            <Image
+              src={course.thumbnail}
+              alt={course.title}
+              fill
+              sizes="(max-width:640px) 100vw,(max-width:1024px) 50vw,33vw"
+              className="object-cover object-center"
+            />
+          ) : (
+            <div className="absolute inset-0 bg-gradient-to-br from-violet-900 via-violet-600 to-blue-600" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+        </div>
+
+        {/* Body */}
+        <div className="flex flex-col px-4 pt-4 pb-0 overflow-hidden">
+          <div className="h-6 flex items-center mb-2 flex-shrink-0">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#3B1892] bg-violet-50 border border-violet-100 px-2.5 py-[3px] rounded-full whitespace-nowrap">
+              {categoryName}
+            </span>
+          </div>
+          <div className="h-14 mb-3 flex-shrink-0 overflow-hidden">
+            <h3 className="text-sm leading-[1.4] text-slate-900 line-clamp-3 font-bold">
+              {course.title}
+            </h3>
+          </div>
+          <div className="h-7 flex items-center gap-2 mb-2 flex-shrink-0 overflow-hidden">
+            <div className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-black text-white flex-shrink-0 bg-gradient-to-br from-violet-600 to-blue-600">
+              {instructorInitials}
+            </div>
+            <span className="text-xs text-slate-500 truncate min-w-0 font-medium">
+              {instructorName || "Instructor"}
+            </span>
+          </div>
+          <div className="h-[22px] flex items-center gap-1.5 flex-shrink-0">
+            <StarRating rating={course.ratingAverage ?? 0} />
+            <span className="text-xs font-bold text-amber-800 leading-none">
+              {(course.ratingAverage ?? 0).toFixed(1)}
+            </span>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex flex-col px-4 mt-3 border-t border-slate-100 flex-shrink-0 pb-4">
+          <div className="flex items-center justify-between gap-2 pt-3">
+            <span className="text-[17px] font-black text-slate-900 leading-none tracking-tight">
+              ${course.price.toFixed(2)}
+            </span>
+            <button
+              type="button"
+              onClick={handleAddToCart}
+              disabled={isPending}
+              className="
+                bg-[#3B1892] hover:bg-[#2f1275] text-white
+                text-xs font-bold px-4 py-2 rounded-full flex-shrink-0
+                transition-colors duration-150
+                disabled:opacity-50 disabled:cursor-not-allowed
+                whitespace-nowrap
+              "
+            >
+              Add to Cart
+            </button>
+          </div>
+          {cartError && (
+            <p className="text-red-500 text-xs mt-1.5" role="alert">
+              {cartError}
+            </p>
+          )}
+        </div>
+      </article>
+    </Link>
+  );
+}
+
 // ─── FeaturedCourses Section
-export default function FeaturedCourses() {
+export default function FeaturedCourses({
+  courses: apiCourses = [],
+  limit = 9,
+}: {
+  courses?: ApiCourse[];
+  limit?: number;
+}) {
   const [activeFilter, setActiveFilter] = useState<FilterKey>("All");
   const [visibleCount, setVisibleCount] = useState(6);
+
+  // If real API courses are provided, use them (sliced to limit); otherwise fall back to static
+  const useRealData = apiCourses.length > 0;
+
+  const realCoursesSliced = apiCourses.slice(0, limit);
 
   const filtered = COURSES.filter((c) =>
     FILTER_MAP[activeFilter].includes(c.categoryVariant),
@@ -555,33 +708,41 @@ export default function FeaturedCourses() {
           </Link>
         </div>
 
-        {/* ── FILTER TABS ── */}
-        <div className="flex gap-2 mb-8 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {FILTERS.map((f) => (
-            <button
-              key={f}
-              type="button"
-              onClick={() => {
-                setActiveFilter(f);
-                setVisibleCount(6);
-              }}
-              className={`
-                px-4 py-2 rounded-full text-[13px] font-semibold whitespace-nowrap
-                border transition-all duration-200 flex-shrink-0
-                ${
-                  activeFilter === f
-                    ? "bg-[#3B1892] text-white border-violet-600 shadow-[0_4px_16px_rgba(124,58,237,0.35)]"
-                    : "bg-white text-slate-500 border-slate-200 hover:border-violet-400 hover:text-violet-600"
-                }
-              `}
-            >
-              {f}
-            </button>
-          ))}
-        </div>
+        {/* ── FILTER TABS — only shown for static fallback ── */}
+        {!useRealData && (
+          <div className="flex gap-2 mb-8 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {FILTERS.map((f) => (
+              <button
+                key={f}
+                type="button"
+                onClick={() => {
+                  setActiveFilter(f);
+                  setVisibleCount(6);
+                }}
+                className={`
+                  px-4 py-2 rounded-full text-[13px] font-semibold whitespace-nowrap
+                  border transition-all duration-200 flex-shrink-0
+                  ${
+                    activeFilter === f
+                      ? "bg-[#3B1892] text-white border-violet-600 shadow-[0_4px_16px_rgba(124,58,237,0.35)]"
+                      : "bg-white text-slate-500 border-slate-200 hover:border-violet-400 hover:text-violet-600"
+                  }
+                `}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* ── GRID ── */}
-        {visible.length > 0 ? (
+        {useRealData ? (
+          <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+            {realCoursesSliced.map((course) => (
+              <ApiCourseCard key={course.id} course={course} />
+            ))}
+          </div>
+        ) : visible.length > 0 ? (
           <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {visible.map((course) => (
               <CourseCard key={course.id} course={course} />
@@ -589,7 +750,6 @@ export default function FeaturedCourses() {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-            <span className="text-5xl mb-4 select-none">🔍</span>
             <p className="text-base font-semibold">
               No courses in this category yet.
             </p>
@@ -597,8 +757,8 @@ export default function FeaturedCourses() {
           </div>
         )}
 
-        {/* ── LOAD MORE ── */}
-        {hasMore && (
+        {/* ── LOAD MORE — only for static fallback ── */}
+        {!useRealData && hasMore && (
           <div className="flex justify-center mt-11">
             <button
               type="button"

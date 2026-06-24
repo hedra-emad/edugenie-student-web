@@ -121,3 +121,25 @@ export async function fetchAllCourses(): Promise<Course[]> {
   const json = await res.json();
   return json?.data?.data ?? [];
 }
+
+/**
+ * Shared fetch used by both the home page and the all-courses page.
+ * Slicing to a limit is the call-site's responsibility — keep this generic.
+ */
+export async function fetchCoursesForHome(token?: string): Promise<Course[]> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const url = `${SERVER_API_URL}/courses?skip=0&limit=1000`;
+
+  const res = await fetch(url, {
+    headers,
+    credentials: token ? undefined : "include",
+    cache: "no-store",
+  });
+
+  if (!res.ok) return [];
+
+  const json = await res.json();
+  return (json?.data?.data ?? []) as Course[];
+}

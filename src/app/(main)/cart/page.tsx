@@ -7,11 +7,7 @@ export const metadata = { title: "Cart — EduGenie" };
 
 export default async function CartPage() {
   const cookieStore = await cookies();
-  const token =
-    cookieStore.get("access_token")?.value ??
-    cookieStore.get("token")?.value ??
-    cookieStore.get("accessToken")?.value ??
-    undefined;
+  const token = cookieStore.get("jwt")?.value ?? undefined;
 
   const cart = await getCart(token);
 

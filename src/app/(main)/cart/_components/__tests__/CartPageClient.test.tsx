@@ -163,10 +163,50 @@ describe('CartPageClient — "Try Again" retry behaviour (Req 9.3)', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Test 2 — Network error path: link to /login is absent in network error state;
-//          notes that auth error path is separate.
-//          Requirement 9.2
+// Test 2 — Auth error path: session-expired message includes a link to /login.
+//          Network error path: /login link is absent in network error state.
+//          Requirements 1.6, 9.2
 // ---------------------------------------------------------------------------
+
+describe("CartPageClient — auth error state (Req 1.6, 9.2)", () => {
+  it("session-expired state renders a link with href='/login'", () => {
+    // Seed fetchError = "auth" via the test-only prop
+    renderWithProvider(
+      <CartPageClient initialCart={null} __testFetchError="auth" />
+    );
+
+    // Must show the session-expired message (not the generic network message)
+    expect(
+      screen.getByText(/your session may have expired/i)
+    ).toBeInTheDocument();
+
+    // A link pointing to /login must be in the DOM
+    const loginLink = screen.getByRole("link", { name: /log in/i });
+    expect(loginLink).toBeInTheDocument();
+    expect(loginLink).toHaveAttribute("href", "/login");
+  });
+
+  it("auth error state does NOT show the generic 'Something went wrong' message", () => {
+    renderWithProvider(
+      <CartPageClient initialCart={null} __testFetchError="auth" />
+    );
+
+    expect(
+      screen.queryByText(/something went wrong while loading your cart/i)
+    ).not.toBeInTheDocument();
+  });
+
+  it("auth error state does NOT show the 'Try Again' button", () => {
+    renderWithProvider(
+      <CartPageClient initialCart={null} __testFetchError="auth" />
+    );
+
+    // Session-expired errors should not offer a retry — user must log in
+    expect(
+      screen.queryByRole("button", { name: /try again/i })
+    ).not.toBeInTheDocument();
+  });
+});
 
 describe("CartPageClient — network error UI (Req 9.2)", () => {
   it("renders the network error message when initialCart is null", () => {

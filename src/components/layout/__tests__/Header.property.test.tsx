@@ -76,7 +76,7 @@ async function renderHeaderWithCount(
 
   return render(
     <CartContext.Provider value={contextValue}>
-      <Header />
+      <Header isStudent={true} displayName={null} />
     </CartContext.Provider>
   );
 }

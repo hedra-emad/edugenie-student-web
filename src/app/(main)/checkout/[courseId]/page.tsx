@@ -19,11 +19,7 @@ export default async function CheckoutPage({
   await params; // courseId available if needed for future per-course cart filtering
 
   const cookieStore = await cookies();
-  const token =
-    cookieStore.get("access_token")?.value ??
-    cookieStore.get("token")?.value ??
-    cookieStore.get("accessToken")?.value ??
-    undefined;
+  const token = cookieStore.get("jwt")?.value ?? undefined;
 
   const cart = await getCart(token);
 

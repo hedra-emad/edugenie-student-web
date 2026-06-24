@@ -8,6 +8,7 @@ import type {
   Course,
   Section,
 } from "../../../app/courses/[courseId]/types/course";
+import { addToCartAction } from "@/app/actions/cart.actions";
 
 function getSafeImageSrc(src: string | null | undefined): string | null {
   if (!src) return null;
@@ -165,10 +166,37 @@ function SectionRow({
   );
 }
 
+// ─── Spinner SVG ─────────────────────────────────────────────────────────────
+function Spinner() {
+  return (
+    <svg
+      className="animate-spin w-5 h-5"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
+      <circle
+        className="opacity-25"
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="3"
+      />
+      <path
+        className="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8v8H4z"
+      />
+    </svg>
+  );
+}
+
 // ─── Main
 export default function EnrollCard({ course }: { course: Course }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [cartError, setCartError] = useState<string | null>(null);
   const safeThumbnail = getSafeImageSrc(course.thumbnail);
 
   const sections = course.sections as SectionWithOwned[];
@@ -215,7 +243,6 @@ export default function EnrollCard({ course }: { course: Course }) {
 
   // ── Smart button label ──
   const btnLabel = (() => {
-    if (pending) return "Please wait…";
     if (btnState === "enrolled") return "Go to Course";
     if (btnState === "disabled") return "Select at least one section";
     if (btnState === "full") return `Buy Full Course — $${fullTotal}`;
@@ -246,18 +273,46 @@ export default function EnrollCard({ course }: { course: Course }) {
   function handleCTA() {
     const courseId = getCourseId(course);
     if (btnState === "disabled" || pending) return;
+
     if (btnState === "enrolled") {
       startTransition(() => router.push(`/learn/${courseId}`));
       return;
     }
+
     if (btnState === "full") {
-      startTransition(() => router.push(`/checkout/${courseId}?type=full`));
+      startTransition(async () => {
+        const result = await addToCartAction({
+          courseId,
+          type: "full_course",
+        });
+
+        if (result.success) {
+          router.push("/cart");
+        } else {
+          setCartError(result.error ?? "Could not add to cart");
+          setTimeout(() => setCartError(null), 3000);
+        }
+      });
       return;
     }
-    const ids = selectedList.map((s) => getSectionId(s)).join(",");
-    startTransition(() =>
-      router.push(`/checkout/${courseId}?type=sections&ids=${ids}`),
-    );
+
+    // partial — batch all selected sections
+    startTransition(async () => {
+      const payloads = selectedList.map((s) => ({
+        courseId,
+        sectionId: getSectionId(s),
+        type: "section" as const,
+      }));
+
+      const result = await addToCartAction(payloads);
+
+      if (result.success) {
+        router.push("/cart");
+      } else {
+        setCartError(result.error ?? "Could not add items to cart");
+        setTimeout(() => setCartError(null), 3000);
+      }
+    });
   }
   // button toggle all sections
   const toggleAllSections = () => {
@@ -378,8 +433,21 @@ export default function EnrollCard({ course }: { course: Course }) {
           disabled={btnState === "disabled" || pending}
           className={btnClass}
         >
-          {btnLabel}
+          {pending ? (
+            <span className="flex items-center justify-center gap-2">
+              <Spinner />
+            </span>
+          ) : (
+            btnLabel
+          )}
         </button>
+
+        {/* Inline cart error */}
+        {cartError && (
+          <p className="text-red-500 text-xs mt-1.5 text-center" role="alert">
+            {cartError}
+          </p>
+        )}
 
         {/* Helper text */}
         {helperText && (
