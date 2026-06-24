@@ -11,18 +11,18 @@ export function buildCoursesQuery(filters: CourseFilters): string {
   const params = new URLSearchParams();
   // console.log(filters.page)
   if (filters.search) params.set("search", filters.search);
-  if (filters.category) params.set("category", filters.category);
+  if (filters.category) params.set("categoryId", filters.category);
   if (filters.level) params.set("level", filters.level);
   if (filters.minPrice !== "") params.set("minPrice", String(filters.minPrice));
   if (filters.maxPrice !== "") params.set("maxPrice", String(filters.maxPrice));
-  if (filters.minRating !== "")
-    params.set("minRating", String(filters.minRating));
-  if (filters.maxDuration !== "")
-    params.set("maxDuration", String(filters.maxDuration));
-  if (filters.sort) params.set("sort", filters.sort);
+  // minRating, maxDuration, and sort are intentionally dropped as they are not supported by the backend findAll endpoint yet.
 
-  params.set("page", String(filters.page));
-  params.set("limit", String(filters.limit));
+  const limit = filters.limit || 10;
+  const page = filters.page || 1;
+  const skip = (page - 1) * limit;
+
+  params.set("skip", String(skip));
+  params.set("limit", String(limit));
 
   return params.toString();
 }
@@ -50,14 +50,12 @@ export async function fetchCourses(
     );
   }
   const json = await res.json();
-  //  API بيرجع: { data, total, skip, limit }
-  //  احنا بنبني pagination منهم
-  const total = json.total ?? json.data?.length ?? 0;
-  const limit = json.limit ?? filters.limit;
-  // const skip        = json.skip    ?? 0;
-  // const currentPage = Math.floor(skip / limit) + 1;
-  const currentPage = json.currentPage ?? filters.page ?? 1;
-  const totalPages = Math.ceil(total / limit);
+  // API returns metadata: { data: { data: [...], meta: { page, total, limit, totalPages, hasNextPage, hasPrevPage } } }
+  const meta = json?.data?.meta || {};
+  const total = meta.total ?? json.data?.data?.length ?? 0;
+  const limit = meta.limit ?? filters.limit ?? 10;
+  const currentPage = meta.page ?? filters.page ?? 1;
+  const totalPages = meta.totalPages ?? Math.ceil(total / limit);
 
   return {
     success: json.success ?? true,
@@ -67,8 +65,8 @@ export async function fetchCourses(
       totalPages,
       totalItems: total,
       itemsPerPage: limit,
-      hasNextPage: currentPage < totalPages,
-      hasPrevPage: currentPage > 1,
+      hasNextPage: meta.hasNextPage ?? (currentPage < totalPages),
+      hasPrevPage: meta.hasPrevPage ?? (currentPage > 1),
     },
   };
 }
@@ -96,7 +94,7 @@ export async function fetchCategories(): Promise<CategoryOption[]> {
   return json.data ?? [];
 }
 export async function fetchAllCourses(): Promise<Course[]> {
-  const url = `${BASE_URL}/courses?page=1&limit=1000`;
+  const url = `${BASE_URL}/courses?skip=0&limit=1000`;
   // console.log("REQUEST URL:", url);
   const res = await fetch(url, {
     credentials: "include",

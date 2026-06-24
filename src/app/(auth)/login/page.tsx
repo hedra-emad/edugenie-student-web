@@ -12,9 +12,11 @@ import RememberMe from '@/components/auth/RememberMe';
 import AuthButton from '@/components/auth/AuthButton';
 import AuthDivider from '@/components/auth/AuthDivider';
 import SocialLogin from '@/components/auth/SocialLogin';
-import { login, verifyExchangeToken } from '@/lib/api/auth';
-import { generateHandoffCodeAction } from '@/app/actions/auth.actions';
+import { login, verifyExchangeToken, handoffCode } from '@/lib/api/auth'; // ← removed generateHandoffCodeAction
 import { useQueryClient } from '@tanstack/react-query';
+
+const ANGULAR_URL =
+  process.env.NEXT_PUBLIC_ANGULAR_APP_URL || 'http://localhost:4200';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -28,9 +30,7 @@ export default function LoginPage() {
 
   const handleTabChange = (tab: 'signin' | 'signup') => {
     setActiveTab(tab);
-    if (tab === 'signup') {
-      router.push('/register');
-    }
+    if (tab === 'signup') router.push('/register');
   };
 
   const onSubmit = async (e: React.FormEvent) => {
@@ -42,23 +42,27 @@ export default function LoginPage() {
       const response = await login({ email, password, rememberMe });
       const role = response?.data?.user?.role;
       const exchangeToken = response?.data?.exchangeToken;
-      
-      if (role === 'student' && exchangeToken) {
-        // Backend generated an exchangeToken because it's a student.
-        // We must convert it to a session cookie before redirecting.
-        await verifyExchangeToken({ token: exchangeToken });
-      }
-      
-      if (!role || role === 'student') {
-        queryClient.invalidateQueries({ queryKey: ["profile"] });
+
+      if (role === 'student') {
+        // Student: NestJS returned an exchangeToken (not a cookie).
+        // Verify it — this call sets the jwt HttpOnly cookie.
+        if (exchangeToken) {
+          await verifyExchangeToken({ token: exchangeToken });
+        }
+        queryClient.invalidateQueries({ queryKey: ['profile'] });
         router.push('/');
-      } else {
-        // Use Server Action so the cookie is read server-side — avoids browser race condition
-        const handoffResponse = await generateHandoffCodeAction();
-        const code = handoffResponse?.code;
-        const ANGULAR_URL = process.env.NEXT_PUBLIC_ANGULAR_APP_URL || 'https://edugenie-dashboard.vercel.app';
-        window.location.href = `${ANGULAR_URL}/auth/redeem?code=${code}`;
+        return;
       }
+
+      // Non-student: NestJS set the jwt cookie directly in the login response.
+      // Now call handoff-code from the BROWSER so the cookie is sent automatically.
+      const handoffResponse = await handoffCode(); // ← browser fetch, cookie included
+      const code = handoffResponse?.code;
+
+      if (!code) throw new Error('No handoff code returned');
+
+      // Hard navigate — leaves Next.js entirely, enters Angular
+      window.location.href = `${ANGULAR_URL}/auth/redeem?code=${code}`;
     } catch (err: any) {
       console.error('Login error:', err);
       const status = err?.status;
@@ -87,15 +91,15 @@ export default function LoginPage() {
 
         {errorMessage && (
           <div className="auth-error flex items-start gap-2 rounded-xl border border-error bg-error/10 px-3 py-2 text-sm text-error shadow-sm mb-4 animate-in slide-in-from-top-2 fade-in duration-300">
-             <svg className="w-4 h-4 mt-[2px] shrink-0 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-             </svg>
-             <span className="leading-relaxed">{errorMessage}</span>
+            <svg className="w-4 h-4 mt-[2px] shrink-0 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="leading-relaxed">{errorMessage}</span>
           </div>
         )}
 
-        <form onSubmit={onSubmit} className="auth-card-form space-y-2 sm:space-y-3 max-[360px]:space-y-2">
-          <div className="auth-step-region space-y-2 sm:space-y-3 max-[360px]:space-y-2">
+        <form onSubmit={onSubmit} className="auth-card-form space-y-2 sm:space-y-3">
+          <div className="auth-step-region space-y-2 sm:space-y-3">
             <AuthInput
               id="email"
               type="email"
@@ -111,7 +115,6 @@ export default function LoginPage() {
                 </svg>
               }
             />
-
             <PasswordInput
               id="password"
               label="Password"
@@ -119,10 +122,7 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
-
-            <div>
-              <RememberMe checked={rememberMe} onChange={setRememberMe} />
-            </div>
+            <RememberMe checked={rememberMe} onChange={setRememberMe} />
           </div>
 
           <div className="auth-card-actions mt-2">
@@ -135,9 +135,9 @@ export default function LoginPage() {
         <div className="auth-card-social mt-4">
           <AuthDivider>or continue with</AuthDivider>
           <div className="mt-4">
-            <SocialLogin 
-              onGoogle={() => console.log('Google login')} 
-              onGithub={() => console.log('Github login')} 
+            <SocialLogin
+              onGoogle={() => console.log('Google login')}
+              onGithub={() => console.log('Github login')}
             />
           </div>
         </div>
