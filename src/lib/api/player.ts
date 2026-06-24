@@ -12,7 +12,7 @@ const REMOTE_API =
 
 /** Resolves the correct base URL. */
 function baseUrl(): string {
-  return REMOTE_API;
+  return typeof window === "undefined" ? REMOTE_API : "/api/proxy";
 }
 
 // ─── Server-side helpers ──────────────────────────────────────────────────────
