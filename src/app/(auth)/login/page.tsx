@@ -59,6 +59,7 @@ export default function LoginPage() {
 
         queryClient.invalidateQueries({ queryKey: ["profile"] });
         router.push("/");
+        router.refresh();
         return;
       }
 
