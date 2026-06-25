@@ -27,7 +27,7 @@ export function proxy(request: NextRequest) {
       STUDENT_ONLY_PATHS.some((p) => pathname.startsWith(p)) ||
       PUBLIC_AUTH_PATHS.some((p) => pathname.startsWith(p))
     ) {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
+      return NextResponse.redirect(new URL("/", request.url));
     }
   }
 
