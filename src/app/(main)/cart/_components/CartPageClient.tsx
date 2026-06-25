@@ -23,11 +23,17 @@ import CartOrderSummary, { type CouponState } from "./CartOrderSummary";
 
 interface CartPageClientProps {
   initialCart: Cart | null;
+  /**
+   * Only used in unit tests to pre-seed fetchError state.
+   * Allows testing the "auth" error path without a real HTTP 401 response.
+   * @internal
+   */
+  __testFetchError?: "auth" | "network";
 }
 
 // ─── component ────────────────────────────────────────────────────────────────
 
-export default function CartPageClient({ initialCart }: CartPageClientProps) {
+export default function CartPageClient({ initialCart, __testFetchError }: CartPageClientProps) {
   const router = useRouter();
   const { setCartCount } = useCartContext();
 
@@ -43,7 +49,7 @@ export default function CartPageClient({ initialCart }: CartPageClientProps) {
     initialCart ? initialCart.total : 0,
   );
   const [fetchError, setFetchError] = useState<"auth" | "network" | null>(
-    initialCart === null ? "network" : null,
+    __testFetchError ?? (initialCart === null ? "network" : null),
   );
   const [retryCount, setRetryCount] = useState<0 | 1>(0);
   const [couponState, setCouponState] = useState<CouponState>({
@@ -292,9 +298,12 @@ export default function CartPageClient({ initialCart }: CartPageClientProps) {
           </>
         ) : (
           <>
-            <p className="text-slate-700 text-base font-medium">
-              Something went wrong while loading your cart. Please check your
-              connection and try again.
+            <h2 className="text-slate-900 text-base font-semibold">
+              We couldn&apos;t load your cart
+            </h2>
+            <p className="text-slate-500 text-sm max-w-sm">
+              This is usually a temporary issue. Your items are saved — try
+              refreshing the page.
             </p>
             {retryCount < 1 && (
               <button
@@ -302,9 +311,24 @@ export default function CartPageClient({ initialCart }: CartPageClientProps) {
                 className="px-6 py-3 rounded-xl text-sm font-bold text-white transition-colors duration-150 hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#3B1892]"
                 style={{ backgroundColor: "#3B1892" }}
               >
-                Try Again
+                Refresh page
               </button>
             )}
+            {retryCount >= 1 && (
+              <button
+                onClick={() => window.location.reload()}
+                className="px-6 py-3 rounded-xl text-sm font-bold text-white transition-colors duration-150 hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#3B1892]"
+                style={{ backgroundColor: "#3B1892" }}
+              >
+                Refresh page
+              </button>
+            )}
+            <Link
+              href="/courses"
+              className="text-[#3B1892] underline text-sm"
+            >
+              Browse courses
+            </Link>
           </>
         )}
       </div>

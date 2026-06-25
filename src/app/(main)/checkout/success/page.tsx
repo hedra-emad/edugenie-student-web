@@ -26,11 +26,7 @@ export default async function CheckoutSuccessPage({
   if (!orderId) redirect("/courses");
 
   const cookieStore = await cookies();
-  const token =
-    cookieStore.get("access_token")?.value ??
-    cookieStore.get("token")?.value ??
-    cookieStore.get("accessToken")?.value ??
-    undefined;
+  const token = cookieStore.get("jwt")?.value ?? undefined;
 
   const order: Order | null = await getOrder(orderId, token);
 

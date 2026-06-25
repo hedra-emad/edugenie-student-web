@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const NESTJS_URL = process.env.NESTJS_API_URL!;
+const BASE_URL =
+  process.env.NESTJS_API_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  'https://edugenie-api.vercel.app';
+const SERVER_API_URL = BASE_URL.endsWith('/api') ? BASE_URL : `${BASE_URL}/api`;
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   return forwardRequest(req, (await params).path, 'GET');
@@ -18,19 +22,28 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ p
   return forwardRequest(req, (await params).path, 'DELETE');
 }
 
-async function forwardRequest(req: NextRequest, pathSegments: string[], method: string) {
+async function forwardRequest(
+  req: NextRequest,
+  pathSegments: string[],
+  method: string,
+): Promise<NextResponse> {
   const path = pathSegments.join('/');
   const search = req.nextUrl.search;
-  const url = `${NESTJS_URL}/api/${path}${search}`;
-
-
+  const url = `${SERVER_API_URL}/${path}${search}`;
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
 
-  const cookie = req.headers.get('cookie');
-  if (cookie) headers['cookie'] = cookie;
+  const cookieHeader = req.headers.get('cookie') ?? '';
+  const jwtToken =
+    cookieHeader
+      .split(';')
+      .map((c) => c.trim())
+      .find((c) => c.startsWith('jwt='))
+      ?.slice('jwt='.length) ?? null;
+
+  if (jwtToken) headers['Authorization'] = `Bearer ${jwtToken}`;
 
   const init: RequestInit = { method, headers };
 
@@ -43,26 +56,30 @@ async function forwardRequest(req: NextRequest, pathSegments: string[], method: 
   const backendRes = await fetch(url, init);
   const body = await backendRes.text();
 
-  // Build response
   const res = new NextResponse(body, {
     status: backendRes.status,
     headers: { 'Content-Type': 'application/json' },
   });
 
-  // Forward ALL Set-Cookie headers from NestJS to the browser
-  // getSetCookie() returns an array — handles multiple cookies correctly
-  const setCookies = backendRes.headers.getSetCookie?.() ?? [];
+  const setCookie = backendRes.headers.get('set-cookie');
+  if (setCookie) {
+    const jwtMatch = setCookie.match(/jwt=([^;]+)/);
+    if (jwtMatch) {
+      const isProd = process.env.NODE_ENV === 'production';
+      const cookie = [
+        `jwt=${jwtMatch[1]}`,
+        'Path=/',
+        'HttpOnly',
+        isProd ? 'Secure' : '',
+        isProd ? 'SameSite=None' : 'SameSite=Lax',
+        'Max-Age=86400',
+      ]
+        .filter(Boolean)
+        .join('; ');
 
-  if (setCookies.length > 0) {
-    // Set each cookie individually
-    setCookies.forEach(cookie => {
-      res.headers.append('Set-Cookie', cookie);
-    });
-  } else {
-    // Fallback for environments where getSetCookie() isn't available
-    const rawCookie = backendRes.headers.get('set-cookie');
-    if (rawCookie) {
-      res.headers.set('Set-Cookie', rawCookie);
+      res.headers.set('set-cookie', cookie);
+    } else {
+      res.headers.set('set-cookie', setCookie);
     }
   }
 

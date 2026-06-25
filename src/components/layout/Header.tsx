@@ -1,10 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getProfile, logout } from "@/lib/api/auth";
+import { logout } from "@/lib/api/auth";
 import { useRouter } from "next/navigation";
 import { useCartContext } from "@/contexts/CartContext";
 
@@ -31,7 +29,6 @@ function CartIcon({ count }: { count: number | null }) {
       aria-label={ariaLabel}
       className="relative flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-gray-600 hover:text-indigo-700 hover:bg-gray-100 transition-colors duration-150"
     >
-      {/* Shopping cart SVG */}
       <svg
         className="h-5 w-5"
         fill="none"
@@ -46,7 +43,6 @@ function CartIcon({ count }: { count: number | null }) {
           d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm-8 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"
         />
       </svg>
-      {/* Badge */}
       {hasBadge && (
         <span
           aria-hidden="true"
@@ -59,20 +55,27 @@ function CartIcon({ count }: { count: number | null }) {
   );
 }
 
-export default function Header() {
-  const [searchValue, setSearchValue] = useState("");
+interface HeaderProps {
+  /** True when the jwt cookie exists and role === "student". */
+  isStudent: boolean;
+  /** Decoded name or email from the JWT payload, or null for guests. */
+  displayName: string | null;
+}
+
+export default function Header({ isStudent, displayName }: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const router = useRouter();
-  const queryClient = useQueryClient();
   const { cartCount } = useCartContext();
 
-  const { data: profileResponse, isLoading } = useQuery({
-    queryKey: ["profile"],
-    queryFn: getProfile,
-    retry: false,
-  });
-
-  const user = profileResponse?.data;
+  async function handleLogout() {
+    try {
+      await logout();
+      router.push("/login");
+      router.refresh(); // rerun Server Components so HeaderServer re-reads cookie
+    } catch (e) {
+      console.error("Logout failed", e);
+    }
+  }
 
   return (
     <header className="w-full border-b border-gray-200 bg-white">
@@ -96,40 +99,18 @@ export default function Header() {
           ))}
         </nav>
 
-        {/* ── Right: Cart Icon (desktop) + Search + Auth ── */}
+        {/* ── Right: Auth + Cart ── */}
         <div className="flex items-center gap-3">
 
-          {/* Cart icon — desktop (hidden on mobile; mobile version lives in the hamburger panel) */}
-          <div className="hidden md:flex">
-            <CartIcon count={cartCount} />
-          </div>
+          {/* Cart icon — desktop, students only */}
+          {isStudent && (
+            <div className="hidden md:flex">
+              <CartIcon count={cartCount} />
+            </div>
+          )}
 
-          {/* Search */}
-          {/* <div className="hidden sm:flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-100 transition-all">
-            <svg
-              className="h-4 w-4 text-gray-400 shrink-0"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"
-              />
-            </svg>
-            <input
-              type="text"
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-              placeholder="Search courses…"
-              className="w-40 bg-transparent text-sm text-gray-700 placeholder-gray-400 outline-none"
-            />
-          </div> */}
-
-          {/* Logged OUT → Login + Sign Up */}
-          {!user && (
+          {/* Guest / non-student → Login + Sign Up */}
+          {!isStudent && (
             <div className="flex items-center gap-2">
               <Link
                 href="/login"
@@ -146,41 +127,21 @@ export default function Header() {
             </div>
           )}
 
-          {/* Logged IN → Avatar + Logout */}
-          {user && (
+          {/* Student → Name + Logout */}
+          {isStudent && (
             <div className="flex items-center gap-3">
-              {/* Avatar */}
               <div className="flex items-center gap-2">
-                {user.avatar ? (
-                  <Image
-                    src={user.avatar}
-                    alt={user.firstName || "User"}
-                    width={32}
-                    height={32}
-                    className="h-8 w-8 rounded-full object-cover ring-2 ring-indigo-100"
-                  />
-                ) : (
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-sm font-bold text-indigo-700 ring-2 ring-indigo-200">
-                    {(user.firstName || user.email || "U").charAt(0).toUpperCase()}
-                  </div>
-                )}
+                {/* Avatar initial */}
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-sm font-bold text-indigo-700 ring-2 ring-indigo-200">
+                  {(displayName ?? "U").charAt(0).toUpperCase()}
+                </div>
                 <span className="hidden sm:block text-sm font-medium text-gray-700">
-                  {user.firstName} {user.lastName}
+                  {displayName}
                 </span>
               </div>
 
-              {/* Logout */}
               <button
-                onClick={async () => {
-                  try {
-                    await logout();
-                    queryClient.setQueryData(["profile"], null);
-                    queryClient.removeQueries({ queryKey: ["profile"] });
-                    router.push("/login");
-                  } catch (e) {
-                    console.error("Logout failed", e);
-                  }
-                }}
+                onClick={handleLogout}
                 className="text-sm font-medium text-gray-500 hover:text-red-500 transition-colors duration-150 px-2 py-1"
               >
                 Logout
@@ -210,7 +171,6 @@ export default function Header() {
       {/* ── Mobile Menu ── */}
       {menuOpen && (
         <div className="md:hidden border-t border-gray-100 bg-white px-6 py-4 flex flex-col gap-3">
-          {/* Mobile Search */}
           <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
             <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
@@ -233,13 +193,16 @@ export default function Header() {
             </Link>
           ))}
 
-          {/* Cart icon — mobile */}
-          <div className="flex items-center gap-3 py-1">
-            <CartIcon count={cartCount} />
-            <span className="text-sm font-medium text-gray-700">Cart</span>
-          </div>
+          {/* Cart icon — mobile, students only */}
+          {isStudent && (
+            <div className="flex items-center gap-3 py-1">
+              <CartIcon count={cartCount} />
+              <span className="text-sm font-medium text-gray-700">Cart</span>
+            </div>
+          )}
 
-          {!user ? (
+          {/* Guest / non-student → Login + Sign Up */}
+          {!isStudent && (
             <div className="flex gap-2 pt-1">
               <Link href="/login" className="flex-1 text-center rounded-lg border border-gray-200 py-2 text-sm font-medium text-gray-700 hover:border-indigo-400 transition-colors">
                 Login
@@ -248,19 +211,16 @@ export default function Header() {
                 Sign Up
               </Link>
             </div>
-          ) : (
-            <div className="flex gap-2 pt-1">
-              <button 
-                onClick={async () => {
-                  try {
-                    await logout();
-                    queryClient.setQueryData(["profile"], null);
-                    queryClient.removeQueries({ queryKey: ["profile"] });
-                    router.push("/login");
-                  } catch (e) {
-                    console.error("Logout failed", e);
-                  }
-                }} 
+          )}
+
+          {/* Student → name + logout */}
+          {isStudent && (
+            <div className="flex flex-col gap-2 pt-1">
+              <span className="text-sm font-medium text-gray-700">
+                {displayName}
+              </span>
+              <button
+                onClick={handleLogout}
                 className="flex-1 text-center rounded-lg border border-red-200 py-2 text-sm font-medium text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors"
               >
                 Logout

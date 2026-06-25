@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Hanken_Grotesk, Inter } from "next/font/google";
 import "./globals.css";
 import SiteShell from "@/components/layout/SiteShell";
+import HeaderServer from "@/components/layout/HeaderServer";
 import QueryProvider from "../app/providers/QueryProvider";
 import { CartProvider } from "@/contexts/CartContext";
 
@@ -39,7 +40,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <QueryProvider>
           <CartProvider>
-            <SiteShell>
+            <SiteShell header={<HeaderServer />}>
               {children}
             </SiteShell>
           </CartProvider>

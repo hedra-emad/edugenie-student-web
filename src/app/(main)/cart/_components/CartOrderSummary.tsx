@@ -179,7 +179,7 @@ export default function CartOrderSummary({
           {couponState.status === "hidden" && !couponVisible && (
             <button
               onClick={handleToggleCoupon}
-              className="text-[12px] font-semibold cursor-pointer"
+              className="min-h-[44px] px-1 text-[12px] font-semibold cursor-pointer"
               style={{ color: "#3B1892" }}
             >
               Have a coupon?
@@ -198,13 +198,13 @@ export default function CartOrderSummary({
                     setLocalValidationMsg(null);
                   }}
                   placeholder="Enter coupon code"
-                  className="flex-1 text-[13px] border border-slate-200 rounded-xl px-3 py-2 outline-none uppercase tracking-widest focus:border-[#3B1892] transition-colors"
+                  className="flex-1 text-[13px] border border-slate-200 rounded-xl px-3 py-2.5 min-h-[44px] outline-none uppercase tracking-widest focus:border-[#3B1892] transition-colors"
                   aria-label="Coupon code"
                 />
                 <button
                   onClick={handleApplyClick}
                   disabled={couponState.status === "open" && couponState.validating}
-                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-[12px] font-bold px-4 py-2 rounded-xl transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-[12px] font-bold px-4 min-h-[44px] rounded-xl transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {couponState.status === "open" && couponState.validating
                     ? "Applying…"
@@ -228,7 +228,7 @@ export default function CartOrderSummary({
               </span>
               <button
                 onClick={handleRemoveCoupon}
-                className="text-[12px] font-semibold text-red-500 hover:text-red-700 transition-colors duration-150"
+                className="min-h-[44px] px-1 text-[12px] font-semibold text-red-500 hover:text-red-700 transition-colors duration-150"
               >
                 Remove
               </button>

@@ -58,7 +58,7 @@ function renderHeader(cartCount: number | null) {
   const value: CartContextValue = { cartCount, setCartCount: () => {} };
   return render(
     <CartContext.Provider value={value}>
-      <Header />
+      <Header isStudent={true} displayName={null} />
     </CartContext.Provider>
   );
 }

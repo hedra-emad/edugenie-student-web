@@ -28,10 +28,7 @@ export default async function LearnPage({
 
   // Read JWT from cookies for server-side authenticated requests
   const cookieStore = await cookies();
-  const token =
-    cookieStore.get("token")?.value ??
-    cookieStore.get("accessToken")?.value ??
-    undefined;
+  const token = cookieStore.get("jwt")?.value ?? undefined;
 
   // Fetch course structure and resume position in parallel
   const [course, resume] = await Promise.all([

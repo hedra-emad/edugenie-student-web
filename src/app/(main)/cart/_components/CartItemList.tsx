@@ -212,7 +212,7 @@ export default function CartItemList({
                     onClick={() => handleRemoveClick(item._id)}
                     disabled={isRemoving}
                     aria-label={`Remove ${item.courseTitle}`}
-                    className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors duration-150 disabled:opacity-40"
+                    className="min-w-[44px] min-h-[44px] rounded-lg flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors duration-150 disabled:opacity-40"
                   >
                     {isRemoving ? (
                       <Spinner />
@@ -254,7 +254,7 @@ export default function CartItemList({
 
                 return (
                   <div
-                    key={section.sectionId ?? section._id}
+                    key={section.sectionId || section._id}
                     className="flex flex-col border-t border-slate-100 first:border-t-0 pt-1.5 first:pt-0"
                   >
                     <div className="flex items-center justify-between py-1">
@@ -284,7 +284,7 @@ export default function CartItemList({
                             onClick={() => handleRemoveClick(section._id)}
                             disabled={isRemoving}
                             aria-label={`Remove ${section.sectionTitle ?? section.courseTitle}`}
-                            className="w-6 h-6 rounded-md flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors duration-150 disabled:opacity-40"
+                            className="min-w-[44px] min-h-[44px] rounded-md flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors duration-150 disabled:opacity-40"
                           >
                             {isRemoving ? (
                               <Spinner size="w-3.5 h-3.5" />
