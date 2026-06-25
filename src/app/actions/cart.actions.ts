@@ -3,7 +3,9 @@
 import { cookies } from "next/headers";
 
 const REMOTE_API =
-  process.env.NEXT_PUBLIC_API_URL ?? "https://edugenie-api.vercel.app";
+  process.env.NESTJS_API_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  "https://edugenie-api.vercel.app";
 const API_URL = REMOTE_API.endsWith("/api") ? REMOTE_API : `${REMOTE_API}/api`;
 
 export interface CartPayload {

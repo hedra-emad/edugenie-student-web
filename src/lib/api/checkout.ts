@@ -2,7 +2,9 @@
 import type { Cart, CheckoutResponse, Order } from "@/types/checkout";
 
 const REMOTE_API =
-  process.env.NEXT_PUBLIC_API_URL ?? "https://edugenie-api.vercel.app";
+  process.env.NESTJS_API_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  "https://edugenie-api.vercel.app";
 
 const SERVER_API_URL = REMOTE_API.endsWith("/api") ? REMOTE_API : `${REMOTE_API}/api`;
 
@@ -49,6 +51,7 @@ export async function addToCart(
 
 export async function removeFromCart(itemId: string): Promise<boolean> {
   try {
+    if (!itemId) return false;
     const res = await fetch(`${baseUrl()}/cart/${encodeURIComponent(itemId)}`, {
       method: "DELETE",
       credentials: "include",
@@ -169,8 +172,9 @@ function normalizeCart(json: unknown): Cart | null {
       const item = asRecord(i);
       if (!item) return null;
       const type = item.type === "section" ? "section" : "full_course";
+      const resolvedId = String(item._id ?? item.id ?? item.itemId ?? item.courseId ?? "");
       return {
-        _id: String(item._id ?? item.id ?? ""),
+        _id: resolvedId,
         type: type as "full_course" | "section",
         courseId: String(item.courseId ?? ""),
         courseTitle: String(item.courseTitle ?? item.title ?? ""),

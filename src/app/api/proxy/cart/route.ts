@@ -102,3 +102,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (denied) return denied;
   return forwardToCart(req, 'POST');
 }
+
+export async function DELETE(req: NextRequest): Promise<NextResponse> {
+  const denied = guardStudent(req);
+  if (denied) return denied;
+  return forwardToCart(req, 'DELETE');
+}

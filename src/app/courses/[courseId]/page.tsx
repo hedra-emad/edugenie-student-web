@@ -9,7 +9,9 @@ import CourseInstructor from "../../../components/courseId/_components/CourseIns
 import EnrollCard from "../../../components/courseId/_components/EnrollCard";
 
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL ?? "https://edugenie-api.vercel.app";
+  process.env.NESTJS_API_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  "https://edugenie-api.vercel.app";
 const SERVER_API_URL = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -22,7 +24,7 @@ function extractCoursePayload(json: unknown): Record<string, unknown> | null {
   if (!root) return null;
 
   const candidate = asRecord(root.course ?? root.data) ?? root;
-  if (!(candidate.id || candidate.id) || !candidate.title) return null;
+  if (!(candidate._id || candidate.id) || !candidate.title) return null;
 
   return candidate;
 }
@@ -47,7 +49,7 @@ function normalizeCourse(raw: Record<string, unknown>): Course {
     asRecord(raw.categoryId) ?? asRecord(raw.category) ?? {};
 
   return {
-    id: String(raw.id ?? raw.id),
+    id: String(raw._id ?? raw.id),
     title: String(raw.title),
     description:
       typeof raw.description === "string" ? raw.description : "",
@@ -66,14 +68,14 @@ function normalizeCourse(raw: Record<string, unknown>): Course {
           ? raw.status
           : "",
     instructorId: {
-      id: String(instructorRaw.id ?? instructorRaw.id ?? ""),
+      id: String(instructorRaw._id ?? instructorRaw.id ?? ""),
       firstName,
       lastName,
       avatar:
         typeof instructorRaw.avatar === "string" ? instructorRaw.avatar : "",
     },
     categoryId: {
-      id: String(categoryRaw.id ?? categoryRaw.id ?? ""),
+      id: String(categoryRaw._id ?? categoryRaw.id ?? ""),
       name: typeof categoryRaw.name === "string" ? categoryRaw.name : "Course",
       iconUrl:
         typeof categoryRaw.iconUrl === "string" ? categoryRaw.iconUrl : "",

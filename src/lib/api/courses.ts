@@ -2,7 +2,9 @@ import { Course, CourseFilters, CoursesApiResponse } from "@/types/course";
 // import { log } from "util";
 
 const REMOTE_API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "https://edugenie-api.vercel.app";
+  process.env.NESTJS_API_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  "https://edugenie-api.vercel.app";
 
 const SERVER_API_URL = REMOTE_API_URL.endsWith("/api") ? REMOTE_API_URL : `${REMOTE_API_URL}/api`;
 const BASE_URL = typeof window === "undefined" ? SERVER_API_URL : "/api/proxy";
