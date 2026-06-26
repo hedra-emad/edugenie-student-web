@@ -19,7 +19,11 @@ export function buildCoursesQuery(filters: CourseFilters): string {
   if (filters.level) params.set("level", filters.level);
   if (filters.minPrice !== "") params.set("minPrice", String(filters.minPrice));
   if (filters.maxPrice !== "") params.set("maxPrice", String(filters.maxPrice));
-  // minRating, maxDuration, and sort are intentionally dropped as they are not supported by the backend findAll endpoint yet.
+  if (filters.minRating !== "")
+    params.set("minRating", String(filters.minRating));
+  if (filters.maxDuration !== "")
+    params.set("maxDuration", String(filters.maxDuration));
+  if (filters.sort) params.set("sort", filters.sort);
 
   const limit = filters.limit || 10;
   const page = filters.page || 1;
@@ -97,48 +101,17 @@ export async function fetchCategories(): Promise<CategoryOption[]> {
   };
   return json.data ?? [];
 }
-export async function fetchAllCourses(): Promise<Course[]> {
-  const url = `${BASE_URL}/courses?skip=0&limit=1000`;
-  // console.log("REQUEST URL:", url);
-  const res = await fetch(url, {
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    cache: "no-store",
-  });
-  // ----------
-  // console.log("URL:", url);
-  // console.log("STATUS:", res.status);
-
-  // const text = await res.text();
-  // console.log("RESPONSE:", text);
-  // // --------
-
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({}));
-    throw new Error(
-      (error as { message?: string }).message ??
-      `Request failed: ${res.status}`,
-    );
-  }
-
-  const json = await res.json();
-  return json?.data?.data ?? [];
-}
-
 /**
- * Shared fetch used by both the home page and the all-courses page.
- * Slicing to a limit is the call-site's responsibility — keep this generic.
+ * Featured courses for the public home page. This is public data (published
+ * courses, identical for every visitor) so it is fetched server-side WITHOUT
+ * auth and cached with ISR — no per-user variance, no 1000-row over-fetch.
  */
-export async function fetchCoursesForHome(token?: string): Promise<Course[]> {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-
-  const url = `${SERVER_API_URL}/courses?skip=0&limit=1000`;
+export async function fetchCoursesForHome(limit = 9): Promise<Course[]> {
+  const url = `${SERVER_API_URL}/courses?skip=0&limit=${limit}`;
 
   const res = await fetch(url, {
-    headers,
-    credentials: token ? undefined : "include",
-    cache: "no-store",
+    headers: { "Content-Type": "application/json" },
+    next: { revalidate: 300 }, // public list — revalidate every 5 min
   });
 
   if (!res.ok) return [];
