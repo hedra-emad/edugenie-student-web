@@ -170,8 +170,8 @@ export default function LoginPage() {
           <AuthDivider>or continue with</AuthDivider>
           <div className="mt-4">
             <SocialLogin
-              onGoogle={() => console.log("Google login")}
-              onGithub={() => console.log("Github login")}
+              onGoogle={() => {}}
+              onGithub={() => {}}
             />
           </div>
         </div>

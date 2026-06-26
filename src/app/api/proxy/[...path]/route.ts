@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { resolveApiBase } from '@/lib/apiBase';
 
 const BASE_URL =
   process.env.NESTJS_API_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
   'https://edugenie-api.vercel.app';
-const SERVER_API_URL = BASE_URL.endsWith('/api') ? BASE_URL : `${BASE_URL}/api`;
+const SERVER_API_URL = resolveApiBase(BASE_URL);
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   return forwardRequest(req, (await params).path, 'GET');
@@ -22,11 +23,27 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ p
   return forwardRequest(req, (await params).path, 'DELETE');
 }
 
+// Returns true if a state-changing request's Origin is NOT the app itself.
+function isCrossSiteMutation(req: NextRequest, method: string): boolean {
+  if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') return false;
+  const origin = req.headers.get('origin');
+  // Same-origin browser requests send an Origin equal to the app's own origin.
+  // Server-to-server / curl requests have no Origin and are allowed.
+  if (!origin) return false;
+  return origin !== req.nextUrl.origin;
+}
+
 async function forwardRequest(
   req: NextRequest,
   pathSegments: string[],
   method: string,
 ): Promise<NextResponse> {
+  // CSRF defense: reject cross-site mutations. The browser only ever calls this
+  // proxy same-origin, so a foreign Origin on a POST/PUT/PATCH/DELETE is forged.
+  if (isCrossSiteMutation(req, method)) {
+    return NextResponse.json({ message: 'Cross-site request blocked' }, { status: 403 });
+  }
+
   const path = pathSegments.join('/');
   const search = req.nextUrl.search;
   const url = `${SERVER_API_URL}/${path}${search}`;
@@ -58,7 +75,12 @@ async function forwardRequest(
 
   const res = new NextResponse(body, {
     status: backendRes.status,
-    headers: { 'Content-Type': 'application/json' },
+    // Pass through the backend's real content type so non-JSON errors
+    // (e.g. an HTML gateway 502) aren't mislabeled as JSON.
+    headers: {
+      'Content-Type':
+        backendRes.headers.get('content-type') ?? 'application/json',
+    },
   });
 
   const setCookie = backendRes.headers.get('set-cookie');
@@ -66,12 +88,14 @@ async function forwardRequest(
     const jwtMatch = setCookie.match(/jwt=([^;]+)/);
     if (jwtMatch) {
       const isProd = process.env.NODE_ENV === 'production';
+      // The proxy is same-origin, so SameSite=Lax is sufficient and avoids the
+      // cross-site exposure of SameSite=None. Secure only in production (HTTPS).
       const cookie = [
         `jwt=${jwtMatch[1]}`,
         'Path=/',
         'HttpOnly',
         isProd ? 'Secure' : '',
-        isProd ? 'SameSite=None' : 'SameSite=Lax',
+        'SameSite=Lax',
         'Max-Age=86400',
       ]
         .filter(Boolean)

@@ -3,12 +3,13 @@
 // Takes precedence over the catch-all [...path] route.
 
 import { NextRequest, NextResponse } from 'next/server';
+import { resolveApiBase } from '@/lib/apiBase';
 
 const BASE_URL =
   process.env.NESTJS_API_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
   'https://edugenie-api.vercel.app';
-const SERVER_API_URL = BASE_URL.endsWith('/api') ? BASE_URL : `${BASE_URL}/api`;
+const SERVER_API_URL = resolveApiBase(BASE_URL);
 
 // ─── JWT helpers ──────────────────────────────────────────────────────────────
 

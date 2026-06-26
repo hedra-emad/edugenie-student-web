@@ -1,12 +1,13 @@
 'use server';
 
 import { cookies } from 'next/headers';
+import { resolveApiBase } from '@/lib/apiBase';
 
 const REMOTE_API =
   process.env.NESTJS_API_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
   "https://edugenie-api.vercel.app";
-const API_URL = REMOTE_API.endsWith('/api') ? REMOTE_API : `${REMOTE_API}/api`;
+const API_URL = resolveApiBase(REMOTE_API);
 
 /**
  * Server Action: Generates a handoff code for instructor/admin users.

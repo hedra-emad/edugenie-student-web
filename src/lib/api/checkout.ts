@@ -1,12 +1,13 @@
 // src/lib/api/checkout.ts
 import type { Cart, CheckoutResponse, Order } from "@/types/checkout";
+import { resolveApiBase } from "@/lib/apiBase";
 
 const REMOTE_API =
   process.env.NESTJS_API_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
   "https://edugenie-api.vercel.app";
 
-const SERVER_API_URL = REMOTE_API.endsWith("/api") ? REMOTE_API : `${REMOTE_API}/api`;
+const SERVER_API_URL = resolveApiBase(REMOTE_API);
 
 function baseUrl(): string {
   return typeof window === "undefined" ? SERVER_API_URL : "/api/proxy";

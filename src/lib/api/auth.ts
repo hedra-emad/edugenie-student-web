@@ -1,10 +1,12 @@
 // On the server (SSR), call NestJS directly.
 // In the browser, go through /api/proxy so cookies stay same-domain.
+import { resolveApiBase } from "@/lib/apiBase";
+
 const REMOTE_API =
   process.env.NESTJS_API_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
   "https://edugenie-api.vercel.app";
-const SERVER_API_URL = REMOTE_API.endsWith('/api') ? REMOTE_API : `${REMOTE_API}/api`;
+const SERVER_API_URL = resolveApiBase(REMOTE_API);
 const BASE_URL = typeof window === 'undefined' ? SERVER_API_URL : '/api/proxy';
 const AUTH_API_URL = `${BASE_URL}/auth`;
 const USERS_API_URL = `${BASE_URL}/users`;
