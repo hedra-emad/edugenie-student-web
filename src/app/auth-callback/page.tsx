@@ -3,18 +3,21 @@
 import { useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import { verifyExchangeToken } from "@/lib/api/auth";
 
 function AuthCallbackContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
   useEffect(() => {
-    const verifyToken = async () => {
+    const run = async () => {
       const token = searchParams.get("token");
 
-      // Fallback to local Angular dashboard URL if environment variable is missing
+      // The dashboard login URL (env that actually exists), used for error
+      // fallbacks since this app cannot recover a failed handoff itself.
       const dashboardUrl =
-        process.env.NEXT_PUBLIC_DASHBOARD_URL || "https://edugenie-dashboard.vercel.app";
+        process.env.NEXT_PUBLIC_ANGULAR_APP_URL ||
+        "https://edugenie-dashboard.vercel.app";
 
       if (!token) {
         window.location.href = `${dashboardUrl}/login?error=invalid_token`;
@@ -22,30 +25,19 @@ function AuthCallbackContent() {
       }
 
       try {
-        const response = await fetch("/auth/verify-exchange-token", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ token }),
-          credentials: "include", // Ensures the returned HTTP-only cookie is set on the domain
-        });
-
-        if (response.ok) {
-          // Token verified successfully and HTTP-only cookie is set
-          // router.replace("/"); // Redirect to the student home/dashboard page
-          router.replace(dashboardUrl);
-        } else {
-          // Verification failed (invalid or expired token)
-          window.location.href = `${dashboardUrl}/login?error=invalid_token`;
-        }
+        // Goes through /api/proxy so the backend's Set-Cookie is rewritten as a
+        // first-party HttpOnly cookie on this (student-web) domain.
+        await verifyExchangeToken({ token });
+        // Land the student on their home page.
+        router.replace("/");
+        router.refresh();
       } catch (err) {
         console.error("Verification error:", err);
-        window.location.href = `${dashboardUrl}/login?error=auth_failed`;
+        window.location.href = `${dashboardUrl}/login?error=invalid_token`;
       }
     };
 
-    verifyToken();
+    run();
   }, [searchParams, router]);
 
   return (
