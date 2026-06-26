@@ -110,7 +110,7 @@ async function getCourse(id: string): Promise<Course | null> {
   try {
     const res = await fetch(
       `${SERVER_API_URL}/courses/${encodeURIComponent(id)}`,
-      { cache: "no-store" },
+      { next: { revalidate: 300 } }, // public course detail — ISR cache 5 min
     );
 
     if (!res.ok) return null;
