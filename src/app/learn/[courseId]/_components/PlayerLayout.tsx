@@ -9,6 +9,7 @@ import PlayerHeader from "./PlayerHeader";
 import VideoPlayer, { type VideoPlayerHandle } from "./VideoPlayer";
 import LessonSidebar from "./LessonSidebar";
 import TabBar from "./TabBar";
+import AiTutorPanel from "./AiTutorPanel";
 
 interface Props {
   course: PlayerCourse;
@@ -161,38 +162,14 @@ export default function PlayerLayout({
               />
             </div>
 
-            {/* Right — AI Chatbot Panel */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col overflow-hidden self-stretch">
-              <div className="px-4 py-3.5 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
-                <p className="text-[15px] font-semibold text-slate-800">Ask about this lesson</p>
-              </div>
-
-              <div className="flex-1 overflow-y-auto px-4 py-4">
-                <p className="text-sm text-slate-500 leading-relaxed">
-                  Ask anything about this lesson
-                </p>
-              </div>
-
-              <div className="border-t border-slate-100 px-3 py-3 flex-shrink-0 flex items-center gap-2">
-                <input
-                  type="text"
-                  disabled
-                  placeholder="Ask about this lesson..."
-                  className="flex-1 bg-slate-50 border border-slate-200 rounded-xl
-                             px-3 py-2.5 text-sm text-slate-700 outline-none
-                             placeholder:text-slate-400 focus:border-[#3B1892]
-                             focus:ring-1 focus:ring-[#3B1892]"
-                />
-                <button
-                  type="button"
-                  disabled
-                  className="flex-shrink-0 bg-[#3B1892] disabled:opacity-40
-                             text-white rounded-xl px-4 py-2.5 text-sm font-semibold
-                             transition-opacity"
-                >
-                  Send
-                </button>
-              </div>
+            {/* Right — AI Tutor Panel (lesson + course tiers, streams over /ai) */}
+            <div className="self-stretch">
+              <AiTutorPanel
+                courseId={course.id}
+                courseTitle={course.title}
+                lessonId={activeLesson.id}
+                lessonTitle={activeLesson.title}
+              />
             </div>
           </div>
         </div>
