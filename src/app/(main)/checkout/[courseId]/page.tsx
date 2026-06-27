@@ -40,7 +40,7 @@ export default async function CheckoutPage({
             Complete your order
           </h1>
           <p className="text-slate-600 text-[13.5px] leading-relaxed mt-1">
-            Review your items and confirm payment
+            Order confirmed — now choose how to pay
           </p>
         </div>
 
