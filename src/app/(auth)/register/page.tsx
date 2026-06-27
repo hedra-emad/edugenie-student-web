@@ -85,8 +85,6 @@ export default function RegisterPage() {
           interests: interests.length > 0 ? interests : [],
         })
       };
-      
-      console.log('DEBUG: Register Payload being sent:', payload);
 
       try {
         const response = await register(payload);

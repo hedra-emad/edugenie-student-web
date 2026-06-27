@@ -1,4 +1,3 @@
-import { cookies } from "next/headers";
 import HeroSection from "@/components/sections/HeroSection";
 import CategoriesSection from "@/components/sections/CategoriesSection";
 import FeaturedCourses from "@/components/sections/FeaturedCourses";
@@ -8,15 +7,8 @@ import FinalCTA from "@/components/sections/FinalCTA";
 import { fetchCoursesForHome } from "@/lib/api/courses";
 
 export default async function Home() {
-  const cookieStore = await cookies();
-  const token =
-    cookieStore.get("access_token")?.value ??
-    cookieStore.get("token")?.value ??
-    cookieStore.get("accessToken")?.value ??
-    undefined;
-
-  // Fetch real courses — slice to 9 in FeaturedCourses, keep function generic
-  const courses = await fetchCoursesForHome(token);
+  // Public featured courses — fetch only what we render (9), cached via ISR.
+  const courses = await fetchCoursesForHome(9);
 
   return (
     <div>

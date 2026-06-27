@@ -1,12 +1,11 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useCallback, useMemo } from "react";
 
-import { fetchAllCourses } from "@/lib/api/courses";
+import { fetchCourses } from "@/lib/api/courses";
 import {
-  Course,
   CourseFilters,
   DEFAULT_FILTERS,
   SortOption,
@@ -14,7 +13,8 @@ import {
 } from "@/types/course";
 
 export const courseKeys = {
-  all: ["courses", "all"] as const,
+  all: ["courses"] as const,
+  list: (filters: CourseFilters) => ["courses", "list", filters] as const,
 };
 
 function parseFiltersFromUrl(params: URLSearchParams): CourseFilters {
@@ -34,80 +34,6 @@ function parseFiltersFromUrl(params: URLSearchParams): CourseFilters {
   };
 }
 
-function applyFilters(courses: Course[], filters: CourseFilters): Course[] {
- if (!Array.isArray(courses)) {
-  return [];
-}
-
-let result = [...courses];
-
-  if (filters.search.trim()) {
-    const q = filters.search.toLowerCase();
-    result = result.filter(
-      (c) =>
-        c.title.toLowerCase().includes(q) ||
-        c.description.toLowerCase().includes(q),
-    );
-  }
-
-  if (filters.category) {
-    result = result.filter((c) => {
-      const catId =
-        typeof c.categoryId === "string" ? c.categoryId : c.categoryId?.id;
-      return catId === filters.category;
-    });
-  }
-
-  if (filters.level) {
-    result = result.filter((c) => c.level === filters.level);
-  }
-
-  if (filters.minPrice !== "") {
-    result = result.filter((c) => c.price >= (filters.minPrice as number));
-  }
-
-  if (filters.maxPrice !== "") {
-    result = result.filter((c) => c.price <= (filters.maxPrice as number));
-  }
-
-  if (filters.minRating !== "") {
-    result = result.filter(
-      (c) => (c.ratingAverage ?? 0) >= (filters.minRating as number),
-    );
-  }
-
-  if (filters.maxDuration !== "") {
-    result = result.filter(
-      (c) => (c.totalHours ?? 0) <= (filters.maxDuration as number),
-    );
-  }
-
-  result.sort((a, b) => {
-    switch (filters.sort) {
-      case "newest":
-        return (
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-      case "oldest":
-        return (
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-        );
-      case "price-asc":
-        return a.price - b.price;
-      case "price-desc":
-        return b.price - a.price;
-      case "rating":
-        return (b.ratingAverage ?? 0) - (a.ratingAverage ?? 0);
-      case "popular":
-        return (b.totalEnrollments ?? 0) - (a.totalEnrollments ?? 0);
-      default:
-        return 0;
-    }
-  });
-
-  return result;
-}
-
 export function useCourses() {
   const router = useRouter();
   const pathname = usePathname();
@@ -118,36 +44,28 @@ export function useCourses() {
     [searchParams],
   );
 
+  // Server-side pagination + filtering: the backend does the work and returns
+  // only the current page. keepPreviousData avoids a full-grid flash while the
+  // next page/filter loads. The filters object is part of the query key, so any
+  // change refetches the right slice.
   const query = useQuery({
-    queryKey: courseKeys.all,
-    queryFn: fetchAllCourses,
-    staleTime: 1000 * 60 * 5,
+    queryKey: courseKeys.list(filters),
+    queryFn: () => fetchCourses(filters),
+    staleTime: 1000 * 60 * 2,
+    placeholderData: keepPreviousData,
     retry: 1,
   });
 
-  const filteredCourses = useMemo(
-    () => applyFilters(query.data ?? [], filters),
-    [query.data, filters],
-  );
+  const courses = query.data?.data ?? [];
 
-  const { paginatedCourses, pagination } = useMemo(() => {
-    const total = filteredCourses.length;
-    const totalPages = Math.max(1, Math.ceil(total / filters.limit));
-    const page = Math.min(filters.page, totalPages);
-    const start = (page - 1) * filters.limit;
-
-    return {
-      paginatedCourses: filteredCourses.slice(start, start + filters.limit),
-      pagination: {
-        currentPage: page,
-        totalPages,
-        totalItems: total,
-        itemsPerPage: filters.limit,
-        hasNextPage: page < totalPages,
-        hasPrevPage: page > 1,
-      },
-    };
-  }, [filteredCourses, filters.page, filters.limit]);
+  const pagination = query.data?.pagination ?? {
+    currentPage: filters.page,
+    totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: filters.limit,
+    hasNextPage: false,
+    hasPrevPage: false,
+  };
 
   const setFilters = useCallback(
     (updates: Partial<CourseFilters>) => {
@@ -188,7 +106,7 @@ export function useCourses() {
   }, [filters]);
 
   return {
-    courses: paginatedCourses,
+    courses,
     pagination,
     filters,
     isLoading: query.isLoading,

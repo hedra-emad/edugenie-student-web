@@ -7,12 +7,13 @@ import CourseCurriculum from "../../../components/courseId/_components/CourseCur
 import CourseDescription from "../../../components/courseId/_components/CourseDescription";
 import CourseInstructor from "../../../components/courseId/_components/CourseInstructor";
 import EnrollCard from "../../../components/courseId/_components/EnrollCard";
+import { resolveApiBase } from "@/lib/apiBase";
 
 const API_BASE =
   process.env.NESTJS_API_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
   "https://edugenie-api.vercel.app";
-const SERVER_API_URL = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
+const SERVER_API_URL = resolveApiBase(API_BASE);
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
@@ -109,7 +110,7 @@ async function getCourse(id: string): Promise<Course | null> {
   try {
     const res = await fetch(
       `${SERVER_API_URL}/courses/${encodeURIComponent(id)}`,
-      { cache: "no-store" },
+      { next: { revalidate: 300 } }, // public course detail — ISR cache 5 min
     );
 
     if (!res.ok) return null;
