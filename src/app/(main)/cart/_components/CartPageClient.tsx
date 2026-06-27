@@ -8,16 +8,21 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 
 import type { Cart, CartItem } from "@/types/checkout";
 import { getCart, removeFromCart } from "@/lib/api/checkout";
-import { validateCoupon } from "@/lib/api/coupon";
 import { useCartContext } from "@/contexts/CartContext";
 
 import CartSkeleton from "./CartSkeleton";
 import CartEmptyState from "./CartEmptyState";
 import CartItemList from "./CartItemList";
-import CartOrderSummary, { type CouponState } from "./CartOrderSummary";
+import CartOrderSummary from "./CartOrderSummary";
+import {
+  getCartItemRemoveId,
+  groupCartItemsByCourse,
+  getOrderedCourseIds,
+} from "./cartItemUtils";
 
 // ─── props ────────────────────────────────────────────────────────────────────
 
@@ -36,6 +41,7 @@ interface CartPageClientProps {
 export default function CartPageClient({ initialCart, __testFetchError }: CartPageClientProps) {
   const router = useRouter();
   const { setCartCount } = useCartContext();
+  const queryClient = useQueryClient();
 
   // ── state ──────────────────────────────────────────────────────────────────
 
@@ -52,9 +58,6 @@ export default function CartPageClient({ initialCart, __testFetchError }: CartPa
     __testFetchError ?? (initialCart === null ? "network" : null),
   );
   const [retryCount, setRetryCount] = useState<0 | 1>(0);
-  const [couponState, setCouponState] = useState<CouponState>({
-    status: "hidden",
-  });
   const [removingIds, setRemovingIds] = useState<Set<string>>(new Set());
   const [errorIds, setErrorIds] = useState<Map<string, string>>(new Map());
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -96,17 +99,19 @@ export default function CartPageClient({ initialCart, __testFetchError }: CartPa
 
   // ── optimistic item removal (Req 3.2–3.7) ─────────────────────────────────
 
-  async function handleRequestRemove(id: string): Promise<void> {
-    // 1. Optimistically hide the item
-    const removedItem = items.find((item) => item._id === id);
+  async function handleRequestRemove(removeId: string): Promise<void> {
+    const removedItem = items.find(
+      (item) => getCartItemRemoveId(item) === removeId,
+    );
     if (!removedItem) return;
 
-    setItems((prev) => prev.filter((item) => item._id !== id));
+    setItems((prev) =>
+      prev.filter((item) => getCartItemRemoveId(item) !== removeId),
+    );
 
-    // 2. Add to removingIds
     setRemovingIds((prev) => {
       const next = new Set(prev);
-      next.add(id);
+      next.add(removeId);
       return next;
     });
 
@@ -117,21 +122,23 @@ export default function CartPageClient({ initialCart, __testFetchError }: CartPa
     try {
       let success: boolean;
       try {
-        success = await removeFromCart(id);
+        success = await removeFromCart(removeId);
       } catch (err) {
         if (controller.signal.aborted || (err instanceof Error && err.name === "AbortError")) {
           // timeout path — restore item + show timeout error
           setItems((prev) => {
-            const alreadyRestored = prev.some((i) => i._id === id);
+            const alreadyRestored = prev.some(
+              (i) => getCartItemRemoveId(i) === removeId,
+            );
             if (alreadyRestored) return prev;
             return [...prev, removedItem];
           });
           setRemovingIds((prev) => {
             const next = new Set(prev);
-            next.delete(id);
+            next.delete(removeId);
             return next;
           });
-          addErrorId(id, "Request timed out");
+          addErrorId(removeId, "Request timed out");
           return;
         }
         // Other exception — treat as failure
@@ -142,24 +149,30 @@ export default function CartPageClient({ initialCart, __testFetchError }: CartPa
       if (success) {
         setRemovingIds((prev) => {
           const next = new Set(prev);
-          next.delete(id);
+          next.delete(removeId);
           return next;
         });
-        // items already filtered — count reflects removal
-        setCartCount(items.filter((item) => item._id !== id).length);
+        const remaining = items.filter(
+          (item) => getCartItemRemoveId(item) !== removeId,
+        );
+        setCartCount(remaining.length);
+        // Invalidate React Query cache so the header badge syncs immediately
+        await queryClient.invalidateQueries({ queryKey: ["cart"] });
       } else {
         // 5. On failure — restore item
         setItems((prev) => {
-          const alreadyRestored = prev.some((i) => i._id === id);
+          const alreadyRestored = prev.some(
+            (i) => getCartItemRemoveId(i) === removeId,
+          );
           if (alreadyRestored) return prev;
           return [...prev, removedItem];
         });
         setRemovingIds((prev) => {
           const next = new Set(prev);
-          next.delete(id);
+          next.delete(removeId);
           return next;
         });
-        addErrorId(id, "Failed to remove item. Please try again.");
+        addErrorId(removeId, "Failed to remove item. Please try again.");
       }
     } finally {
       clearTimeout(timeoutId);
@@ -188,52 +201,6 @@ export default function CartPageClient({ initialCart, __testFetchError }: CartPa
     }
 
     setIsLoading(false);
-  }
-
-  // ── coupon apply handler ───────────────────────────────────────────────────
-
-  async function handleApplyCoupon(code: string): Promise<void> {
-    setCouponState({ status: "open", code, validating: true });
-
-    const result = await validateCoupon(code);
-
-    if (result === null) {
-      // Network / 5xx error
-      setCouponState({
-        status: "error",
-        code,
-        message:
-          "Could not connect to validate the coupon. Please try again.",
-        kind: "network",
-      });
-      return;
-    }
-
-    if (!result.valid) {
-      setCouponState({
-        status: "error",
-        code,
-        message: result.message ?? "Invalid or expired coupon code",
-        kind: "invalid",
-      });
-      return;
-    }
-
-    // Valid coupon
-    setCouponState({
-      status: "applied",
-      code,
-      discountAmount: result.discountAmount,
-    });
-    setTotal(result.updatedTotal);
-  }
-
-  // ── coupon remove handler ──────────────────────────────────────────────────
-
-  function handleRemoveCoupon(): void {
-    setCouponState({ status: "hidden" });
-    // Restore original total from initialCart, or fall back to subtotal
-    setTotal(initialCart?.total ?? subtotal);
   }
 
   // ── checkout handler (Req 5.3, 5.4) ───────────────────────────────────────
@@ -340,6 +307,9 @@ export default function CartPageClient({ initialCart, __testFetchError }: CartPa
     return <CartEmptyState />;
   }
 
+  const groupedItems = groupCartItemsByCourse(items);
+  const orderedCourseIds = getOrderedCourseIds(items);
+
   // 4. Two-column cart layout
   return (
     <div className="w-full max-w-5xl mx-auto px-4 py-10">
@@ -354,19 +324,18 @@ export default function CartPageClient({ initialCart, __testFetchError }: CartPa
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8 items-start">
         <CartItemList
-          items={items}
+          groupedItems={groupedItems}
+          orderedCourseIds={orderedCourseIds}
           removingIds={removingIds}
           errorIds={itemErrorIds}
           onRequestRemove={handleRequestRemove}
           onDismissError={handleDismissError}
+          getRemoveId={getCartItemRemoveId}
         />
         <CartOrderSummary
           items={items}
           subtotal={subtotal}
           total={total}
-          couponState={couponState}
-          onApplyCoupon={handleApplyCoupon}
-          onRemoveCoupon={handleRemoveCoupon}
           onCheckout={handleCheckout}
         />
       </div>

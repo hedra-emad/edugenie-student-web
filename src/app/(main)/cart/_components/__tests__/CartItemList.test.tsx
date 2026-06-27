@@ -12,6 +12,11 @@ import "@testing-library/jest-dom";
 
 import CartItemList from "../CartItemList";
 import type { CartItem } from "@/types/checkout";
+import {
+  getCartItemRemoveId,
+  groupCartItemsByCourse,
+  getOrderedCourseIds,
+} from "../cartItemUtils";
 
 // ---------------------------------------------------------------------------
 // Mock next/image — render as plain <img> so it works in jsdom
@@ -56,12 +61,20 @@ const item: CartItem = {
 // ---------------------------------------------------------------------------
 
 function defaultProps(overrides: Partial<React.ComponentProps<typeof CartItemList>> = {}) {
+  const sampleItems = [item];
+  const groupedItems =
+    overrides.groupedItems ?? groupCartItemsByCourse(sampleItems);
+  const orderedCourseIds =
+    overrides.orderedCourseIds ?? getOrderedCourseIds(sampleItems);
+
   return {
-    items: [item],
+    groupedItems,
+    orderedCourseIds,
     removingIds: new Set<string>(),
     errorIds: new Map<string, string>(),
     onRequestRemove: vi.fn(),
     onDismissError: vi.fn(),
+    getRemoveId: getCartItemRemoveId,
     ...overrides,
   };
 }
@@ -123,7 +136,7 @@ describe("CartItemList — cancel on ConfirmRemoveModal hides modal without remo
 describe("CartItemList — dismiss error button", () => {
   it("clicking × calls onDismissError with the item id and removes the inline error", () => {
     const onDismissError = vi.fn();
-    const errorIds = new Map([["item-1", "Failed to remove item"]]);
+    const errorIds = new Map([["course-1", "Failed to remove item"]]);
     render(
       <CartItemList {...defaultProps({ errorIds, onDismissError })} />
     );
@@ -137,7 +150,7 @@ describe("CartItemList — dismiss error button", () => {
 
     // onDismissError must be called with the item's id
     expect(onDismissError).toHaveBeenCalledTimes(1);
-    expect(onDismissError).toHaveBeenCalledWith("item-1");
+    expect(onDismissError).toHaveBeenCalledWith("course-1");
   });
 });
 
@@ -145,7 +158,7 @@ describe("CartItemList — item in removingIds shows spinner and disables button
   it("remove button is disabled and contains an animate-spin SVG when item is in removingIds", () => {
     render(
       <CartItemList
-        {...defaultProps({ removingIds: new Set(["item-1"]) })}
+        {...defaultProps({ removingIds: new Set(["course-1"]) })}
       />
     );
 

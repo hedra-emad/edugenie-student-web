@@ -22,6 +22,11 @@ import { render, cleanup } from "@testing-library/react";
 import * as fc from "fast-check";
 import "@testing-library/jest-dom";
 import type { CartItem } from "@/types/checkout";
+import {
+  getCartItemRemoveId,
+  groupCartItemsByCourse,
+  getOrderedCourseIds,
+} from "../cartItemUtils";
 
 fc.configureGlobal({ numRuns: 50 });
 
@@ -126,11 +131,13 @@ describe("Property 3: Section items are grouped by courseId", () => {
 
           const { container, unmount } = render(
             <CartItemList
-              items={items}
+              groupedItems={groupCartItemsByCourse(items)}
+              orderedCourseIds={getOrderedCourseIds(items)}
               removingIds={new Set<string>()}
               errorIds={new Map<string, string>()}
               onRequestRemove={vi.fn()}
               onDismissError={vi.fn()}
+              getRemoveId={getCartItemRemoveId}
             />
           );
 

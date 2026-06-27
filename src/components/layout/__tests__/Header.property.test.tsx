@@ -17,8 +17,34 @@ import React from "react";
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import * as fc from "fast-check";
-import { CartContext } from "@/contexts/CartContext";
-import type { CartContextValue } from "@/contexts/CartContext";
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    prefetch: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+  }),
+}));
+
+vi.mock("@tanstack/react-query", () => ({
+  useQuery: ({ enabled }: { enabled?: boolean }) => {
+    if (!enabled) {
+      return { data: undefined };
+    }
+    const count = (globalThis as { __mockCartCount?: number }).__mockCartCount;
+    return {
+      data:
+        count !== undefined
+          ? { items: Array(count).fill({}) }
+          : undefined,
+    };
+  },
+}));
+
+import { SessionProvider } from "@/providers/SessionProvider";
+
 import "@testing-library/jest-dom";
 
 fc.configureGlobal({ numRuns: 100 });
@@ -69,15 +95,13 @@ async function renderHeaderWithCount(
 ): Promise<ReturnType<typeof render>> {
   const { default: Header } = await import("@/components/layout/Header");
 
-  const contextValue: CartContextValue = {
-    cartCount,
-    setCartCount: () => {},
-  };
+  (globalThis as { __mockCartCount?: number }).__mockCartCount =
+    cartCount === null ? undefined : cartCount;
 
   return render(
-    <CartContext.Provider value={contextValue}>
+    <SessionProvider isAuthenticated={cartCount !== null}>
       <Header isStudent={true} displayName={null} />
-    </CartContext.Provider>
+    </SessionProvider>
   );
 }
 

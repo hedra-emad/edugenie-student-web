@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { Hanken_Grotesk, Inter } from "next/font/google";
+import { cookies } from "next/headers";
 import "./globals.css";
 import SiteShell from "@/components/layout/SiteShell";
 import HeaderServer from "@/components/layout/HeaderServer";
 import QueryProvider from "../app/providers/QueryProvider";
 import { CartProvider } from "@/contexts/CartContext";
+import { SessionProvider } from "@/providers/SessionProvider";
 
 const hankenGrotesk = Hanken_Grotesk({
   variable: "--font-hanken-grotesk",
@@ -27,11 +29,14 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const store = await cookies();
+  const isAuthenticated = Boolean(store.get("jwt")?.value);
+
   return (
     <html
       lang="en"
@@ -39,11 +44,13 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <QueryProvider>
-          <CartProvider>
-            <SiteShell header={<HeaderServer />}>
-              {children}
-            </SiteShell>
-          </CartProvider>
+          <SessionProvider isAuthenticated={isAuthenticated}>
+            <CartProvider>
+              <SiteShell header={<HeaderServer />}>
+                {children}
+              </SiteShell>
+            </CartProvider>
+          </SessionProvider>
         </QueryProvider>
       </body>
       

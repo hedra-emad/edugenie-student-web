@@ -13,29 +13,14 @@ interface CheckoutClientProps {
 }
 
 export default function CheckoutClient({ initialCart }: CheckoutClientProps) {
-  const [items, setItems] = useState<CartItem[]>(initialCart.items);
-  const [subtotal, setSubtotal] = useState<number>(initialCart.subtotal);
-  const [total, setTotal] = useState<number>(initialCart.total);
+  const [items] = useState<CartItem[]>(initialCart.items);
+  const [subtotal] = useState<number>(initialCart.subtotal);
+  const [total] = useState<number>(initialCart.total);
   const [buttonStep, setButtonStep] = useState<ButtonStep>("idle");
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // ── item removal 
-
-  function handleItemRemoved(itemId: string) {
-    setItems((prev) => {
-      const next = prev.filter((i) => i._id !== itemId);
-      // Server owns all monetary calculations — reset totals to 0 when cart
-      // empties client-side so we never display stale server-calculated values.
-      if (next.length === 0) {
-        setSubtotal(0);
-        setTotal(0);
-      }
-      return next;
-    });
-  }
-
-  // ── checkout 
+  // ── checkout
 
   async function handleCheckout() {
     setError(null);
@@ -92,7 +77,7 @@ export default function CheckoutClient({ initialCart }: CheckoutClientProps) {
           </div>
         )}
 
-        <CartSummary items={items} onItemRemoved={handleItemRemoved} />
+        <CartSummary items={items} />
       </div>
 
       {/* Right column — order summary */}

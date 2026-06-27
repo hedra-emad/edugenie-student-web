@@ -108,7 +108,7 @@ export default function OrderSummary({
         </span>
       );
     }
-    return `Confirm & Pay — $${total}`;
+    return `Confirm & Pay — $${total.toFixed(2)}`;
   }
 
   // ── render ───────────────────────────────────────────────────────────────────
@@ -180,7 +180,7 @@ export default function OrderSummary({
         <div className="flex justify-between items-center mb-2">
           <span className="text-[13px] text-slate-500">Subtotal</span>
           <span className="text-[13px] font-semibold text-slate-700">
-            ${subtotal}
+            ${subtotal.toFixed(2)}
           </span>
         </div>
 
@@ -252,7 +252,7 @@ export default function OrderSummary({
             className="text-[19px] font-extrabold"
             style={{ color: "#3B1892" }}
           >
-            ${total}
+            ${total.toFixed(2)}
           </span>
         </div>
 

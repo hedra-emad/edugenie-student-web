@@ -9,6 +9,7 @@ import type {
   Section,
 } from "../../../app/courses/[courseId]/types/course";
 import { addToCartAction } from "@/app/actions/cart.actions";
+import { useSession } from "@/providers/SessionProvider";
 
 function getSafeImageSrc(src: string | null | undefined): string | null {
   if (!src) return null;
@@ -195,6 +196,7 @@ function Spinner() {
 // ─── Main
 export default function EnrollCard({ course }: { course: Course }) {
   const router = useRouter();
+  const { isAuthenticated } = useSession();
   const [pending, startTransition] = useTransition();
   const [cartError, setCartError] = useState<string | null>(null);
   const safeThumbnail = getSafeImageSrc(course.thumbnail);
@@ -273,6 +275,11 @@ export default function EnrollCard({ course }: { course: Course }) {
   function handleCTA() {
     const courseId = getCourseId(course);
     if (btnState === "disabled" || pending) return;
+
+    if (btnState !== "enrolled" && !isAuthenticated) {
+      router.push("/login");
+      return;
+    }
 
     if (btnState === "enrolled") {
       startTransition(() => router.push(`/learn/${courseId}`));

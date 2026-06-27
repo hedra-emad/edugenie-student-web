@@ -99,21 +99,25 @@ function TrashIcon({ size = "w-4 h-4" }: { size?: string }) {
 // ─── types ────────────────────────────────────────────────────────────────────
 
 interface CartItemListProps {
-  items: CartItem[];
+  groupedItems: Map<string, CartItem[]>;
+  orderedCourseIds: string[];
   removingIds: Set<string>;
-  errorIds: Map<string, string>; // itemId → error message
-  onRequestRemove: (id: string) => void;
-  onDismissError: (id: string) => void;
+  errorIds: Map<string, string>; // removeId → error message
+  onRequestRemove: (removeId: string) => void;
+  onDismissError: (removeId: string) => void;
+  getRemoveId: (item: CartItem) => string;
 }
 
 // ─── component ────────────────────────────────────────────────────────────────
 
 export default function CartItemList({
-  items,
+  groupedItems,
+  orderedCourseIds,
   removingIds,
   errorIds,
   onRequestRemove,
   onDismissError,
+  getRemoveId,
 }: CartItemListProps) {
   // tracks which single item has the confirm modal open
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
@@ -131,37 +135,22 @@ export default function CartItemList({
     setConfirmingId(null);
   }
 
-  if (items.length === 0) return null;
-
-  // ── group items by courseId ─────────────────────────────────────────────────
-  const grouped = items.reduce(
-    (acc, item) => {
-      const key = item.courseId;
-      if (!acc[key]) acc[key] = [];
-      acc[key].push(item);
-      return acc;
-    },
-    {} as Record<string, CartItem[]>,
-  );
-
-  // preserve original insertion order of courseIds
-  const orderedCourseIds = Array.from(
-    new Map(items.map((item) => [item.courseId, true])).keys(),
-  );
+  if (orderedCourseIds.length === 0) return null;
 
   return (
     <div className="flex flex-col gap-3">
       {orderedCourseIds.map((courseId) => {
-        const groupItems = grouped[courseId];
+        const groupItems = groupedItems.get(courseId) ?? [];
         const first = groupItems[0];
-        const isFullCourse = first.type === "full_course";
+        const isFullCourse = groupItems.every((i) => i.type === "full_course");
 
         // ── full_course card ─────────────────────────────────────────────────
         if (isFullCourse) {
           const item = first;
-          const isRemoving = removingIds.has(item._id);
-          const isConfirming = confirmingId === item._id;
-          const errorMessage = errorIds.get(item._id);
+          const removeId = getRemoveId(item);
+          const isRemoving = removingIds.has(removeId);
+          const isConfirming = confirmingId === removeId;
+          const errorMessage = errorIds.get(removeId);
 
           return (
             <div
@@ -178,7 +167,7 @@ export default function CartItemList({
                   {item.instructorName}
                 </p>
                 <span className="inline-block mt-1.5 text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-violet-50 text-[#3B1892]">
-                  Full Course
+                  FULL COURSE
                 </span>
 
                 {/* Inline error message */}
@@ -186,7 +175,7 @@ export default function CartItemList({
                   <div className="mt-1.5 flex items-center gap-1.5">
                     <p className="text-[12px] text-red-500">{errorMessage}</p>
                     <button
-                      onClick={() => onDismissError(item._id)}
+                      onClick={() => onDismissError(removeId)}
                       aria-label="Dismiss error"
                       className="text-[12px] text-red-400 hover:text-red-600 transition-colors font-bold leading-none"
                     >
@@ -198,18 +187,18 @@ export default function CartItemList({
 
               <div className="flex flex-col items-end gap-2 flex-shrink-0">
                 <span className="text-[15px] font-extrabold text-slate-900">
-                  ${item.price}
+                  ${item.price.toFixed(2)}
                 </span>
 
                 {isConfirming ? (
                   <ConfirmRemoveModal
                     itemTitle={item.courseTitle}
-                    onConfirm={() => handleConfirm(item._id)}
+                    onConfirm={() => handleConfirm(removeId)}
                     onCancel={handleCancel}
                   />
                 ) : (
                   <button
-                    onClick={() => handleRemoveClick(item._id)}
+                    onClick={() => handleRemoveClick(removeId)}
                     disabled={isRemoving}
                     aria-label={`Remove ${item.courseTitle}`}
                     className="min-w-[44px] min-h-[44px] rounded-lg flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors duration-150 disabled:opacity-40"
@@ -227,6 +216,8 @@ export default function CartItemList({
         }
 
         // ── section group card ───────────────────────────────────────────────
+        const groupTotal = groupItems.reduce((sum, i) => sum + i.price, 0);
+
         return (
           <div
             key={courseId}
@@ -248,9 +239,10 @@ export default function CartItemList({
             {/* Section rows */}
             <div className="flex flex-col gap-1 pl-1">
               {groupItems.map((section) => {
-                const isRemoving = removingIds.has(section._id);
-                const isConfirming = confirmingId === section._id;
-                const errorMessage = errorIds.get(section._id);
+                const removeId = getRemoveId(section);
+                const isRemoving = removingIds.has(removeId);
+                const isConfirming = confirmingId === removeId;
+                const errorMessage = errorIds.get(removeId);
 
                 return (
                   <div
@@ -262,28 +254,28 @@ export default function CartItemList({
                         {/* dot */}
                         <span className="w-1 h-1 rounded-full bg-slate-300 flex-shrink-0" />
                         <span className="text-[12.5px] text-slate-600 line-clamp-1">
-                          {section.sectionTitle ?? section.courseTitle}
+                          {section.sectionTitle ?? "Section"}
                         </span>
                       </div>
 
                       <div className="flex items-center gap-3 flex-shrink-0 ml-3">
                         <span className="text-[12.5px] font-semibold text-slate-800">
-                          ${section.price}
+                          ${section.price.toFixed(2)}
                         </span>
 
                         {isConfirming ? (
                           <ConfirmRemoveModal
                             itemTitle={
-                              section.sectionTitle ?? section.courseTitle
+                              section.sectionTitle ?? "Section"
                             }
-                            onConfirm={() => handleConfirm(section._id)}
+                            onConfirm={() => handleConfirm(removeId)}
                             onCancel={handleCancel}
                           />
                         ) : (
                           <button
-                            onClick={() => handleRemoveClick(section._id)}
+                            onClick={() => handleRemoveClick(removeId)}
                             disabled={isRemoving}
-                            aria-label={`Remove ${section.sectionTitle ?? section.courseTitle}`}
+                            aria-label={`Remove ${section.sectionTitle ?? "Section"}`}
                             className="min-w-[44px] min-h-[44px] rounded-md flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors duration-150 disabled:opacity-40"
                           >
                             {isRemoving ? (
@@ -303,7 +295,7 @@ export default function CartItemList({
                           {errorMessage}
                         </p>
                         <button
-                          onClick={() => onDismissError(section._id)}
+                          onClick={() => onDismissError(removeId)}
                           aria-label="Dismiss error"
                           className="text-[12px] text-red-400 hover:text-red-600 transition-colors font-bold leading-none"
                         >
@@ -314,6 +306,12 @@ export default function CartItemList({
                   </div>
                 );
               })}
+            </div>
+
+            <div className="flex justify-end mt-2 pt-2 border-t border-slate-100">
+              <span className="text-[13px] font-extrabold text-slate-900">
+                ${groupTotal.toFixed(2)}
+              </span>
             </div>
           </div>
         );

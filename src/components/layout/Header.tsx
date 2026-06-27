@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { logout } from "@/lib/api/auth";
+import { getCart } from "@/lib/api/checkout";
 import { useRouter } from "next/navigation";
-import { useCartContext } from "@/contexts/CartContext";
+import { useSession } from "@/providers/SessionProvider";
 
 const navLinks = [
   { label: "Home", href: "/" },
@@ -80,7 +82,17 @@ interface HeaderProps {
 export default function Header({ isStudent, displayName }: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const router = useRouter();
-  const { cartCount } = useCartContext();
+  const { isAuthenticated } = useSession();
+
+  const { data: cartData } = useQuery({
+    queryKey: ["cart"],
+    queryFn: () => getCart(),
+    enabled: isStudent && isAuthenticated,
+    staleTime: 1000 * 60 * 2,
+  });
+
+  const cartCount = cartData?.items?.length ?? 0;
+  const badgeCount = cartCount > 0 ? cartCount : null;
 
   async function handleLogout() {
     try {
@@ -120,7 +132,7 @@ export default function Header({ isStudent, displayName }: HeaderProps) {
           {/* Cart — students only */}
           {isStudent && (
             <div className="hidden md:flex">
-              <CartIcon count={cartCount} />
+              <CartIcon count={badgeCount} />
             </div>
           )}
 
@@ -202,7 +214,7 @@ export default function Header({ isStudent, displayName }: HeaderProps) {
           {/* Cart — mobile, students only */}
           {isStudent && (
             <div className="flex items-center gap-3 py-1">
-              <CartIcon count={cartCount} />
+              <CartIcon count={badgeCount} />
               <span className="text-sm font-medium text-gray-700">Cart</span>
             </div>
           )}
