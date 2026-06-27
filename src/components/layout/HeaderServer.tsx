@@ -9,11 +9,10 @@ export default async function HeaderServer() {
   const payload = token ? decodeJwt(token) : null;
   const isStudent = payload?.role === "student";
 
-  // displayName cookie set by login page (plain cookie, not HttpOnly)
-  const rawDisplayName = cookieStore.get("displayName")?.value;
-  const displayName = rawDisplayName
-    ? decodeURIComponent(rawDisplayName)
-    : null;
+  const displayName =
+    payload?.firstName && payload?.lastName
+      ? `${payload.firstName} ${payload.lastName}`
+      : (payload?.firstName as string | undefined) ?? null;
 
   return <Header isStudent={isStudent} displayName={displayName} />;
 }

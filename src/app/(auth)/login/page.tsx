@@ -42,19 +42,11 @@ export default function LoginPage() {
       const response = await login({ email, password, rememberMe });
       const role = response?.data?.user?.role;
       const exchangeToken = response?.data?.exchangeToken;
-      const user = response?.data?.user;
+      // const user = response?.data?.user;
 
       if (role === "student") {
         if (exchangeToken) {
           await verifyExchangeToken({ token: exchangeToken });
-        }
-
-        // ← حط الاسم في cookie عادية عشان HeaderServer يقدر يقراها
-        if (user?.firstName) {
-          const displayName = [user.firstName, user.lastName]
-            .filter(Boolean)
-            .join(" ");
-          document.cookie = `displayName=${encodeURIComponent(displayName)}; path=/; max-age=86400; SameSite=Lax`;
         }
 
         queryClient.invalidateQueries({ queryKey: ["profile"] });

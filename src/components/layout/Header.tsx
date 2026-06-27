@@ -12,16 +12,14 @@ const navLinks = [
   { label: "About", href: "/about" },
 ];
 
-/** Renders the cart icon + badge for the given count. */
 function CartIcon({ count }: { count: number | null }) {
   const hasBadge = count !== null && count >= 1;
   const badgeText = count !== null && count > 99 ? "99+" : String(count ?? 0);
-  const ariaLabel =
-    hasBadge
-      ? count! > 99
-        ? "Cart, 99+ items"
-        : `Cart, ${count} item${count === 1 ? "" : "s"}`
-      : "Cart";
+  const ariaLabel = hasBadge
+    ? count! > 99
+      ? "Cart, 99+ items"
+      : `Cart, ${count} item${count === 1 ? "" : "s"}`
+    : "Cart";
 
   return (
     <Link
@@ -55,10 +53,27 @@ function CartIcon({ count }: { count: number | null }) {
   );
 }
 
+/** Avatar circle — links to /profile */
+function UserAvatar({ displayName }: { displayName: string | null }) {
+  const initial = (displayName ?? "U").charAt(0).toUpperCase();
+  return (
+    <Link
+      href="/profile"
+      aria-label="Go to profile"
+      className="flex items-center gap-2 rounded-lg px-1 py-1 hover:bg-gray-100 transition-colors duration-150"
+    >
+      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-sm font-bold text-indigo-700 ring-2 ring-indigo-200">
+        {initial}
+      </div>
+      <span className="hidden sm:block text-sm font-medium text-gray-700">
+        {displayName}
+      </span>
+    </Link>
+  );
+}
+
 interface HeaderProps {
-  /** True when the jwt cookie exists and role === "student". */
   isStudent: boolean;
-  /** Decoded name or email from the JWT payload, or null for guests. */
   displayName: string | null;
 }
 
@@ -71,7 +86,7 @@ export default function Header({ isStudent, displayName }: HeaderProps) {
     try {
       await logout();
       router.push("/login");
-      router.refresh(); // rerun Server Components so HeaderServer re-reads cookie
+      router.refresh();
     } catch (e) {
       console.error("Logout failed", e);
     }
@@ -81,12 +96,12 @@ export default function Header({ isStudent, displayName }: HeaderProps) {
     <header className="w-full border-b border-gray-200 bg-white">
       <div className="mx-auto flex max-w-screen-xl items-center justify-between gap-4 px-6 py-3">
 
-        {/* ── Left: Logo ── */}
+        {/* ── Logo ── */}
         <Link href="/" className="text-xl font-bold text-primary tracking-tight shrink-0">
           EduGenie
         </Link>
 
-        {/* ── Center: Nav Links ── */}
+        {/* ── Nav ── */}
         <nav className="hidden md:flex items-center gap-6">
           {navLinks.map((link) => (
             <Link
@@ -99,17 +114,17 @@ export default function Header({ isStudent, displayName }: HeaderProps) {
           ))}
         </nav>
 
-        {/* ── Right: Auth + Cart ── */}
+        {/* ── Right ── */}
         <div className="flex items-center gap-3">
 
-          {/* Cart icon — desktop, students only */}
+          {/* Cart — students only */}
           {isStudent && (
             <div className="hidden md:flex">
               <CartIcon count={cartCount} />
             </div>
           )}
 
-          {/* Guest / non-student → Login + Sign Up */}
+          {/* Guest → Login + Sign Up */}
           {!isStudent && (
             <div className="flex items-center gap-2">
               <Link
@@ -127,19 +142,10 @@ export default function Header({ isStudent, displayName }: HeaderProps) {
             </div>
           )}
 
-          {/* Student → Name + Logout */}
+          {/* Student → Avatar (links to /profile) + Logout */}
           {isStudent && (
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                {/* Avatar initial */}
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-sm font-bold text-indigo-700 ring-2 ring-indigo-200">
-                  {(displayName ?? "U").charAt(0).toUpperCase()}
-                </div>
-                <span className="hidden sm:block text-sm font-medium text-gray-700">
-                  {displayName}
-                </span>
-              </div>
-
+              <UserAvatar displayName={displayName} />
               <button
                 onClick={handleLogout}
                 className="text-sm font-medium text-gray-500 hover:text-red-500 transition-colors duration-150 px-2 py-1"
@@ -193,7 +199,7 @@ export default function Header({ isStudent, displayName }: HeaderProps) {
             </Link>
           ))}
 
-          {/* Cart icon — mobile, students only */}
+          {/* Cart — mobile, students only */}
           {isStudent && (
             <div className="flex items-center gap-3 py-1">
               <CartIcon count={cartCount} />
@@ -201,7 +207,7 @@ export default function Header({ isStudent, displayName }: HeaderProps) {
             </div>
           )}
 
-          {/* Guest / non-student → Login + Sign Up */}
+          {/* Guest → Login + Sign Up */}
           {!isStudent && (
             <div className="flex gap-2 pt-1">
               <Link href="/login" className="flex-1 text-center rounded-lg border border-gray-200 py-2 text-sm font-medium text-gray-700 hover:border-indigo-400 transition-colors">
@@ -213,12 +219,19 @@ export default function Header({ isStudent, displayName }: HeaderProps) {
             </div>
           )}
 
-          {/* Student → name + logout */}
+          {/* Student → Avatar link + Logout */}
           {isStudent && (
             <div className="flex flex-col gap-2 pt-1">
-              <span className="text-sm font-medium text-gray-700">
-                {displayName}
-              </span>
+              <Link
+                href="/profile"
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-2"
+              >
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-sm font-bold text-indigo-700 ring-2 ring-indigo-200">
+                  {(displayName ?? "U").charAt(0).toUpperCase()}
+                </div>
+                <span className="text-sm font-medium text-gray-700">{displayName}</span>
+              </Link>
               <button
                 onClick={handleLogout}
                 className="flex-1 text-center rounded-lg border border-red-200 py-2 text-sm font-medium text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors"
