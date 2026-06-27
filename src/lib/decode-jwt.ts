@@ -3,6 +3,7 @@ export interface JwtPayload {
   role: string;
   firstName?: string;
   lastName?: string;
+  avatar?: string | null;
   iat: number;
   exp: number;
 }

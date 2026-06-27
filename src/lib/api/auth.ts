@@ -50,11 +50,23 @@ export async function register(payload: Record<string, any>) {
 }
 
 export async function logout() {
-  const res = await fetch(`${AUTH_API_URL}/logout`, {
+  // Clear the first-party `jwt` cookie via the local route, which deletes it
+  // with the SAME attributes it was set with (Path=/, HttpOnly, SameSite=Lax).
+  // The cross-domain backend logout uses SameSite=None, which the browser
+  // rejects over http in local dev, so the cookie would survive and the user
+  // would still appear logged in.
+  const res = await fetch('/api/logout', {
+    method: 'POST',
+    credentials: 'include',
+  });
+
+  // Best-effort: also tell the API to clear its own cookie (stateless JWT, so
+  // not required for the session to end). Never block logout on it.
+  fetch(`${AUTH_API_URL}/logout`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
-  });
+  }).catch(() => {});
 
   if (!res.ok) throw new Error('Logout failed');
   return res.json();
