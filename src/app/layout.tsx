@@ -33,9 +33,7 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   const store = await cookies();
   const isAuthenticated = Boolean(store.get("jwt")?.value);
 
@@ -45,25 +43,19 @@ export default async function RootLayout({
       className={`${hankenGrotesk.variable} ${inter.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <QueryProvider>
-          <CartProvider>
-            <NotificationProvider>
-              <SiteShell header={<HeaderServer />}>
-                {children}
-              </SiteShell>
-              <NotificationToast />
-            </NotificationProvider>
-          </CartProvider>
-          <SessionProvider isAuthenticated={isAuthenticated}>
+        <SessionProvider isAuthenticated={isAuthenticated}>
+          <QueryProvider>
             <CartProvider>
-              <SiteShell header={<HeaderServer />}>
-                {children}
-              </SiteShell>
+              <NotificationProvider>
+                <SiteShell header={<HeaderServer />}>
+                  {children}
+                </SiteShell>
+                <NotificationToast />
+              </NotificationProvider>
             </CartProvider>
-          </SessionProvider>
-        </QueryProvider>
+          </QueryProvider>
+        </SessionProvider>
       </body>
-      
     </html>
   );
 }
