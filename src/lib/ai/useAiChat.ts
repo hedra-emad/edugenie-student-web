@@ -166,12 +166,24 @@ export function useAiChat({
           ),
         );
 
+      const appendToken = (chunk: string) =>
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantMsg.id
+              ? { ...m, content: m.content + chunk }
+              : m,
+          ),
+        );
+
       void (async () => {
         try {
           const res = await fetch(request.url, {
             method: "POST",
             credentials: "include",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "text/event-stream",
+            },
             body: JSON.stringify({ message, history, ...request.extra }),
           });
 
@@ -184,7 +196,8 @@ export function useAiChat({
             return;
           }
 
-          if (!res.ok) {
+          // Access / validation errors come back as normal JSON (not a stream).
+          if (!res.ok || !res.body) {
             const err = await res.json().catch(() => ({}));
             const raw = (err as { message?: unknown })?.message;
             const text = Array.isArray(raw)
@@ -196,11 +209,61 @@ export function useAiChat({
             return;
           }
 
-          const json = await res.json();
-          const reply: string =
-            json?.data?.reply ||
-            "I couldn't generate a response. Please try again.";
-          finishWith({ content: reply });
+          // Read the SSE stream: `data: {json}` frames separated by a blank line.
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = "";
+          let streamError: string | null = null;
+
+          for (;;) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+
+            const frames = buffer.split("\n\n");
+            buffer = frames.pop() ?? "";
+            for (const frame of frames) {
+              const dataLine = frame
+                .split("\n")
+                .find((l) => l.startsWith("data:"));
+              if (!dataLine) continue;
+              const payload = dataLine.slice(5).trim();
+              if (!payload) continue;
+              try {
+                const data = JSON.parse(payload) as {
+                  type: string;
+                  value?: string;
+                  message?: string;
+                };
+                if (data.type === "token" && data.value) {
+                  appendToken(data.value);
+                } else if (data.type === "error") {
+                  streamError = data.message || "AI service error";
+                }
+              } catch {
+                /* ignore malformed frame */
+              }
+            }
+          }
+
+          if (streamError) {
+            finishWith({ error: true, content: streamError });
+          } else {
+            // Clear pending; keep accumulated text (fallback if empty).
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantMsg.id
+                  ? {
+                      ...m,
+                      pending: false,
+                      content:
+                        m.content.trim() ||
+                        "I couldn't generate a response. Please try again.",
+                    }
+                  : m,
+              ),
+            );
+          }
         } catch {
           finishWith({
             error: true,

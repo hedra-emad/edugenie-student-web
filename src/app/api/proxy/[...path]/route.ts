@@ -71,6 +71,22 @@ async function forwardRequest(
   }
 
   const backendRes = await fetch(url, init);
+
+  // Server-Sent Events (AI tutor): pipe the stream straight through instead of
+  // buffering with .text(), so tokens reach the browser word-by-word.
+  const contentType = backendRes.headers.get('content-type') ?? '';
+  if (contentType.includes('text/event-stream') && backendRes.body) {
+    return new NextResponse(backendRes.body, {
+      status: backendRes.status,
+      headers: {
+        'Content-Type': 'text/event-stream; charset=utf-8',
+        'Cache-Control': 'no-cache, no-transform',
+        Connection: 'keep-alive',
+        'X-Accel-Buffering': 'no',
+      },
+    });
+  }
+
   const body = await backendRes.text();
 
   const res = new NextResponse(body, {
