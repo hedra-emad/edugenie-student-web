@@ -1,17 +1,15 @@
 /**
  * Resolves the backend API base URL.
  *
- * The deployed NestJS API is reached under `/api/*` because Vercel's rewrite
- * maps `/api/(.*)` onto the app (and strips the prefix). A local dev backend,
- * however, serves routes WITHOUT that prefix (e.g. `http://localhost:5000/auth/login`).
+ * The NestJS backend serves EVERY route under `/api` because `main.ts` calls
+ * `app.setGlobalPrefix('api')` unconditionally — locally and in production
+ * alike (e.g. `http://localhost:5000/api/auth/login`). So we always ensure the
+ * base ends with `/api`, whether the host is localhost or the deployed API.
  *
- * So we append `/api` for remote hosts but never for localhost. This keeps
- * production working with the existing env vars while fixing local dev.
+ * The base may already include `/api` (some env vars set it that way), so we
+ * append it only when it isn't already there to avoid a double `/api/api`.
  */
 export function resolveApiBase(raw: string): string {
   const base = (raw || '').replace(/\/+$/, '');
-  if (/^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?/i.test(base)) {
-    return base;
-  }
   return base.endsWith('/api') ? base : `${base}/api`;
 }

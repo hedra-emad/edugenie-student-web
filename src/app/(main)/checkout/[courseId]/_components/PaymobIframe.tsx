@@ -10,8 +10,28 @@ interface PaymobIframeProps {
 export default function PaymobIframe({ clientSecret }: PaymobIframeProps) {
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // TODO: verify the exact Paymob unified checkout URL with your Paymob dashboard settings
-  const src = `https://accept.paymob.com/unifiedcheckout/?publicKey=${encodeURIComponent(clientSecret)}`;
+  // Paymob Unified Checkout needs BOTH the (non-secret) public key AND the
+  // intention's client_secret. Earlier this passed the client_secret as the
+  // publicKey and omitted the secret entirely, so Paymob rendered an empty
+  // checkout shell (no amount, no card form).
+  const publicKey = process.env.NEXT_PUBLIC_PAYMOB_PUBLIC_KEY ?? "";
+  const src =
+    `https://accept.paymob.com/unifiedcheckout/` +
+    `?publicKey=${encodeURIComponent(publicKey)}` +
+    `&clientSecret=${encodeURIComponent(clientSecret)}`;
+
+  if (!publicKey) {
+    return (
+      <div className="bg-white rounded-2xl border border-red-200 p-5">
+        <p className="text-[14px] font-bold text-red-600">
+          Payment is not configured
+        </p>
+        <p className="text-[12.5px] text-slate-500 mt-1">
+          NEXT_PUBLIC_PAYMOB_PUBLIC_KEY is missing. Set it and restart the app.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
