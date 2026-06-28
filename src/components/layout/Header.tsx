@@ -134,7 +134,7 @@ export default function Header({ isStudent, displayName, avatarUrl = null }: Hea
     } catch (e) {
       console.error("Logout failed", e);
     } finally {
-      router.push("/login");
+      router.push("/");
       router.refresh();
     }
   }
