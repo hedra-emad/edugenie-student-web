@@ -5,6 +5,8 @@ import SiteShell from "@/components/layout/SiteShell";
 import HeaderServer from "@/components/layout/HeaderServer";
 import QueryProvider from "../app/providers/QueryProvider";
 import { CartProvider } from "@/contexts/CartContext";
+import { NotificationProvider } from "@/contexts/NotificationContext";
+import NotificationToast from "@/components/ui/NotificationToast";
 
 const hankenGrotesk = Hanken_Grotesk({
   variable: "--font-hanken-grotesk",
@@ -40,9 +42,12 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <QueryProvider>
           <CartProvider>
-            <SiteShell header={<HeaderServer />}>
-              {children}
-            </SiteShell>
+            <NotificationProvider>
+              <SiteShell header={<HeaderServer />}>
+                {children}
+              </SiteShell>
+              <NotificationToast />
+            </NotificationProvider>
           </CartProvider>
         </QueryProvider>
       </body>
