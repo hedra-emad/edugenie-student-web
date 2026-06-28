@@ -10,6 +10,7 @@ import type {
 } from "../../../app/courses/[courseId]/types/course";
 import { addToCartAction } from "@/app/actions/cart.actions";
 import { useSession } from "@/providers/SessionProvider";
+import PlacementTestModal from "./PlacementTestModal";
 
 function getSafeImageSrc(src: string | null | undefined): string | null {
   if (!src) return null;
@@ -199,6 +200,7 @@ export default function EnrollCard({ course }: { course: Course }) {
   const { isAuthenticated } = useSession();
   const [pending, startTransition] = useTransition();
   const [cartError, setCartError] = useState<string | null>(null);
+  const [showPlacement, setShowPlacement] = useState(false);
   const safeThumbnail = getSafeImageSrc(course.thumbnail);
 
   const sections = course.sections as SectionWithOwned[];
@@ -479,6 +481,37 @@ export default function EnrollCard({ course }: { course: Course }) {
               ? "Unselect All"
               : "Select All Sections"}
           </button>
+        )}
+
+        {/* AI placement test — "buy only what you need" */}
+        {!course.isEnrolled && availableSections.length > 0 && (
+          <button
+            onClick={() => {
+              if (!isAuthenticated) {
+                router.push("/login");
+                return;
+              }
+              setShowPlacement(true);
+            }}
+            className="w-full mt-2.5 py-2.5 rounded-xl text-[12.5px] font-semibold text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-100 transition-all duration-150 flex items-center justify-center gap-1.5"
+          >
+            <svg
+              className="w-[15px] h-[15px]"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              aria-hidden
+            >
+              <path d="M12 2l1.9 5.7L20 9.5l-5.1 2L12 17l-1.9-5.5L5 9.5l5.1-1.8L12 2z" />
+            </svg>
+            Take the AI placement test — skip what you know
+          </button>
+        )}
+
+        {showPlacement && (
+          <PlacementTestModal
+            courseId={getCourseId(course)}
+            onClose={() => setShowPlacement(false)}
+          />
         )}
 
         {/* Divider */}
