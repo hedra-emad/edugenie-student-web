@@ -10,7 +10,33 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, beforeAll } from "vitest";
 import "@testing-library/jest-dom";
 
-import { CartContext, CartContextValue } from "@/contexts/CartContext";
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    prefetch: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+  }),
+}));
+
+vi.mock("@tanstack/react-query", () => ({
+  useQuery: ({ enabled }: { enabled?: boolean }) => {
+    if (!enabled) {
+      return { data: undefined };
+    }
+    const count = (globalThis as { __mockCartCount?: number }).__mockCartCount;
+    return {
+      data:
+        count !== undefined
+          ? { items: Array(count).fill({}) }
+          : undefined,
+    };
+  },
+}));
+
+import { SessionProvider } from "@/providers/SessionProvider";
 import Header from "../Header";
 
 // ---------------------------------------------------------------------------
@@ -55,11 +81,13 @@ vi.mock("next/image", () => ({
 // Helper: render Header wrapped in CartContext.Provider
 // ---------------------------------------------------------------------------
 function renderHeader(cartCount: number | null) {
-  const value: CartContextValue = { cartCount, setCartCount: () => {} };
+  (globalThis as { __mockCartCount?: number }).__mockCartCount =
+    cartCount === null ? undefined : cartCount;
+
   return render(
-    <CartContext.Provider value={value}>
+    <SessionProvider isAuthenticated={cartCount !== null}>
       <Header isStudent={true} displayName={null} />
-    </CartContext.Provider>
+    </SessionProvider>
   );
 }
 

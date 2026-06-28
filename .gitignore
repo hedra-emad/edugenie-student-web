@@ -12,6 +12,7 @@
 
 # testing
 /coverage
+vitest.config.ts
 
 # next.js
 /.next/
@@ -40,6 +41,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-#ide
+#IDE
 .kiro
 .vscode 
+.cursor
+

@@ -1,10 +1,12 @@
 export interface JwtPayload {
+  id: string;
   role: string;
-  name?: string;
-  email?: string;
-  [key: string]: unknown;
+  firstName?: string;
+  lastName?: string;
+  avatar?: string | null;
+  iat: number;
+  exp: number;
 }
-
 export function decodeJwt(token: string): JwtPayload | null {
   try {
     const segment = token.split(".")[1];

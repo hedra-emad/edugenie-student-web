@@ -6,13 +6,14 @@ import type {
   ProgressResponse,
   Note,
 } from "@/types/player";
+import { resolveApiBase } from "@/lib/apiBase";
 
 const REMOTE_API =
   process.env.NESTJS_API_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
   "https://edugenie-api.vercel.app";
 
-const SERVER_API_URL = REMOTE_API.endsWith("/api") ? REMOTE_API : `${REMOTE_API}/api`;
+const SERVER_API_URL = resolveApiBase(REMOTE_API);
 
 /** Resolves the correct base URL. */
 function baseUrl(): string {

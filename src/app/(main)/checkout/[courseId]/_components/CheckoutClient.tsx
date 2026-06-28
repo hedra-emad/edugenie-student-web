@@ -6,36 +6,31 @@ import { initiateCheckout } from "@/lib/api/checkout";
 import type { Cart, CartItem } from "@/types/checkout";
 import CartSummary from "./CartSummary";
 import OrderSummary, { type ButtonStep } from "./OrderSummary";
-import PaymobIframe from "./PaymobIframe";
 
 interface CheckoutClientProps {
   initialCart: Cart;
 }
 
+// Non-secret Paymob public key (egy_pk_...). Used to build the hosted
+// Unified Checkout URL we redirect the customer to.
+const PAYMOB_PUBLIC_KEY = process.env.NEXT_PUBLIC_PAYMOB_PUBLIC_KEY ?? "";
+
+function buildPaymobCheckoutUrl(clientSecret: string): string {
+  return (
+    `https://accept.paymob.com/unifiedcheckout/` +
+    `?publicKey=${encodeURIComponent(PAYMOB_PUBLIC_KEY)}` +
+    `&clientSecret=${encodeURIComponent(clientSecret)}`
+  );
+}
+
 export default function CheckoutClient({ initialCart }: CheckoutClientProps) {
-  const [items, setItems] = useState<CartItem[]>(initialCart.items);
-  const [subtotal, setSubtotal] = useState<number>(initialCart.subtotal);
-  const [total, setTotal] = useState<number>(initialCart.total);
+  const [items] = useState<CartItem[]>(initialCart.items);
+  const [subtotal] = useState<number>(initialCart.subtotal);
+  const [total] = useState<number>(initialCart.total);
   const [buttonStep, setButtonStep] = useState<ButtonStep>("idle");
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // ── item removal 
-
-  function handleItemRemoved(itemId: string) {
-    setItems((prev) => {
-      const next = prev.filter((i) => i._id !== itemId);
-      // Server owns all monetary calculations — reset totals to 0 when cart
-      // empties client-side so we never display stale server-calculated values.
-      if (next.length === 0) {
-        setSubtotal(0);
-        setTotal(0);
-      }
-      return next;
-    });
-  }
-
-  // ── checkout 
+  // ── checkout ─────────────────────────────────────────────────────────────────
 
   async function handleCheckout() {
     setError(null);
@@ -53,30 +48,28 @@ export default function CheckoutClient({ initialCart }: CheckoutClientProps) {
       return;
     }
 
-    // Step 3: show "Redirecting to Paymob..." briefly before swapping in the iframe
+    if (!PAYMOB_PUBLIC_KEY) {
+      setButtonStep("idle");
+      setError(
+        "Payment is not configured. Please contact support (missing payment key).",
+      );
+      return;
+    }
+
+    // Full-page redirect to Paymob's hosted (dashboard-branded) checkout. This
+    // avoids the nested-iframe scrollbar and the Chrome "public→localhost"
+    // block, and Paymob returns the browser to /checkout/success afterwards
+    // (via the intention's redirection_url set on the backend).
     setButtonStep("redirect");
-    setTimeout(() => {
-      setClientSecret(result.clientSecret);
-    }, 800);
+    window.location.assign(buildPaymobCheckoutUrl(result.clientSecret));
   }
 
-  // ── iframe view ───────────────────────────────────────────────────────────────
-
-  if (clientSecret) {
-    return (
-      <div className="max-w-2xl mx-auto">
-        <PaymobIframe clientSecret={clientSecret} />
-      </div>
-    );
-  }
-
-  // ── checkout view ─────────────────────────────────────────────────────────────
+  // ── render ───────────────────────────────────────────────────────────────────
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8">
       {/* Left column — cart items */}
       <div className="flex flex-col gap-4">
-        {/* Error banner */}
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-start gap-3">
             <svg
@@ -92,7 +85,7 @@ export default function CheckoutClient({ initialCart }: CheckoutClientProps) {
           </div>
         )}
 
-        <CartSummary items={items} onItemRemoved={handleItemRemoved} />
+        <CartSummary items={items} />
       </div>
 
       {/* Right column — order summary */}

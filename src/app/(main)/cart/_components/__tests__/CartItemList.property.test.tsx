@@ -22,7 +22,11 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, cleanup, within } from "@testing-library/react";
 import * as fc from "fast-check";
 import "@testing-library/jest-dom";
-import type { CartItem } from "@/types/checkout";
+import {
+  getCartItemRemoveId,
+  groupCartItemsByCourse,
+  getOrderedCourseIds,
+} from "../cartItemUtils";
 
 fc.configureGlobal({ numRuns: 100 });
 
@@ -90,12 +94,15 @@ const fullCourseCartItemArb: fc.Arbitrary<CartItem> = fc.record<CartItem>({
 // ---------------------------------------------------------------------------
 
 function buildProps(item: CartItem) {
+  const groupedItems = groupCartItemsByCourse([item]);
   return {
-    items: [item],
+    groupedItems,
+    orderedCourseIds: getOrderedCourseIds([item]),
     removingIds: new Set<string>(),
     errorIds: new Map<string, string>(),
     onRequestRemove: () => {},
     onDismissError: () => {},
+    getRemoveId: getCartItemRemoveId,
   };
 }
 
@@ -145,11 +152,11 @@ describe("Property 2: Full-course card renders all required fields", () => {
             // 3. "Full Course" badge: the <span> with uppercase/tracking styles
             const badgeEl = contentDiv!.querySelector("span") as HTMLElement | null;
             expect(badgeEl).not.toBeNull();
-            expect(badgeEl!.textContent).toBe("Full Course");
+            expect(badgeEl!.textContent).toBe("FULL COURSE");
 
             // 4. Price must be visible — rendered as "$<price>" in a sibling area
             const priceRegex = new RegExp(
-              `\\$${item.price.toString().replace(".", "\\.")}`,
+              `\\$${item.price.toFixed(2).replace(".", "\\.")}`,
             );
             expect(
               within(container).getByText(priceRegex),

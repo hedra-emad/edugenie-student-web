@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { logout } from "@/lib/api/auth";
+import { getCart } from "@/lib/api/checkout";
 import { useRouter } from "next/navigation";
-import { useCartContext } from "@/contexts/CartContext";
+import { useSession } from "@/providers/SessionProvider";
 
 const navLinks = [
   { label: "Home", href: "/" },
@@ -12,16 +14,14 @@ const navLinks = [
   { label: "About", href: "/about" },
 ];
 
-/** Renders the cart icon + badge for the given count. */
 function CartIcon({ count }: { count: number | null }) {
   const hasBadge = count !== null && count >= 1;
   const badgeText = count !== null && count > 99 ? "99+" : String(count ?? 0);
-  const ariaLabel =
-    hasBadge
-      ? count! > 99
-        ? "Cart, 99+ items"
-        : `Cart, ${count} item${count === 1 ? "" : "s"}`
-      : "Cart";
+  const ariaLabel = hasBadge
+    ? count! > 99
+      ? "Cart, 99+ items"
+      : `Cart, ${count} item${count === 1 ? "" : "s"}`
+    : "Cart";
 
   return (
     <Link
@@ -55,25 +55,87 @@ function CartIcon({ count }: { count: number | null }) {
   );
 }
 
-interface HeaderProps {
-  /** True when the jwt cookie exists and role === "student". */
-  isStudent: boolean;
-  /** Decoded name or email from the JWT payload, or null for guests. */
+/** Round profile picture with an initials fallback. */
+function Avatar({
+  displayName,
+  avatarUrl,
+  className = "h-8 w-8",
+}: {
   displayName: string | null;
+  avatarUrl: string | null;
+  className?: string;
+}) {
+  const initial = (displayName ?? "U").charAt(0).toUpperCase();
+  if (avatarUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={avatarUrl}
+        alt={displayName ?? "Profile"}
+        className={`${className} rounded-full object-cover ring-2 ring-indigo-200`}
+      />
+    );
+  }
+  return (
+    <div
+      className={`${className} flex items-center justify-center rounded-full bg-indigo-100 text-sm font-bold text-indigo-700 ring-2 ring-indigo-200`}
+    >
+      {initial}
+    </div>
+  );
 }
 
-export default function Header({ isStudent, displayName }: HeaderProps) {
+/** Avatar + name — links to /profile */
+function UserAvatar({
+  displayName,
+  avatarUrl,
+}: {
+  displayName: string | null;
+  avatarUrl: string | null;
+}) {
+  return (
+    <Link
+      href="/profile"
+      aria-label="Go to profile"
+      className="flex items-center gap-2 rounded-lg px-1 py-1 hover:bg-gray-100 transition-colors duration-150"
+    >
+      <Avatar displayName={displayName} avatarUrl={avatarUrl} />
+      <span className="hidden sm:block text-sm font-medium text-gray-700">
+        {displayName ?? "My account"}
+      </span>
+    </Link>
+  );
+}
+
+interface HeaderProps {
+  isStudent: boolean;
+  displayName: string | null;
+  avatarUrl?: string | null;
+}
+
+export default function Header({ isStudent, displayName, avatarUrl = null }: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const router = useRouter();
-  const { cartCount } = useCartContext();
+  const { isAuthenticated } = useSession();
+
+  const { data: cartData } = useQuery({
+    queryKey: ["cart"],
+    queryFn: () => getCart(),
+    enabled: isStudent && isAuthenticated,
+    staleTime: 1000 * 60 * 2,
+  });
+
+  const cartCount = cartData?.items?.length ?? 0;
+  const badgeCount = cartCount > 0 ? cartCount : null;
 
   async function handleLogout() {
     try {
       await logout();
-      router.push("/login");
-      router.refresh(); // rerun Server Components so HeaderServer re-reads cookie
     } catch (e) {
       console.error("Logout failed", e);
+    } finally {
+      router.push("/");
+      router.refresh();
     }
   }
 
@@ -81,12 +143,12 @@ export default function Header({ isStudent, displayName }: HeaderProps) {
     <header className="w-full border-b border-gray-200 bg-white">
       <div className="mx-auto flex max-w-screen-xl items-center justify-between gap-4 px-6 py-3">
 
-        {/* ── Left: Logo ── */}
+        {/* ── Logo ── */}
         <Link href="/" className="text-xl font-bold text-primary tracking-tight shrink-0">
           EduGenie
         </Link>
 
-        {/* ── Center: Nav Links ── */}
+        {/* ── Nav ── */}
         <nav className="hidden md:flex items-center gap-6">
           {navLinks.map((link) => (
             <Link
@@ -97,19 +159,31 @@ export default function Header({ isStudent, displayName }: HeaderProps) {
               {link.label}
             </Link>
           ))}
+          {/* AI roadmap advisor — students only */}
+          {isStudent && (
+            <Link
+              href="/roadmap"
+              className="group flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary-dark transition-colors duration-150"
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z" />
+              </svg>
+              Roadmap
+            </Link>
+          )}
         </nav>
 
-        {/* ── Right: Auth + Cart ── */}
+        {/* ── Right ── */}
         <div className="flex items-center gap-3">
 
-          {/* Cart icon — desktop, students only */}
+          {/* Cart — students only */}
           {isStudent && (
             <div className="hidden md:flex">
-              <CartIcon count={cartCount} />
+              <CartIcon count={badgeCount} />
             </div>
           )}
 
-          {/* Guest / non-student → Login + Sign Up */}
+          {/* Guest → Login + Sign Up */}
           {!isStudent && (
             <div className="flex items-center gap-2">
               <Link
@@ -127,19 +201,10 @@ export default function Header({ isStudent, displayName }: HeaderProps) {
             </div>
           )}
 
-          {/* Student → Name + Logout */}
+          {/* Student → Avatar (links to /profile) + Logout */}
           {isStudent && (
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                {/* Avatar initial */}
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-sm font-bold text-indigo-700 ring-2 ring-indigo-200">
-                  {(displayName ?? "U").charAt(0).toUpperCase()}
-                </div>
-                <span className="hidden sm:block text-sm font-medium text-gray-700">
-                  {displayName}
-                </span>
-              </div>
-
+              <UserAvatar displayName={displayName} avatarUrl={avatarUrl} />
               <button
                 onClick={handleLogout}
                 className="text-sm font-medium text-gray-500 hover:text-red-500 transition-colors duration-150 px-2 py-1"
@@ -192,16 +257,29 @@ export default function Header({ isStudent, displayName }: HeaderProps) {
               {link.label}
             </Link>
           ))}
+          {/* AI roadmap advisor — students only */}
+          {isStudent && (
+            <Link
+              href="/roadmap"
+              onClick={() => setMenuOpen(false)}
+              className="flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary-dark transition-colors"
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z" />
+              </svg>
+              Roadmap
+            </Link>
+          )}
 
-          {/* Cart icon — mobile, students only */}
+          {/* Cart — mobile, students only */}
           {isStudent && (
             <div className="flex items-center gap-3 py-1">
-              <CartIcon count={cartCount} />
+              <CartIcon count={badgeCount} />
               <span className="text-sm font-medium text-gray-700">Cart</span>
             </div>
           )}
 
-          {/* Guest / non-student → Login + Sign Up */}
+          {/* Guest → Login + Sign Up */}
           {!isStudent && (
             <div className="flex gap-2 pt-1">
               <Link href="/login" className="flex-1 text-center rounded-lg border border-gray-200 py-2 text-sm font-medium text-gray-700 hover:border-indigo-400 transition-colors">
@@ -213,12 +291,17 @@ export default function Header({ isStudent, displayName }: HeaderProps) {
             </div>
           )}
 
-          {/* Student → name + logout */}
+          {/* Student → Avatar link + Logout */}
           {isStudent && (
             <div className="flex flex-col gap-2 pt-1">
-              <span className="text-sm font-medium text-gray-700">
-                {displayName}
-              </span>
+              <Link
+                href="/profile"
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-2"
+              >
+                <Avatar displayName={displayName} avatarUrl={avatarUrl} />
+                <span className="text-sm font-medium text-gray-700">{displayName ?? "My account"}</span>
+              </Link>
               <button
                 onClick={handleLogout}
                 className="flex-1 text-center rounded-lg border border-red-200 py-2 text-sm font-medium text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors"

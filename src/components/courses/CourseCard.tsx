@@ -4,10 +4,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Clock, Users, BookOpen, Heart } from "lucide-react";
 
 import { Course, CourseLevel } from "@/types/course";
 import { addToCartAction } from "@/app/actions/cart.actions";
+import { getCart } from "@/lib/api/checkout";
+import { useSession } from "@/providers/SessionProvider";
+import { useCartContext } from "@/contexts/CartContext";
+import Toast from "@/components/ui/Toast";
 
 // ─── Helpers
 
@@ -117,14 +122,23 @@ function Spinner() {
 
 export default function CourseCard({ course }: Props) {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const { isAuthenticated } = useSession();
+  const { setCartCount } = useCartContext();
   const [imgError, setImgError] = useState(false);
   const [wished, setWished] = useState(false);
   const [cartError, setCartError] = useState<string | null>(null);
+  const [showToast, setShowToast] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   function handleAddToCart(e: React.MouseEvent) {
     e.preventDefault();
     if (isPending) return;
+
+    if (!isAuthenticated) {
+      router.push("/login");
+      return;
+    }
 
     startTransition(async () => {
       const result = await addToCartAction({
@@ -133,7 +147,14 @@ export default function CourseCard({ course }: Props) {
       });
 
       if (result.success) {
-        router.push("/cart");
+        const cart = await queryClient.fetchQuery({
+          queryKey: ["cart"],
+          queryFn: () => getCart(),
+        });
+        if (cart) {
+          setCartCount(cart.items.length);
+        }
+        setShowToast(true);
       } else {
         setCartError(result.error ?? "Could not add to cart");
         setTimeout(() => setCartError(null), 3000);
@@ -169,7 +190,9 @@ export default function CourseCard({ course }: Props) {
   const safeThumbnail = getSafeImageSrc(course.thumbnail);
   // console.log("COURSE CARD IMAGE:", course.title, course.thumbnail);
   return (
-    <Link href={`/courses/${course.id}`} className="group block">
+    <>
+      {showToast && <Toast onDismiss={() => setShowToast(false)} />}
+      <Link href={`/courses/${course.id}`} className="group block">
       <article
         className="
           bg-white rounded-2xl border border-slate-200 overflow-hidden
@@ -383,5 +406,6 @@ export default function CourseCard({ course }: Props) {
         </div>
       </article>
     </Link>
+    </>
   );
 }
