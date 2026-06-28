@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useChangePassword } from "@/hooks/useProfile";
-import { Eye, EyeOff, Lock, Loader2, CheckCircle } from "lucide-react";
+import { Eye, EyeOff, Lock, CheckCircle } from "lucide-react";
+import DotsLoader from "@/components/ui/DotsLoader";
 import type { ChangePasswordPayload } from "@/lib/api/profile.api";
 
 export default function ChangePasswordForm() {
@@ -163,8 +164,7 @@ export default function ChangePasswordForm() {
                      py-2.5 rounded-lg
                      transition-colors duration-150"
         >
-          {isPending && <Loader2 size={15} className="animate-spin" />}
-          {isPending ? "Saving..." : "Update Password"}
+          {isPending ? <DotsLoader /> : (isPending ? "Saving..." : "Update Password")}
         </button>
       </form>
     </div>

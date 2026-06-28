@@ -19,10 +19,10 @@ export interface Category {
 }
 
 export interface Instructor {
+ firstName: string;
+  lastName: string;
+  email: string;
   id: string;
-  name?: string; // optional
-  avatar?: string;
-  averageIntructorRating?: number;
 }
 export interface InstructorProfile {
   id: string;
@@ -40,7 +40,8 @@ export interface Course {
   thumbnail: string;
   goals?: string[];
   requirements?: string[];
-  instructorId: Instructor;
+  instructorId?: Instructor;   
+  instructor?: Instructor;   
   categoryId: Category;
   status: CourseStatus;
   ratingAverage?: number;

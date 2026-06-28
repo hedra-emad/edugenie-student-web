@@ -10,6 +10,7 @@ import type {
 } from "../../../app/courses/[courseId]/types/course";
 import { addToCartAction } from "@/app/actions/cart.actions";
 import { useSession } from "@/providers/SessionProvider";
+import DotsLoader from "@/components/ui/DotsLoader";
 
 function getSafeImageSrc(src: string | null | undefined): string | null {
   if (!src) return null;
@@ -167,31 +168,7 @@ function SectionRow({
   );
 }
 
-// ─── Spinner SVG ─────────────────────────────────────────────────────────────
-function Spinner() {
-  return (
-    <svg
-      className="animate-spin w-5 h-5"
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-    >
-      <circle
-        className="opacity-25"
-        cx="12"
-        cy="12"
-        r="10"
-        stroke="currentColor"
-        strokeWidth="3"
-      />
-      <path
-        className="opacity-75"
-        fill="currentColor"
-        d="M4 12a8 8 0 018-8v8H4z"
-      />
-    </svg>
-  );
-}
+// (DotsLoader imported — used for button loading state)
 
 // ─── Main
 export default function EnrollCard({ course }: { course: Course }) {
@@ -440,13 +417,7 @@ export default function EnrollCard({ course }: { course: Course }) {
           disabled={btnState === "disabled" || pending}
           className={btnClass}
         >
-          {pending ? (
-            <span className="flex items-center justify-center gap-2">
-              <Spinner />
-            </span>
-          ) : (
-            btnLabel
-          )}
+          {pending ? <DotsLoader /> : btnLabel}
         </button>
 
         {/* Inline cart error */}

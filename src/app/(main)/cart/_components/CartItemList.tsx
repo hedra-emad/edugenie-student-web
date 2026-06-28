@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useState } from "react";
 import type { CartItem } from "@/types/checkout";
 import ConfirmRemoveModal from "./ConfirmRemoveModal";
+import DotsLoader from "@/components/ui/DotsLoader";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -58,27 +59,8 @@ function Thumbnail({ src, alt }: { src: string; alt: string }) {
   );
 }
 
-// ─── Spinner ──────────────────────────────────────────────────────────────────
+// (DotsLoader imported for button loading states)
 
-function Spinner({ size = "w-4 h-4" }: { size?: string }) {
-  return (
-    <svg className={`animate-spin ${size}`} fill="none" viewBox="0 0 24 24">
-      <circle
-        className="opacity-25"
-        cx="12"
-        cy="12"
-        r="10"
-        stroke="currentColor"
-        strokeWidth="3"
-      />
-      <path
-        className="opacity-75"
-        fill="currentColor"
-        d="M4 12a8 8 0 018-8v8H4z"
-      />
-    </svg>
-  );
-}
 
 // ─── Trash icon ───────────────────────────────────────────────────────────────
 
@@ -203,11 +185,7 @@ export default function CartItemList({
                     aria-label={`Remove ${item.courseTitle}`}
                     className="min-w-[44px] min-h-[44px] rounded-lg flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors duration-150 disabled:opacity-40"
                   >
-                    {isRemoving ? (
-                      <Spinner />
-                    ) : (
-                      <TrashIcon />
-                    )}
+                    {isRemoving ? <DotsLoader /> : <TrashIcon />}
                   </button>
                 )}
               </div>
@@ -278,11 +256,7 @@ export default function CartItemList({
                             aria-label={`Remove ${section.sectionTitle ?? "Section"}`}
                             className="min-w-[44px] min-h-[44px] rounded-md flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors duration-150 disabled:opacity-40"
                           >
-                            {isRemoving ? (
-                              <Spinner size="w-3.5 h-3.5" />
-                            ) : (
-                              <TrashIcon size="w-3.5 h-3.5" />
-                            )}
+                            {isRemoving ? <DotsLoader /> : <TrashIcon size="w-3.5 h-3.5" />}
                           </button>
                         )}
                       </div>
