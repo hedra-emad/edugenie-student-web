@@ -33,18 +33,18 @@ export default function RoleSelector({ value, onChange }: RoleSelectorProps) {
         <button
           type="button"
           onClick={() => onChange('instructor')}
-          className={`group flex flex-col items-center justify-center p-5 border rounded-xl transition-all duration-300 focus:outline-none focus:ring-[3px] focus:ring-secondary/20 ${
-            value === 'instructor'
-              ? 'border-secondary bg-secondary/5 ring-1 ring-secondary shadow-sm transform scale-[1.02]'
-              : 'border-gray-200 hover:border-secondary/40 hover:bg-gray-50 bg-white hover:-translate-y-1'
+          className={`group flex flex-col items-center justify-center p-5 border rounded-xl transition-all duration-300 focus:outline-none focus:ring-[3px] focus:ring-primary/20 ${
+             value === 'instructor'
+              ? 'border-primary ring-1 ring-primary bg-primary/5 shadow-sm transform scale-[1.02]'
+              : 'border-gray-200 hover:border-primary/40 hover:bg-gray-50 bg-white hover:-translate-y-1'
           }`}
         >
-          <div className={`p-3 rounded-full mb-3 transition-colors ${value === 'instructor' ? 'bg-secondary/10' : 'bg-gray-100 group-hover:bg-secondary/5'}`}>
-            <svg className={`w-7 h-7 transition-colors ${value === 'instructor' ? 'text-secondary' : 'text-gray-400 group-hover:text-secondary/70'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className={`p-3 rounded-full mb-3 transition-colors ${value === 'instructor' ? 'bg-primary/10' : 'bg-gray-100 group-hover:bg-primary/5'}`}>
+            <svg className={`w-7 h-7 transition-colors ${value === 'instructor' ? 'text-primary' : 'text-gray-400 group-hover:text-primary/70'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
             </svg>
           </div>
-          <span className={`text-sm font-bold tracking-wide ${value === 'instructor' ? 'text-secondary' : 'text-text-secondary group-hover:text-text-primary'}`}>Instructor</span>
+          <span className={`text-sm font-bold tracking-wide ${value === 'instructor' ? 'text-primary' : 'text-text-secondary group-hover:text-text-primary'}`}>Instructor</span>
         </button>
       </div>
     </div>
