@@ -61,7 +61,7 @@
   --radius-lg: 20px;
   --radius-full: 9999px;
   --radius-panel: 2rem;
-  
+
   --color-primary: #3B1892;
   --color-primary-light: #5B3DB8;
   --color-primary-dark: #2A1069;
@@ -75,7 +75,8 @@
   --color-surface: #FFFFFF;
 }
 
-html, body {
+html,
+body {
   height: 100%;
 }
 

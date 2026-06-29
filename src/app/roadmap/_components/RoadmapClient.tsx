@@ -1,8 +1,9 @@
 "use client";
 // _components/RoadmapClient.tsx
 // Tier-3 global advisor — builds a personalized, milestone-based learning
-// roadmap from the student's profile + stated goal. Streams over the NestJS
-// `/ai` WebSocket via the shared useAiChat hook.
+// roadmap. The student answers a quick tap-to-pick intake (single- and
+// multi-choice chips; typing only for the goal + optional notes), then one tap
+// streams the roadmap. Follow-ups are typed in the chat that follows.
 
 import { useEffect, useRef, useState } from "react";
 import { useAiChat } from "@/lib/ai/useAiChat";
@@ -14,6 +15,7 @@ import {
   RouteIcon,
 } from "@/components/ai/chatUi";
 
+// Goal: pick a chip or type your own (the only required free-text).
 const GOAL_IDEAS = [
   "Become a full-stack web developer",
   "Break into data science",
@@ -21,10 +23,39 @@ const GOAL_IDEAS = [
   "Prepare for a backend engineering job",
 ];
 
+// Single-choice questions — one tap each, no typing.
+const LEVELS = ["Complete beginner", "Some basics", "Intermediate", "Advanced"];
+const TIMES = [
+  "Under 5 hrs/week",
+  "5–10 hrs/week",
+  "10–20 hrs/week",
+  "20+ hrs/week",
+];
+const TIMELINES = ["1 month", "3 months", "6 months", "1 year", "Flexible"];
+
+// Multi-choice — pick any that apply (optional).
+const PREFS = [
+  "Hands-on projects",
+  "Strong fundamentals",
+  "Fast results",
+  "Certification",
+  "Interview prep",
+  "Build a portfolio",
+];
+
 export default function RoadmapClient({ firstName = "" }: { firstName?: string }) {
+  // Wizard answers
   const [goal, setGoal] = useState("");
+  const [level, setLevel] = useState("");
+  const [time, setTime] = useState("");
+  const [timeline, setTimeline] = useState("");
+  const [prefs, setPrefs] = useState<string[]>([]);
+  const [specifics, setSpecifics] = useState("");
+  // Chat follow-up input (after the roadmap is built)
   const [input, setInput] = useState("");
 
+  // No greeting — the wizard IS the intake, so the first message to the model is
+  // always the student's (user-first), which Bedrock requires.
   const { messages, connection, isStreaming, send, reset, reconnect } = useAiChat({
     event: "roadmap_chat",
     context: { goal },
@@ -39,26 +70,54 @@ export default function RoadmapClient({ firstName = "" }: { firstName?: string }
     if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
-  const canSend =
-    connection === "connected" && !isStreaming && input.trim().length > 0;
+  // The wizard is showing until the student has sent the intake (a user turn).
+  const started = messages.some((m) => m.role === "user");
+  const ready = connection === "connected";
+  const canBuild =
+    ready &&
+    !isStreaming &&
+    goal.trim().length > 0 &&
+    !!level &&
+    !!time &&
+    !!timeline;
 
-  const submit = (text: string) => {
-    if (connection !== "connected" || isStreaming) return;
-    const value = text.trim();
-    if (!value) return;
-    // Remember the first stated goal so it grounds every later follow-up.
-    if (!goal) setGoal(value);
-    send(value);
+  const togglePref = (p: string) =>
+    setPrefs((prev) =>
+      prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p],
+    );
+
+  const buildRoadmap = () => {
+    if (!canBuild) return;
+    const composed =
+      `Build my personalized learning roadmap.\n` +
+      `Goal: ${goal.trim()}.\n` +
+      `Current level: ${level}.\n` +
+      `Time available: ${time}.\n` +
+      `Timeline: ${timeline}.` +
+      (prefs.length ? `\nWhat matters to me: ${prefs.join(", ")}.` : "") +
+      (specifics.trim() ? `\nSpecific notes: ${specifics.trim()}.` : "");
+    send(composed);
+  };
+
+  const canSend = ready && !isStreaming && input.trim().length > 0;
+  const handleFollowup = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canSend) return;
+    send(input.trim());
     setInput("");
     inputRef.current?.focus();
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (canSend) submit(input);
+  const startOver = () => {
+    reset();
+    setGoal("");
+    setLevel("");
+    setTime("");
+    setTimeline("");
+    setPrefs([]);
+    setSpecifics("");
+    setInput("");
   };
-
-  const isEmpty = messages.length === 0;
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:py-10">
@@ -72,42 +131,41 @@ export default function RoadmapClient({ firstName = "" }: { firstName?: string }
             Career Roadmap Advisor
           </h1>
           <p className="mt-1 max-w-xl text-[13.5px] leading-relaxed text-slate-500">
-            Tell me where you want to go{firstName ? `, ${firstName}` : ""}, and
-            I&apos;ll map a step-by-step learning path — tailored to your skills,
-            interests, and level.
+            Answer a few quick taps{firstName ? `, ${firstName}` : ""}, and
+            I&apos;ll map a step-by-step learning path — tailored to your level,
+            time, and goal.
           </p>
         </div>
       </div>
 
-      {/* Chat card */}
+      {/* Card */}
       <div className="flex h-[68vh] min-h-[460px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         {/* Connection strip */}
         <div className="flex flex-shrink-0 items-center justify-between border-b border-slate-100 px-4 py-2.5">
           <p className="flex items-center gap-1.5 text-[11.5px] font-medium text-slate-400">
             <span
               className={`inline-block h-1.5 w-1.5 rounded-full ${
-                connection === "connected"
+                ready
                   ? "bg-green-500"
                   : connection === "connecting"
                     ? "animate-pulse bg-amber-400"
                     : "bg-slate-300"
               }`}
             />
-            {connection === "connected"
-              ? goal
-                ? `Goal: ${goal}`
-                : "Ready"
+            {ready
+              ? started
+                ? goal
+                  ? `Goal: ${goal}`
+                  : "Roadmap"
+                : "Let's set up your roadmap"
               : connection === "connecting"
                 ? "Connecting…"
                 : "Offline"}
           </p>
-          {!isEmpty && (
+          {started && (
             <button
               type="button"
-              onClick={() => {
-                setGoal("");
-                reset();
-              }}
+              onClick={startOver}
               className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-[11.5px] font-medium text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
             >
               <RefreshIcon className="h-3.5 w-3.5" />
@@ -116,8 +174,11 @@ export default function RoadmapClient({ firstName = "" }: { firstName?: string }
           )}
         </div>
 
-        {/* Messages */}
-        <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto px-4 py-5 sm:px-6">
+        {/* Body: wizard until the intake is sent, then the chat transcript */}
+        <div
+          ref={scrollRef}
+          className="flex-1 space-y-4 overflow-y-auto px-4 py-5 sm:px-6"
+        >
           {connection === "unauthenticated" ? (
             <StateNotice
               title="Sign in to use the advisor"
@@ -129,83 +190,291 @@ export default function RoadmapClient({ firstName = "" }: { firstName?: string }
               body="The assistant is temporarily unavailable."
               action={{ label: "Try again", onClick: reconnect }}
             />
-          ) : isEmpty ? (
-            <EmptyState onPick={submit} disabled={connection !== "connected"} />
+          ) : !started ? (
+            <IntakeWizard
+              firstName={firstName}
+              goal={goal}
+              setGoal={setGoal}
+              level={level}
+              setLevel={setLevel}
+              time={time}
+              setTime={setTime}
+              timeline={timeline}
+              setTimeline={setTimeline}
+              prefs={prefs}
+              togglePref={togglePref}
+              specifics={specifics}
+              setSpecifics={setSpecifics}
+              disabled={!ready || isStreaming}
+            />
           ) : (
             messages.map((m) => <MessageBubble key={m.id} message={m} />)
           )}
         </div>
 
-        {/* Composer */}
-        <form
-          onSubmit={handleSubmit}
-          className="flex flex-shrink-0 items-center gap-2 border-t border-slate-100 px-3 py-3 sm:px-4"
-        >
-          <input
-            ref={inputRef}
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            disabled={connection !== "connected"}
-            placeholder={
-              connection === "connected"
-                ? goal
-                  ? "Ask a follow-up about your roadmap…"
-                  : "Describe your goal…"
-                : "Connecting…"
-            }
-            className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-[14px] text-slate-700 outline-none transition-colors placeholder:text-slate-400 focus:border-[#3B1892] focus:ring-1 focus:ring-[#3B1892] disabled:cursor-not-allowed disabled:opacity-60"
-          />
-          <button
-            type="submit"
-            disabled={!canSend}
-            className="flex h-[46px] w-[46px] flex-shrink-0 items-center justify-center rounded-xl bg-[#3B1892] text-white transition-all hover:bg-[#2A1069] disabled:cursor-not-allowed disabled:opacity-40"
-            aria-label="Send message"
+        {/* Footer: "Build my roadmap" during intake, chat composer afterwards */}
+        {!started ? (
+          <div className="flex-shrink-0 border-t border-slate-100 px-3 py-3 sm:px-4">
+            <button
+              type="button"
+              onClick={buildRoadmap}
+              disabled={!canBuild}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#3B1892] px-4 py-3 text-[14px] font-semibold text-white transition-all hover:bg-[#2A1069] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <RouteIcon className="h-4 w-4" />
+              Build my roadmap
+            </button>
+            {!canBuild && ready && (
+              <p className="mt-2 text-center text-[11.5px] text-slate-400">
+                Pick your goal, level, time, and timeline to continue.
+              </p>
+            )}
+          </div>
+        ) : (
+          <form
+            onSubmit={handleFollowup}
+            className="flex flex-shrink-0 items-center gap-2 border-t border-slate-100 px-3 py-3 sm:px-4"
           >
-            <SendIcon className="h-5 w-5" />
-          </button>
-        </form>
+            <input
+              ref={inputRef}
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              disabled={!ready}
+              placeholder={
+                ready ? "Ask a follow-up about your roadmap…" : "Connecting…"
+              }
+              className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-[14px] text-slate-700 outline-none transition-colors placeholder:text-slate-400 focus:border-[#3B1892] focus:ring-1 focus:ring-[#3B1892] disabled:cursor-not-allowed disabled:opacity-60"
+            />
+            <button
+              type="submit"
+              disabled={!canSend}
+              className="flex h-[46px] w-[46px] flex-shrink-0 items-center justify-center rounded-xl bg-[#3B1892] text-white transition-all hover:bg-[#2A1069] disabled:cursor-not-allowed disabled:opacity-40"
+              aria-label="Send message"
+            >
+              <SendIcon className="h-5 w-5" />
+            </button>
+          </form>
+        )}
       </div>
     </div>
   );
 }
 
-// ── Empty state ──────────────────────────────────────────────────────────────
+// ── Intake wizard ────────────────────────────────────────────────────────────
 
-function EmptyState({
-  onPick,
+function IntakeWizard({
+  firstName,
+  goal,
+  setGoal,
+  level,
+  setLevel,
+  time,
+  setTime,
+  timeline,
+  setTimeline,
+  prefs,
+  togglePref,
+  specifics,
+  setSpecifics,
   disabled,
 }: {
-  onPick: (text: string) => void;
+  firstName: string;
+  goal: string;
+  setGoal: (v: string) => void;
+  level: string;
+  setLevel: (v: string) => void;
+  time: string;
+  setTime: (v: string) => void;
+  timeline: string;
+  setTimeline: (v: string) => void;
+  prefs: string[];
+  togglePref: (v: string) => void;
+  specifics: string;
+  setSpecifics: (v: string) => void;
+  disabled: boolean;
+}) {
+  // A chip's "selected" state for goal is true only when it exactly matches a
+  // preset (typing a custom goal deselects all preset chips).
+  return (
+    <div className="space-y-6">
+      <p className="text-[13.5px] leading-relaxed text-slate-600">
+        Hi{firstName ? ` ${firstName}` : ""}! 👋 I&apos;m your AI learning coach.
+        Tap to answer — it takes about 20 seconds.
+      </p>
+
+      {/* Goal — chips + custom text (required) */}
+      <Field label="What's your goal?" required>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {GOAL_IDEAS.map((g) => (
+            <Chip
+              key={g}
+              label={g}
+              selected={goal === g}
+              disabled={disabled}
+              onClick={() => setGoal(g)}
+              icon
+            />
+          ))}
+        </div>
+        <input
+          type="text"
+          value={GOAL_IDEAS.includes(goal) ? "" : goal}
+          onChange={(e) => setGoal(e.target.value)}
+          disabled={disabled}
+          placeholder="…or type your own goal"
+          className="mt-2.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-[13.5px] text-slate-700 outline-none transition-colors placeholder:text-slate-400 focus:border-[#3B1892] focus:ring-1 focus:ring-[#3B1892] disabled:opacity-60"
+        />
+      </Field>
+
+      {/* Level (required, single) */}
+      <Field label="Your current level" required>
+        <ChipRow
+          options={LEVELS}
+          value={level}
+          onSelect={setLevel}
+          disabled={disabled}
+        />
+      </Field>
+
+      {/* Time (required, single) */}
+      <Field label="Time you can commit" required>
+        <ChipRow
+          options={TIMES}
+          value={time}
+          onSelect={setTime}
+          disabled={disabled}
+        />
+      </Field>
+
+      {/* Timeline (required, single) */}
+      <Field label="Your timeline" required>
+        <ChipRow
+          options={TIMELINES}
+          value={timeline}
+          onSelect={setTimeline}
+          disabled={disabled}
+        />
+      </Field>
+
+      {/* Preferences (optional, multi) */}
+      <Field label="What matters most?" hint="Optional · pick any">
+        <div className="flex flex-wrap gap-2">
+          {PREFS.map((p) => (
+            <Chip
+              key={p}
+              label={p}
+              selected={prefs.includes(p)}
+              disabled={disabled}
+              onClick={() => togglePref(p)}
+            />
+          ))}
+        </div>
+      </Field>
+
+      {/* Specifics (optional, free text) */}
+      <Field label="Anything specific?" hint="Optional">
+        <input
+          type="text"
+          value={specifics}
+          onChange={(e) => setSpecifics(e.target.value)}
+          disabled={disabled}
+          placeholder="e.g. focus on React, prep for a June interview…"
+          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-[13.5px] text-slate-700 outline-none transition-colors placeholder:text-slate-400 focus:border-[#3B1892] focus:ring-1 focus:ring-[#3B1892] disabled:opacity-60"
+        />
+      </Field>
+    </div>
+  );
+}
+
+// ── Small building blocks ────────────────────────────────────────────────────
+
+function Field({
+  label,
+  required,
+  hint,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  hint?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <div className="mb-2 flex items-baseline gap-2">
+        <p className="text-[12.5px] font-semibold text-slate-700">
+          {label}
+          {required && <span className="ml-0.5 text-[#3B1892]">*</span>}
+        </p>
+        {hint && <span className="text-[11px] text-slate-400">{hint}</span>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function ChipRow({
+  options,
+  value,
+  onSelect,
+  disabled,
+}: {
+  options: string[];
+  value: string;
+  onSelect: (v: string) => void;
   disabled: boolean;
 }) {
   return (
-    <div className="flex h-full flex-col items-center justify-center px-2 text-center">
-      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-violet-100 to-violet-50 text-[#3B1892]">
-        <RouteIcon className="h-8 w-8" />
-      </div>
-      <p className="text-[16px] font-semibold text-slate-800">
-        Where do you want to go?
-      </p>
-      <p className="mx-auto mt-1.5 max-w-[340px] text-[13px] leading-relaxed text-slate-500">
-        Pick a goal to get started, or describe your own below. I&apos;ll build
-        an ordered roadmap with concrete skills for each milestone.
-      </p>
-
-      <div className="mt-6 grid w-full max-w-md grid-cols-1 gap-2.5 sm:grid-cols-2">
-        {GOAL_IDEAS.map((g) => (
-          <button
-            key={g}
-            type="button"
-            disabled={disabled}
-            onClick={() => onPick(g)}
-            className="group flex items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-4 py-3 text-left text-[13px] font-medium text-slate-600 transition-all hover:border-[#3B1892]/40 hover:bg-violet-50/40 hover:text-[#3B1892] disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <RouteIcon className="h-4 w-4 flex-shrink-0 text-slate-300 transition-colors group-hover:text-[#3B1892]" />
-            {g}
-          </button>
-        ))}
-      </div>
+    <div className="flex flex-wrap gap-2">
+      {options.map((o) => (
+        <Chip
+          key={o}
+          label={o}
+          selected={value === o}
+          disabled={disabled}
+          onClick={() => onSelect(o)}
+        />
+      ))}
     </div>
+  );
+}
+
+function Chip({
+  label,
+  selected,
+  disabled,
+  onClick,
+  icon,
+}: {
+  label: string;
+  selected: boolean;
+  disabled: boolean;
+  onClick: () => void;
+  icon?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      aria-pressed={selected}
+      className={`group flex items-center gap-2 rounded-xl border px-3.5 py-2.5 text-left text-[13px] font-medium transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
+        selected
+          ? "border-[#3B1892] bg-[#3B1892] text-white shadow-sm"
+          : "border-slate-200 bg-white text-slate-600 hover:border-[#3B1892]/40 hover:bg-violet-50/40 hover:text-[#3B1892]"
+      }`}
+    >
+      {icon && (
+        <RouteIcon
+          className={`h-4 w-4 flex-shrink-0 ${
+            selected
+              ? "text-white"
+              : "text-slate-300 transition-colors group-hover:text-[#3B1892]"
+          }`}
+        />
+      )}
+      {label}
+    </button>
   );
 }

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 // Reusable client hook for the EduGenie AI tutor over plain HTTP (NestJS `/ai`
 // REST endpoints). One hook drives all three tiers — lesson / course / roadmap —
 // by swapping the `event` name and reading the matching id from `context`.
@@ -14,15 +14,15 @@
 // The public API (messages / connection / isStreaming / send / reset /
 // reconnect) is unchanged, so consumer components keep working as-is.
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "/api/proxy";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || '/api/proxy';
 
-export type AiChatEvent = "lesson_chat" | "course_chat" | "roadmap_chat";
+export type AiChatEvent = 'lesson_chat' | 'course_chat' | 'roadmap_chat';
 
 export interface AiChatMessage {
   id: string;
-  role: "user" | "assistant";
+  role: 'user' | 'assistant';
   content: string;
   /** Assistant message is still being generated. */
   pending?: boolean;
@@ -31,10 +31,10 @@ export interface AiChatMessage {
 }
 
 export type AiConnectionState =
-  | "connecting"
-  | "connected"
-  | "unauthenticated"
-  | "error";
+  | 'connecting'
+  | 'connected'
+  | 'unauthenticated'
+  | 'error';
 
 interface UseAiChatOptions {
   event: AiChatEvent;
@@ -44,6 +44,12 @@ interface UseAiChatOptions {
   resetKey: string;
   /** Defer until true (e.g. the panel is collapsed). */
   enabled?: boolean;
+  /**
+   * Optional opening assistant message — the agent "greets first." Seeded into
+   * an empty transcript and included in history, so the model knows it already
+   * opened the conversation.
+   */
+  greeting?: string;
 }
 
 interface UseAiChatResult {
@@ -57,7 +63,7 @@ interface UseAiChatResult {
 }
 
 function randomId(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
     return crypto.randomUUID();
   }
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -69,18 +75,20 @@ function resolveRequest(
   context: Record<string, unknown>,
 ): { url: string; extra: Record<string, unknown> } | null {
   switch (event) {
-    case "lesson_chat": {
+    case 'lesson_chat': {
       const lessonId = context.lessonId as string | undefined;
-      return lessonId ? { url: `${API_BASE}/ai/chat/${lessonId}`, extra: {} } : null;
+      return lessonId
+        ? { url: `${API_BASE}/ai/chat/${lessonId}`, extra: {} }
+        : null;
     }
-    case "course_chat": {
+    case 'course_chat': {
       const courseId = context.courseId as string | undefined;
       return courseId
         ? { url: `${API_BASE}/ai/course-chat/${courseId}`, extra: {} }
         : null;
     }
-    case "roadmap_chat": {
-      const goal = (context.goal as string | undefined) ?? "";
+    case 'roadmap_chat': {
+      const goal = (context.goal as string | undefined) ?? '';
       return { url: `${API_BASE}/ai/roadmap-chat`, extra: { goal } };
     }
   }
@@ -91,9 +99,18 @@ export function useAiChat({
   context,
   resetKey,
   enabled = true,
+  greeting,
 }: UseAiChatOptions): UseAiChatResult {
-  const [messages, setMessages] = useState<AiChatMessage[]>([]);
-  const [connection, setConnection] = useState<AiConnectionState>("connecting");
+  // Build the initial transcript — seeded with the agent's greeting if given.
+  const seed = useCallback(
+    (): AiChatMessage[] =>
+      greeting
+        ? [{ id: randomId(), role: 'assistant', content: greeting }]
+        : [],
+    [greeting],
+  );
+  const [messages, setMessages] = useState<AiChatMessage[]>(seed);
+  const [connection, setConnection] = useState<AiConnectionState>('connecting');
   const [isStreaming, setIsStreaming] = useState(false);
 
   // Mirror of `messages` so `send()` can read history without a stale closure.
@@ -114,22 +131,22 @@ export function useAiChat({
   const [trackedKey, setTrackedKey] = useState(resetKey);
   if (trackedKey !== resetKey) {
     setTrackedKey(resetKey);
-    setMessages([]);
+    setMessages(seed());
     setIsStreaming(false);
-    setConnection("connecting");
+    setConnection('connecting');
   }
 
   // No socket to open — once enabled we're ready. The proxy supplies the JWT.
   useEffect(() => {
     if (!enabled) return;
-    setConnection("connected");
+    setConnection('connected');
   }, [enabled, event, resetKey]);
 
-  const reconnect = useCallback(() => setConnection("connected"), []);
+  const reconnect = useCallback(() => setConnection('connected'), []);
   const reset = useCallback(() => {
-    setMessages([]);
+    setMessages(seed());
     setIsStreaming(false);
-  }, []);
+  }, [seed]);
 
   // ── Send a message ──────────────────────────────────────────────────────────
   const send = useCallback(
@@ -147,13 +164,13 @@ export function useAiChat({
 
       const userMsg: AiChatMessage = {
         id: randomId(),
-        role: "user",
+        role: 'user',
         content: message,
       };
       const assistantMsg: AiChatMessage = {
         id: randomId(),
-        role: "assistant",
-        content: "",
+        role: 'assistant',
+        content: '',
         pending: true,
       };
       setMessages((prev) => [...prev, userMsg, assistantMsg]);
@@ -169,29 +186,27 @@ export function useAiChat({
       const appendToken = (chunk: string) =>
         setMessages((prev) =>
           prev.map((m) =>
-            m.id === assistantMsg.id
-              ? { ...m, content: m.content + chunk }
-              : m,
+            m.id === assistantMsg.id ? { ...m, content: m.content + chunk } : m,
           ),
         );
 
       void (async () => {
         try {
           const res = await fetch(request.url, {
-            method: "POST",
-            credentials: "include",
+            method: 'POST',
+            credentials: 'include',
             headers: {
-              "Content-Type": "application/json",
-              Accept: "text/event-stream",
+              'Content-Type': 'application/json',
+              Accept: 'text/event-stream',
             },
             body: JSON.stringify({ message, history, ...request.extra }),
           });
 
           if (res.status === 401) {
-            setConnection("unauthenticated");
+            setConnection('unauthenticated');
             finishWith({
               error: true,
-              content: "Please log in to use the AI tutor.",
+              content: 'Please log in to use the AI tutor.',
             });
             return;
           }
@@ -201,10 +216,10 @@ export function useAiChat({
             const err = await res.json().catch(() => ({}));
             const raw = (err as { message?: unknown })?.message;
             const text = Array.isArray(raw)
-              ? raw.join(", ")
-              : typeof raw === "string"
+              ? raw.join(', ')
+              : typeof raw === 'string'
                 ? raw
-                : "The AI tutor is unavailable right now. Please try again.";
+                : 'The AI tutor is unavailable right now. Please try again.';
             finishWith({ error: true, content: text });
             return;
           }
@@ -212,7 +227,7 @@ export function useAiChat({
           // Read the SSE stream: `data: {json}` frames separated by a blank line.
           const reader = res.body.getReader();
           const decoder = new TextDecoder();
-          let buffer = "";
+          let buffer = '';
           let streamError: string | null = null;
 
           for (;;) {
@@ -220,12 +235,12 @@ export function useAiChat({
             if (done) break;
             buffer += decoder.decode(value, { stream: true });
 
-            const frames = buffer.split("\n\n");
-            buffer = frames.pop() ?? "";
+            const frames = buffer.split('\n\n');
+            buffer = frames.pop() ?? '';
             for (const frame of frames) {
               const dataLine = frame
-                .split("\n")
-                .find((l) => l.startsWith("data:"));
+                .split('\n')
+                .find((l) => l.startsWith('data:'));
               if (!dataLine) continue;
               const payload = dataLine.slice(5).trim();
               if (!payload) continue;
@@ -235,10 +250,10 @@ export function useAiChat({
                   value?: string;
                   message?: string;
                 };
-                if (data.type === "token" && data.value) {
+                if (data.type === 'token' && data.value) {
                   appendToken(data.value);
-                } else if (data.type === "error") {
-                  streamError = data.message || "AI service error";
+                } else if (data.type === 'error') {
+                  streamError = data.message || 'AI service error';
                 }
               } catch {
                 /* ignore malformed frame */
@@ -267,7 +282,7 @@ export function useAiChat({
         } catch {
           finishWith({
             error: true,
-            content: "Network error. Please try again.",
+            content: 'Network error. Please try again.',
           });
         } finally {
           setIsStreaming(false);
