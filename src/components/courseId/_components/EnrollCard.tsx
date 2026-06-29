@@ -11,7 +11,7 @@ import type {
 import { addToCartAction } from "@/app/actions/cart.actions";
 import { useSession } from "@/providers/SessionProvider";
 import PlacementTestModal from "./PlacementTestModal";
-
+import DotsLoader from "@/components/ui/DotsLoader";
 function getSafeImageSrc(src: string | null | undefined): string | null {
   if (!src) return null;
   const trimmed = src.trim();
