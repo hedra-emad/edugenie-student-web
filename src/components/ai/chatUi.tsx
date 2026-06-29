@@ -3,7 +3,95 @@
 // roadmap tiers). Keeps the bubble, typing indicator, icons, and notice styles
 // consistent across every place the assistant is surfaced.
 
+import Link from "next/link";
+import ReactMarkdown from "react-markdown";
+import type { Components } from "react-markdown";
+import remarkGfm from "remark-gfm";
+import remarkBreaks from "remark-breaks";
 import type { AiChatMessage } from "@/lib/ai/useAiChat";
+
+// Full markdown for assistant messages — bold, italics, lists, headings, code,
+// blockquotes, and links. Internal links ([x](/courses/id)) use Next <Link> for
+// client-side navigation; external links open in a new tab. Tailwind classes
+// keep everything compact to match the chat bubble.
+const LINK_CLASS =
+  "font-semibold text-[#3B1892] underline decoration-[#3B1892]/30 underline-offset-2 transition-colors hover:decoration-[#3B1892]";
+
+const mdComponents: Components = {
+  a: ({ href, children }) => {
+    const url = href ?? "";
+    if (url.startsWith("/")) {
+      return (
+        <Link href={url} className={LINK_CLASS}>
+          {children}
+        </Link>
+      );
+    }
+    return (
+      <a href={url} target="_blank" rel="noreferrer" className={LINK_CLASS}>
+        {children}
+      </a>
+    );
+  },
+  p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+  ul: ({ children }) => (
+    <ul className="mb-2 list-disc space-y-1 pl-5 marker:text-slate-400 last:mb-0">
+      {children}
+    </ul>
+  ),
+  ol: ({ children }) => (
+    <ol className="mb-2 list-decimal space-y-1 pl-5 marker:text-slate-400 last:mb-0">
+      {children}
+    </ol>
+  ),
+  li: ({ children }) => <li className="pl-0.5">{children}</li>,
+  strong: ({ children }) => (
+    <strong className="font-semibold text-slate-900">{children}</strong>
+  ),
+  em: ({ children }) => <em className="italic">{children}</em>,
+  h1: ({ children }) => (
+    <p className="mb-1.5 mt-1 text-[15px] font-bold text-slate-900">{children}</p>
+  ),
+  h2: ({ children }) => (
+    <p className="mb-1.5 mt-1 text-[14px] font-bold text-slate-900">{children}</p>
+  ),
+  h3: ({ children }) => (
+    <p className="mb-1 mt-1 text-[13.5px] font-semibold text-slate-900">
+      {children}
+    </p>
+  ),
+  blockquote: ({ children }) => (
+    <blockquote className="mb-2 border-l-2 border-slate-300 pl-3 italic text-slate-500 last:mb-0">
+      {children}
+    </blockquote>
+  ),
+  hr: () => <hr className="my-2 border-slate-200" />,
+  code: ({ className, children }) =>
+    className ? (
+      // fenced block (carries a language-* class) — styled by <pre>
+      <code className="font-mono text-[12px]">{children}</code>
+    ) : (
+      <code className="rounded bg-slate-200/70 px-1 py-0.5 font-mono text-[12px]">
+        {children}
+      </code>
+    ),
+  pre: ({ children }) => (
+    <pre className="mb-2 overflow-x-auto rounded-lg bg-slate-900 p-3 text-[12px] text-slate-100 last:mb-0">
+      {children}
+    </pre>
+  ),
+};
+
+function Markdown({ content }: { content: string }) {
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm, remarkBreaks]}
+      components={mdComponents}
+    >
+      {content}
+    </ReactMarkdown>
+  );
+}
 
 // ── Icons (inline SVG to match the codebase convention) ──────────────────────
 
@@ -106,12 +194,12 @@ export function MessageBubble({ message }: { message: AiChatMessage }) {
         {message.pending && !message.content ? (
           <TypingDots />
         ) : (
-          <p className="whitespace-pre-wrap break-words">
-            {message.content}
+          <div className="break-words">
+            <Markdown content={message.content} />
             {message.pending && (
               <span className="ml-0.5 inline-block h-3.5 w-[2px] translate-y-0.5 animate-pulse bg-[#3B1892]" />
             )}
-          </p>
+          </div>
         )}
       </div>
     </div>

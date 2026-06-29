@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { ChevronRight } from "lucide-react";
-import { useCourses } from "@/hooks/useCourses";
-import { CategoryOption } from "@/lib/api/courses";
-import CoursesFilterBar from "@/components/courses/CoursesFilterBar";
-import CoursesGrid from "@/components/courses/CoursesGrid";
-import CoursesPagination from "@/components/courses/CoursesPagination";
+import Link from 'next/link';
+import { ChevronRight } from 'lucide-react';
+import { useCourses } from '@/hooks/useCourses';
+import { CategoryOption } from '@/lib/api/courses';
+import CoursesFilterBar from '@/components/courses/CoursesFilterBar';
+import CoursesGrid from '@/components/courses/CoursesGrid';
+import CoursesPagination from '@/components/courses/CoursesPagination';
 
 interface Props {
   categories: CategoryOption[];
@@ -44,9 +44,9 @@ export default function CoursesPageClient({ categories }: Props) {
             className="absolute inset-0 opacity-[0.025]"
             style={{
               backgroundImage:
-                "linear-gradient(rgba(255,255,255,1) 1px,transparent 1px)," +
-                "linear-gradient(90deg,rgba(255,255,255,1) 1px,transparent 1px)",
-              backgroundSize: "48px 48px",
+                'linear-gradient(rgba(255,255,255,1) 1px,transparent 1px),' +
+                'linear-gradient(90deg,rgba(255,255,255,1) 1px,transparent 1px)',
+              backgroundSize: '48px 48px',
             }}
           />
         </div>
@@ -74,13 +74,13 @@ export default function CoursesPageClient({ categories }: Props) {
                 className="text-3xl sm:text-4xl font-black text-white leading-tight tracking-tight"
                 style={{ fontWeight: 800 }}
               >
-                Explore{" "}
+                Explore{' '}
                 <span
                   className="text-transparent bg-clip-text
                                  bg-gradient-to-r from-violet-400 to-blue-400"
                 >
                   800+
-                </span>{" "}
+                </span>{' '}
                 Expert Courses
               </h1>
               <p className="mt-2 text-sm text-slate-400 max-w-lg leading-relaxed">
@@ -96,10 +96,10 @@ export default function CoursesPageClient({ categories }: Props) {
                               rounded-2xl px-5 py-3 text-center"
               >
                 <p className="text-2xl font-black text-white leading-none tracking-tight">
-                  {pagination.totalItems.toLocaleString("en-US")}
+                  {pagination.totalItems.toLocaleString('en-US')}
                 </p>
                 <p className="text-xs text-slate-400 mt-1">
-                  {activeFilterCount > 0 ? "matching courses" : "total courses"}
+                  {activeFilterCount > 0 ? 'matching courses' : 'total courses'}
                 </p>
               </div>
             )}
@@ -163,7 +163,7 @@ export default function CoursesPageClient({ categories }: Props) {
             isFetching={isFetching}
             onPageChange={(page) => {
               setFilters({ page });
-              window.scrollTo({ top: 0, behavior: "smooth" });
+              window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
           />
         )}
