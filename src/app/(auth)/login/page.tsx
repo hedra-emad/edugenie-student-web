@@ -193,7 +193,6 @@ export default function LoginPage() {
           <div className="mt-3">
             <SocialLogin
               onGoogle={() => console.log("Google login")}
-              onGithub={() => console.log("Github login")}
             />
           </div>
         </div>
