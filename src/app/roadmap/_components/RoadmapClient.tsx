@@ -1,39 +1,30 @@
 "use client";
 // _components/RoadmapClient.tsx
-// Tier-3 global advisor — builds a personalized, milestone-based learning
-// roadmap. The student answers a quick tap-to-pick intake (single- and
-// multi-choice chips; typing only for the goal + optional notes), then one tap
-// streams the roadmap. Follow-ups are typed in the chat that follows.
+// Tier-3 advisor — a quick tap-to-pick intake, then one tap builds a STRUCTURED,
+// buyable learning path: ordered milestones recommending real courses (or
+// specific sections), with prices and an "Add all to cart" CTA. Builds are
+// capped (3 lifetime per user).
 
-import { useEffect, useRef, useState } from "react";
-import { useAiChat } from "@/lib/ai/useAiChat";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { RouteIcon } from "@/components/ai/chatUi";
 import {
-  MessageBubble,
-  StateNotice,
-  SendIcon,
-  RefreshIcon,
-  RouteIcon,
-} from "@/components/ai/chatUi";
+  buildRoadmap,
+  getRoadmapQuota,
+  type Roadmap,
+} from "@/lib/api/roadmap";
+import { addToCartAction } from "@/app/actions/cart.actions";
 
-// Goal: pick a chip or type your own (the only required free-text).
 const GOAL_IDEAS = [
   "Become a full-stack web developer",
   "Break into data science",
   "Land a UI/UX design role",
   "Prepare for a backend engineering job",
 ];
-
-// Single-choice questions — one tap each, no typing.
 const LEVELS = ["Complete beginner", "Some basics", "Intermediate", "Advanced"];
-const TIMES = [
-  "Under 5 hrs/week",
-  "5–10 hrs/week",
-  "10–20 hrs/week",
-  "20+ hrs/week",
-];
+const TIMES = ["Under 5 hrs/week", "5–10 hrs/week", "10–20 hrs/week", "20+ hrs/week"];
 const TIMELINES = ["1 month", "3 months", "6 months", "1 year", "Flexible"];
-
-// Multi-choice — pick any that apply (optional).
 const PREFS = [
   "Hands-on projects",
   "Strong fundamentals",
@@ -43,39 +34,35 @@ const PREFS = [
   "Build a portfolio",
 ];
 
+type Phase = "intake" | "building" | "result" | "error";
+
 export default function RoadmapClient({ firstName = "" }: { firstName?: string }) {
-  // Wizard answers
+  const router = useRouter();
+
   const [goal, setGoal] = useState("");
   const [level, setLevel] = useState("");
   const [time, setTime] = useState("");
   const [timeline, setTimeline] = useState("");
   const [prefs, setPrefs] = useState<string[]>([]);
   const [specifics, setSpecifics] = useState("");
-  // Chat follow-up input (after the roadmap is built)
-  const [input, setInput] = useState("");
 
-  // No greeting — the wizard IS the intake, so the first message to the model is
-  // always the student's (user-first), which Bedrock requires.
-  const { messages, connection, isStreaming, send, reset, reconnect } = useAiChat({
-    event: "roadmap_chat",
-    context: { goal },
-    resetKey: "roadmap",
-  });
-
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [phase, setPhase] = useState<Phase>("intake");
+  const [roadmap, setRoadmap] = useState<Roadmap | null>(null);
+  const [error, setError] = useState("");
+  const [remaining, setRemaining] = useState<number | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [addError, setAddError] = useState("");
 
   useEffect(() => {
-    const el = scrollRef.current;
-    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-  }, [messages]);
+    getRoadmapQuota()
+      .then(setRemaining)
+      .catch(() => setRemaining(0));
+  }, []);
 
-  // The wizard is showing until the student has sent the intake (a user turn).
-  const started = messages.some((m) => m.role === "user");
-  const ready = connection === "connected";
+  const left = remaining ?? 0;
   const canBuild =
-    ready &&
-    !isStreaming &&
+    phase !== "building" &&
+    left > 0 &&
     goal.trim().length > 0 &&
     !!level &&
     !!time &&
@@ -86,37 +73,55 @@ export default function RoadmapClient({ firstName = "" }: { firstName?: string }
       prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p],
     );
 
-  const buildRoadmap = () => {
+  const build = async () => {
     if (!canBuild) return;
-    const composed =
-      `Build my personalized learning roadmap.\n` +
-      `Goal: ${goal.trim()}.\n` +
-      `Current level: ${level}.\n` +
-      `Time available: ${time}.\n` +
-      `Timeline: ${timeline}.` +
-      (prefs.length ? `\nWhat matters to me: ${prefs.join(", ")}.` : "") +
-      (specifics.trim() ? `\nSpecific notes: ${specifics.trim()}.` : "");
-    send(composed);
+    setPhase("building");
+    setError("");
+    try {
+      const r = await buildRoadmap({
+        goal: goal.trim(),
+        level,
+        time,
+        timeline,
+        focus: prefs,
+        notes: specifics.trim() || undefined,
+      });
+      setRoadmap(r);
+      if (typeof r.generationsRemaining === "number") {
+        setRemaining(r.generationsRemaining);
+      }
+      setPhase("result");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't build your roadmap.");
+      setPhase("error");
+      getRoadmapQuota()
+        .then(setRemaining)
+        .catch(() => {});
+    }
   };
 
-  const canSend = ready && !isStreaming && input.trim().length > 0;
-  const handleFollowup = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!canSend) return;
-    send(input.trim());
-    setInput("");
-    inputRef.current?.focus();
+  const addAllToCart = async () => {
+    if (!roadmap || !roadmap.items.length || adding) return;
+    setAdding(true);
+    setAddError("");
+    const payloads = roadmap.items.map((i) =>
+      i.type === "section"
+        ? { courseId: i.courseId, sectionId: i.sectionId as string, type: "section" as const }
+        : { courseId: i.courseId, type: "full_course" as const },
+    );
+    const res = await addToCartAction(payloads);
+    if (res.success) {
+      router.push("/cart");
+    } else {
+      setAddError(res.error ?? "Could not add items to cart");
+      setAdding(false);
+    }
   };
 
-  const startOver = () => {
-    reset();
-    setGoal("");
-    setLevel("");
-    setTime("");
-    setTimeline("");
-    setPrefs([]);
-    setSpecifics("");
-    setInput("");
+  const buildAnother = () => {
+    setRoadmap(null);
+    setPhase("intake");
+    setAddError("");
   };
 
   return (
@@ -126,71 +131,56 @@ export default function RoadmapClient({ firstName = "" }: { firstName?: string }
         <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#3B1892] to-[#5B3DB8] text-white shadow-md">
           <RouteIcon className="h-6 w-6" />
         </div>
-        <div>
+        <div className="flex-1">
           <h1 className="text-[22px] font-bold tracking-tight text-slate-900">
             Career Roadmap Advisor
           </h1>
           <p className="mt-1 max-w-xl text-[13.5px] leading-relaxed text-slate-500">
-            Answer a few quick taps{firstName ? `, ${firstName}` : ""}, and
-            I&apos;ll map a step-by-step learning path — tailored to your level,
-            time, and goal.
+            Answer a few taps{firstName ? `, ${firstName}` : ""} and I&apos;ll
+            build a step-by-step path of real courses — buy the whole plan in one
+            click.
           </p>
         </div>
+        {remaining !== null && (
+          <span className="flex-shrink-0 rounded-full bg-violet-50 px-3 py-1 text-[11.5px] font-semibold text-[#3B1892]">
+            {left} of 3 builds left
+          </span>
+        )}
       </div>
 
       {/* Card */}
-      <div className="flex h-[68vh] min-h-[460px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        {/* Connection strip */}
-        <div className="flex flex-shrink-0 items-center justify-between border-b border-slate-100 px-4 py-2.5">
-          <p className="flex items-center gap-1.5 text-[11.5px] font-medium text-slate-400">
-            <span
-              className={`inline-block h-1.5 w-1.5 rounded-full ${
-                ready
-                  ? "bg-green-500"
-                  : connection === "connecting"
-                    ? "animate-pulse bg-amber-400"
-                    : "bg-slate-300"
-              }`}
-            />
-            {ready
-              ? started
-                ? goal
-                  ? `Goal: ${goal}`
-                  : "Roadmap"
-                : "Let's set up your roadmap"
-              : connection === "connecting"
-                ? "Connecting…"
-                : "Offline"}
-          </p>
-          {started && (
-            <button
-              type="button"
-              onClick={startOver}
-              className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-[11.5px] font-medium text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
-            >
-              <RefreshIcon className="h-3.5 w-3.5" />
-              New roadmap
-            </button>
-          )}
-        </div>
-
-        {/* Body: wizard until the intake is sent, then the chat transcript */}
-        <div
-          ref={scrollRef}
-          className="flex-1 space-y-4 overflow-y-auto px-4 py-5 sm:px-6"
-        >
-          {connection === "unauthenticated" ? (
-            <StateNotice
-              title="Sign in to use the advisor"
-              body="Your session has expired. Please log in again to build your roadmap."
-            />
-          ) : connection === "error" ? (
-            <StateNotice
-              title="Couldn't reach the advisor"
-              body="The assistant is temporarily unavailable."
-              action={{ label: "Try again", onClick: reconnect }}
-            />
-          ) : !started ? (
+      <div className="flex min-h-[460px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-6">
+          {phase === "building" ? (
+            <Centered>
+              <span className="inline-block h-9 w-9 animate-spin rounded-full border-[3px] border-slate-200 border-t-[#3B1892]" />
+              <p className="mt-4 text-[14px] font-semibold text-slate-700">
+                Designing your roadmap…
+              </p>
+              <p className="mt-1 text-[12.5px] text-slate-400">
+                Matching your goal to real courses and sections.
+              </p>
+            </Centered>
+          ) : phase === "error" ? (
+            <Centered>
+              <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-red-50 text-red-500">
+                <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <path d="M12 9v4M12 17h.01" />
+                </svg>
+              </div>
+              <p className="text-[13.5px] font-medium text-slate-600">{error}</p>
+              <button
+                type="button"
+                onClick={() => setPhase("intake")}
+                className="mt-4 rounded-xl bg-[#3B1892] px-4 py-2 text-[13px] font-semibold text-white hover:bg-[#2A1069]"
+              >
+                Back
+              </button>
+            </Centered>
+          ) : phase === "result" && roadmap ? (
+            <RoadmapResult roadmap={roadmap} />
+          ) : (
             <IntakeWizard
               firstName={firstName}
               goal={goal}
@@ -205,58 +195,147 @@ export default function RoadmapClient({ firstName = "" }: { firstName?: string }
               togglePref={togglePref}
               specifics={specifics}
               setSpecifics={setSpecifics}
-              disabled={!ready || isStreaming}
+              disabled={left <= 0}
             />
-          ) : (
-            messages.map((m) => <MessageBubble key={m.id} message={m} />)
           )}
         </div>
 
-        {/* Footer: "Build my roadmap" during intake, chat composer afterwards */}
-        {!started ? (
-          <div className="flex-shrink-0 border-t border-slate-100 px-3 py-3 sm:px-4">
+        {/* Footer */}
+        {phase === "result" && roadmap ? (
+          <div className="flex-shrink-0 border-t border-slate-100 px-4 py-3 sm:px-4">
+            {addError && (
+              <p className="mb-2 text-center text-[12px] text-red-500">{addError}</p>
+            )}
+            <div className="flex items-center gap-3">
+              <div className="flex-shrink-0">
+                <p className="text-[11px] text-slate-400">Plan total</p>
+                <p className="text-[20px] font-extrabold leading-none text-slate-900">
+                  ${roadmap.totalPrice}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={addAllToCart}
+                disabled={adding || roadmap.items.length === 0}
+                className="flex-1 rounded-xl bg-[#3B1892] py-3 text-[14px] font-bold text-white transition-all hover:bg-[#2A1069] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {adding
+                  ? "Adding…"
+                  : `Add all ${roadmap.items.length} to cart`}
+              </button>
+            </div>
             <button
               type="button"
-              onClick={buildRoadmap}
+              onClick={buildAnother}
+              disabled={left <= 0}
+              className="mt-2 w-full rounded-xl border border-slate-200 py-2.5 text-[12.5px] font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-50"
+            >
+              {left > 0 ? `Build another (${left} left)` : "No builds left"}
+            </button>
+          </div>
+        ) : phase === "intake" ? (
+          <div className="flex-shrink-0 border-t border-slate-100 px-4 py-3 sm:px-4">
+            <button
+              type="button"
+              onClick={build}
               disabled={!canBuild}
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#3B1892] px-4 py-3 text-[14px] font-semibold text-white transition-all hover:bg-[#2A1069] disabled:cursor-not-allowed disabled:opacity-40"
             >
               <RouteIcon className="h-4 w-4" />
               Build my roadmap
             </button>
-            {!canBuild && ready && (
-              <p className="mt-2 text-center text-[11.5px] text-slate-400">
-                Pick your goal, level, time, and timeline to continue.
-              </p>
-            )}
+            <p className="mt-2 text-center text-[11.5px] text-slate-400">
+              {left <= 0
+                ? "You've used all 3 roadmap builds."
+                : "Pick your goal, level, time, and timeline to continue."}
+            </p>
           </div>
-        ) : (
-          <form
-            onSubmit={handleFollowup}
-            className="flex flex-shrink-0 items-center gap-2 border-t border-slate-100 px-3 py-3 sm:px-4"
-          >
-            <input
-              ref={inputRef}
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              disabled={!ready}
-              placeholder={
-                ready ? "Ask a follow-up about your roadmap…" : "Connecting…"
-              }
-              className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-[14px] text-slate-700 outline-none transition-colors placeholder:text-slate-400 focus:border-[#3B1892] focus:ring-1 focus:ring-[#3B1892] disabled:cursor-not-allowed disabled:opacity-60"
-            />
-            <button
-              type="submit"
-              disabled={!canSend}
-              className="flex h-[46px] w-[46px] flex-shrink-0 items-center justify-center rounded-xl bg-[#3B1892] text-white transition-all hover:bg-[#2A1069] disabled:cursor-not-allowed disabled:opacity-40"
-              aria-label="Send message"
-            >
-              <SendIcon className="h-5 w-5" />
-            </button>
-          </form>
-        )}
+        ) : null}
       </div>
+    </div>
+  );
+}
+
+// ── Result: milestone cards ──────────────────────────────────────────────────
+
+function RoadmapResult({ roadmap }: { roadmap: Roadmap }) {
+  return (
+    <div className="space-y-5">
+      {roadmap.summary && (
+        <p className="text-[14px] leading-relaxed text-slate-700">
+          {roadmap.summary}
+        </p>
+      )}
+
+      <div className="space-y-4">
+        {roadmap.milestones.map((m, i) => (
+          <div
+            key={i}
+            className="overflow-hidden rounded-2xl border border-slate-200"
+          >
+            <div className="border-b border-slate-100 bg-slate-50 px-4 py-3">
+              <div className="flex items-center gap-2">
+                <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#3B1892] text-[11px] font-bold text-white">
+                  {i + 1}
+                </span>
+                <p className="text-[13.5px] font-bold text-slate-800">
+                  {m.title}
+                </p>
+              </div>
+              {m.focus && (
+                <p className="mt-1 text-[12px] leading-relaxed text-slate-500">
+                  {m.focus}
+                </p>
+              )}
+            </div>
+
+            <div className="divide-y divide-slate-100">
+              {m.items.map((it, j) => (
+                <div key={j} className="flex items-start gap-3 px-4 py-3">
+                  <span
+                    className={`mt-0.5 flex-shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase ${
+                      it.type === "section"
+                        ? "bg-amber-100 text-amber-700"
+                        : "bg-violet-100 text-[#3B1892]"
+                    }`}
+                  >
+                    {it.type === "section" ? "Section" : "Course"}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <Link
+                      href={`/courses/${it.courseId}`}
+                      className="text-[13px] font-semibold text-slate-800 transition-colors hover:text-[#3B1892]"
+                    >
+                      {it.title}
+                    </Link>
+                    {it.type === "section" && (
+                      <p className="text-[11px] text-slate-400">
+                        from {it.courseTitle}
+                      </p>
+                    )}
+                    {it.reason && (
+                      <p className="mt-0.5 text-[12px] leading-relaxed text-slate-500">
+                        {it.reason}
+                      </p>
+                    )}
+                  </div>
+                  <span className="flex-shrink-0 text-[13px] font-bold text-slate-700">
+                    ${it.price}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Centered({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex min-h-[360px] flex-col items-center justify-center text-center">
+      {children}
     </div>
   );
 }
@@ -294,27 +373,17 @@ function IntakeWizard({
   setSpecifics: (v: string) => void;
   disabled: boolean;
 }) {
-  // A chip's "selected" state for goal is true only when it exactly matches a
-  // preset (typing a custom goal deselects all preset chips).
   return (
     <div className="space-y-6">
       <p className="text-[13.5px] leading-relaxed text-slate-600">
-        Hi{firstName ? ` ${firstName}` : ""}! 👋 I&apos;m your AI learning coach.
-        Tap to answer — it takes about 20 seconds.
+        Hi{firstName ? ` ${firstName}` : ""}! 👋 Tap to answer — it takes about 20
+        seconds, then I&apos;ll build your buyable plan.
       </p>
 
-      {/* Goal — chips + custom text (required) */}
       <Field label="What's your goal?" required>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {GOAL_IDEAS.map((g) => (
-            <Chip
-              key={g}
-              label={g}
-              selected={goal === g}
-              disabled={disabled}
-              onClick={() => setGoal(g)}
-              icon
-            />
+            <Chip key={g} label={g} selected={goal === g} disabled={disabled} onClick={() => setGoal(g)} icon />
           ))}
         </div>
         <input
@@ -327,52 +396,26 @@ function IntakeWizard({
         />
       </Field>
 
-      {/* Level (required, single) */}
       <Field label="Your current level" required>
-        <ChipRow
-          options={LEVELS}
-          value={level}
-          onSelect={setLevel}
-          disabled={disabled}
-        />
+        <ChipRow options={LEVELS} value={level} onSelect={setLevel} disabled={disabled} />
       </Field>
 
-      {/* Time (required, single) */}
       <Field label="Time you can commit" required>
-        <ChipRow
-          options={TIMES}
-          value={time}
-          onSelect={setTime}
-          disabled={disabled}
-        />
+        <ChipRow options={TIMES} value={time} onSelect={setTime} disabled={disabled} />
       </Field>
 
-      {/* Timeline (required, single) */}
       <Field label="Your timeline" required>
-        <ChipRow
-          options={TIMELINES}
-          value={timeline}
-          onSelect={setTimeline}
-          disabled={disabled}
-        />
+        <ChipRow options={TIMELINES} value={timeline} onSelect={setTimeline} disabled={disabled} />
       </Field>
 
-      {/* Preferences (optional, multi) */}
       <Field label="What matters most?" hint="Optional · pick any">
         <div className="flex flex-wrap gap-2">
           {PREFS.map((p) => (
-            <Chip
-              key={p}
-              label={p}
-              selected={prefs.includes(p)}
-              disabled={disabled}
-              onClick={() => togglePref(p)}
-            />
+            <Chip key={p} label={p} selected={prefs.includes(p)} disabled={disabled} onClick={() => togglePref(p)} />
           ))}
         </div>
       </Field>
 
-      {/* Specifics (optional, free text) */}
       <Field label="Anything specific?" hint="Optional">
         <input
           type="text"
@@ -386,8 +429,6 @@ function IntakeWizard({
     </div>
   );
 }
-
-// ── Small building blocks ────────────────────────────────────────────────────
 
 function Field({
   label,
@@ -428,13 +469,7 @@ function ChipRow({
   return (
     <div className="flex flex-wrap gap-2">
       {options.map((o) => (
-        <Chip
-          key={o}
-          label={o}
-          selected={value === o}
-          disabled={disabled}
-          onClick={() => onSelect(o)}
-        />
+        <Chip key={o} label={o} selected={value === o} disabled={disabled} onClick={() => onSelect(o)} />
       ))}
     </div>
   );
@@ -468,9 +503,7 @@ function Chip({
       {icon && (
         <RouteIcon
           className={`h-4 w-4 flex-shrink-0 ${
-            selected
-              ? "text-white"
-              : "text-slate-300 transition-colors group-hover:text-[#3B1892]"
+            selected ? "text-white" : "text-slate-300 transition-colors group-hover:text-[#3B1892]"
           }`}
         />
       )}

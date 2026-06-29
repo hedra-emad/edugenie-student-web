@@ -8,6 +8,7 @@ interface Props {
   course: PlayerCourse;
   activeLessonId: string;
   onLessonClick: (lesson: PlayerLesson) => void;
+  onQuizSection: (sectionId: string, label: string) => void;
 }
 
 /** Skeleton for the sidebar while loading */
@@ -41,6 +42,7 @@ export default function LessonSidebar({
   course,
   activeLessonId,
   onLessonClick,
+  onQuizSection,
 }: Props) {
   const totalLessons = course.sections.reduce(
     (a, s) => a + s.lessons.length,
@@ -84,10 +86,12 @@ export default function LessonSidebar({
             key={section.id}
             section={section}
             courseId={course.id}
+            courseTitle={course.title}
             activeLessonId={activeLessonId}
             globalLessonIndex={sectionStartIndexes[index]}
             defaultOpen={section.id === activeSectionId}
             onLessonClick={onLessonClick}
+            onQuizSection={onQuizSection}
           />
         ))}
       </div>

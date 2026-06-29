@@ -65,17 +65,20 @@ export async function addToCartAction(
     }),
   );
 
-  const failed = results.filter((r) => r.status === "rejected");
+  const failures = results
+    .filter((r): r is PromiseRejectedResult => r.status === "rejected")
+    .map((r) =>
+      r.reason instanceof Error
+        ? r.reason.message
+        : "Failed to add item to cart",
+    );
 
-  if (failed.length > 0) {
-    const firstError = failed[0] as PromiseRejectedResult;
-    return {
-      success: false,
-      error:
-        firstError.reason instanceof Error
-          ? firstError.reason.message
-          : "Failed to add item to cart",
-    };
+  // "Already in cart" / "already own" / duplicate-key are not real failures —
+  // the item is already accounted for, so don't block the flow over them.
+  const hardFailures = failures.filter((m) => !/already|duplicate/i.test(m));
+
+  if (hardFailures.length > 0) {
+    return { success: false, error: hardFailures[0] };
   }
 
   return { success: true };

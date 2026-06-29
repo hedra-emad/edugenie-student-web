@@ -9,10 +9,12 @@ import LessonItem from "./LessonItem";
 interface Props {
   section: PlayerSection;
   courseId: string;
+  courseTitle?: string;
   activeLessonId: string;
   globalLessonIndex: number; // 1-based index of the first lesson in this section
   defaultOpen?: boolean;
   onLessonClick: (lesson: PlayerLesson) => void;
+  onQuizSection: (sectionId: string, label: string) => void;
 }
 
 function formatSectionDuration(sections: PlayerSection["lessons"]): string {
@@ -49,10 +51,12 @@ function ChevronIcon({ open }: { open: boolean }) {
 export default function SectionAccordion({
   section,
   courseId,
+  courseTitle,
   activeLessonId,
   globalLessonIndex,
   defaultOpen = false,
   onLessonClick,
+  onQuizSection,
 }: Props) {
   const [open, setOpen] = useState(defaultOpen);
 
@@ -95,6 +99,27 @@ export default function SectionAccordion({
       {/* Lesson list */}
       {open && (
         <div>
+          {section.isOwned && section.lessons.length > 0 && (
+            <div className="px-3 pt-3 bg-white">
+              <button
+                type="button"
+                onClick={() =>
+                  onQuizSection(
+                    section.id,
+                    `${courseTitle ? `${courseTitle} › ` : ""}${section.title}`,
+                  )
+                }
+                className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-[#3B1892]/30
+                           bg-violet-50 px-3 py-2 text-[12px] font-bold text-[#3B1892]
+                           transition-colors hover:bg-violet-100"
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z" />
+                </svg>
+                Quiz me on this section
+              </button>
+            </div>
+          )}
           {!section.isOwned && (
             <div className="px-3 pb-3 border-t border-slate-200 bg-white">
               <p className="text-[12.5px] text-slate-500 px-1 pt-3">

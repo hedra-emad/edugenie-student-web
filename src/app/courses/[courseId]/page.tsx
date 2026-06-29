@@ -7,6 +7,7 @@ import CourseCurriculum from "../../../components/courseId/_components/CourseCur
 import CourseDescription from "../../../components/courseId/_components/CourseDescription";
 import CourseInstructor from "../../../components/courseId/_components/CourseInstructor";
 import EnrollCard from "../../../components/courseId/_components/EnrollCard";
+import { CourseAccessProvider } from "../../../components/courseId/_components/CourseAccessProvider";
 import { resolveApiBase } from "@/lib/apiBase";
 
 const API_BASE =
@@ -139,6 +140,10 @@ export default async function CourseDetailPage({
     <main className="min-h-screen bg-slate-50">
       <CourseHero course={course} />
 
+      <CourseAccessProvider
+        courseId={course.id}
+        totalSections={course.sections.length}
+      >
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-10 py-10">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_352px] gap-10 items-stretch">
           <div className="flex flex-col gap-6">
@@ -170,7 +175,8 @@ export default async function CourseDetailPage({
 
             <CourseCurriculum
               sections={course.sections}
-              isEnrolled={course.isEnrolled ?? false}
+              courseId={course.id}
+              courseTitle={course.title}
             />
             <CourseDescription
               description={course.description}
@@ -184,6 +190,7 @@ export default async function CourseDetailPage({
           </div>
         </div>
       </div>
+      </CourseAccessProvider>
     </main>
   );
 }

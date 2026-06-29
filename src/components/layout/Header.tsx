@@ -171,6 +171,19 @@ export default function Header({ isStudent, displayName, avatarUrl = null }: Hea
               Roadmap
             </Link>
           )}
+          {/* AI Learning Coach — students only */}
+          {isStudent && (
+            <Link
+              href="/coach"
+              className="group flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary-dark transition-colors duration-150"
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z" />
+                <path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15z" />
+              </svg>
+              Coach
+            </Link>
+          )}
         </nav>
 
         {/* ── Right ── */}
@@ -268,6 +281,20 @@ export default function Header({ isStudent, displayName, avatarUrl = null }: Hea
                 <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z" />
               </svg>
               Roadmap
+            </Link>
+          )}
+          {/* AI Learning Coach — students only */}
+          {isStudent && (
+            <Link
+              href="/coach"
+              onClick={() => setMenuOpen(false)}
+              className="flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary-dark transition-colors"
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z" />
+                <path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15z" />
+              </svg>
+              Coach
             </Link>
           )}
 
