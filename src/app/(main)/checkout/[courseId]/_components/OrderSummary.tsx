@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import DotsLoader from "@/components/ui/DotsLoader";
 import type { CartItem } from "@/types/checkout";
+import Image from "next/image";
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -238,6 +239,7 @@ export default function OrderSummary({
           </span>
         </div>
 
+        
         {/* Payment methods section */}
         <div className="mt-3">
           <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2">
@@ -245,75 +247,68 @@ export default function OrderSummary({
           </p>
           <div className="grid grid-cols-2 gap-2">
             {/* Badge 1 — Credit/Debit Card */}
-            <div className="flex items-center gap-2 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl">
-              <svg
-                className="w-4 h-4 text-slate-500"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <rect x="2" y="6" width="20" height="12" rx="2" />
-                <line x1="2" y1="10" x2="22" y2="10" />
-              </svg>
 
+            <div className="flex items-center justify-center px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+              <Image
+                src="/card-mastercard.png"
+                alt="Credit Card"
+                width={110}
+                height={28}
+                className="h-6 w-auto object-contain"
+              />
               <span className="text-[12px] font-semibold text-slate-600">
-                Credit / Debit Card
+                Credit/DebitCard
               </span>
             </div>
 
             {/* Badge 2 — Mobile Wallet */}
-            <div className="flex items-center gap-2 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl">
-              <svg
-                className="w-4 h-4 text-slate-500"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <rect x="3" y="6" width="18" height="12" rx="2" />
-                <circle cx="16" cy="12" r="1" />
-              </svg>
-
+           
+            
+<div className="flex items-center justify-center px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+              <Image
+                src="/1596022647Mask Group 17402.png"
+                alt="Credit Card"
+                width={110}
+                height={28}
+                className="h-6 w-auto object-contain"
+              />
               <span className="text-[12px] font-semibold text-slate-600">
-                Mobile Wallet
+                Meeza
               </span>
             </div>
 
             {/* Badge 3 — Vodafone Cash */}
-            <div className="flex items-center gap-2 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl">
-              <svg
-                className="w-4 h-4 text-red-500"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <circle cx="12" cy="12" r="9" />
-              </svg>
-
+           
+            <div className="flex items-center justify-center px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+              <Image
+                src="/vc.png"
+                alt="Credit Card"
+                width={110}
+                height={28}
+                className="h-6 w-auto object-contain"
+              />
               <span className="text-[12px] font-semibold text-slate-600">
                 Vodafone Cash
               </span>
             </div>
 
             {/* Badge 4 — Instapay */}
-            <div className="flex items-center gap-2 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl">
-              <svg
-                className="w-4 h-4 text-violet-600"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path d="M5 12h14" />
-                <path d="M12 5l7 7-7 7" />
-              </svg>
 
+            <div className="flex items-center justify-center px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+              <Image
+                src="/InstaPay_Logo.png"
+                alt="Credit Card"
+                width={110}
+                height={28}
+                className="h-6 w-auto object-contain"
+              />
               <span className="text-[12px] font-semibold text-slate-600">
                 Instapay
               </span>
             </div>
           </div>
 
+          {/* --------------------- */}
           <p className="text-[11px] text-slate-400 text-center mt-2">
             Payment processed securely by Paymob
           </p>
