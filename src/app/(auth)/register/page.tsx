@@ -32,6 +32,15 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   
+  // Touched state for field-level errors
+  const [touched, setTouched] = useState({
+    firstName: false,
+    lastName: false,
+    email: false,
+    password: false,
+    confirmPassword: false,
+  });
+  
   // Profile Setup State (Step 4)
   const [level, setLevel] = useState('');
   const [openLevel, setOpenLevel] = useState(false);
@@ -42,6 +51,98 @@ export default function RegisterPage() {
   const [passwordError, setPasswordError] = useState('');
   const [generalError, setGeneralError] = useState('');
   
+  // Validation helpers
+  const firstNamePattern = /^[\p{L}\s'-]+$/u;
+  const lastNamePattern = /^[\p{L}\s'-]+$/u;
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  
+  const getPasswordStrength = () => {
+    if (!password) return 0;
+    let score = 0;
+    if (/[a-z]/.test(password)) score++;
+    if (/[A-Z]/.test(password)) score++;
+    if (/[0-9]/.test(password)) score++;
+    if (/[^A-Za-z0-9]/.test(password)) score++;
+    // Match Angular's thresholds
+    if (password.length < 8) return Math.min(score, 2);
+    if (password.length < 10) return Math.min(score, 3);
+    return Math.min(score, 4);
+  };
+
+  const strength = getPasswordStrength();
+  
+  const getFirstNameError = () => {
+    if (!touched.firstName) return "";
+    if (!firstName) return "Please Enter your first name";
+    if (firstName.length < 2) return "First Name must be at least 2 characters";
+    if (!firstNamePattern.test(firstName)) return "First Name must contain only letters";
+    return "";
+  };
+  
+  const getLastNameError = () => {
+    if (!touched.lastName) return "";
+    if (!lastName) return "Please Enter your las name";
+    if (lastName.length < 2) return "Last name must be at least 2 characters";
+    if (!lastNamePattern.test(lastName)) return "Last name can only contain letters";
+    return "";
+  };
+  
+  const getEmailError = () => {
+    if (!touched.email) return "";
+    if (!email) return "Please enter your email";
+    if (!emailRegex.test(email)) return "Please enter a valid email address";
+    return "";
+  };
+  
+  const getPasswordError = () => {
+    if (!touched.password) return "";
+    if (!password) return "Password is required.";
+    if (password.length < 8) return "Minimum length is 8 characters.";
+    // Only show weak password error when password has a value but is weak
+    if (password.length >= 8 && strength < 3) return "Add upper/lowercase letters, a number, or a symbol.";
+    return "";
+  };
+  
+  const getConfirmPasswordError = () => {
+    if (!touched.confirmPassword) return "";
+    if (!confirmPassword) return "Password is required.";
+    return "";
+  };
+  
+  const getConfirmPasswordMismatchError = () => {
+    if (!touched.confirmPassword) return "";
+    if (!confirmPassword) return "";
+    if (password !== confirmPassword) return "Passwords do not match.";
+    return "";
+  };
+
+  const previousStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(prev => prev - 1);
+    }
+  };
+
+  const toggleInterest = (interest: string) => {
+    setInterests(prev => 
+      prev.includes(interest) 
+        ? prev.filter(i => i !== interest)
+        : [...prev, interest]
+    );
+  };
+
+  const isStepInvalid = () => {
+    if (currentStep === 1) return !role;
+    if (currentStep === 2) {
+      return !firstName || !lastName || !email || 
+             firstName.length < 2 || lastName.length < 2 || !emailRegex.test(email) ||
+             !firstNamePattern.test(firstName) || !lastNamePattern.test(lastName);
+    }
+    if (currentStep === 3) {
+      return !password || !confirmPassword || password.length < 8 || password !== confirmPassword;
+    }
+    return false;
+  };
+
   const totalSteps = role === 'instructor' ? 3 : 4;
   const progressPercent = (currentStep / totalSteps) * 100;
 
@@ -67,6 +168,19 @@ export default function RegisterPage() {
     setPasswordError('');
     setGeneralError('');
     setSuccessMessage('');
+    
+    if (currentStep === 2) {
+      setTouched(t => ({ ...t, firstName: true, lastName: true, email: true }));
+      if (getFirstNameError() || getLastNameError() || getEmailError()) {
+        return;
+      }
+    }
+    if (currentStep === 3) {
+      setTouched(t => ({ ...t, password: true, confirmPassword: true }));
+      if (getPasswordError() || getConfirmPasswordError() || getConfirmPasswordMismatchError()) {
+        return;
+      }
+    }
     
     if (currentStep < totalSteps) {
       setCurrentStep(prev => prev + 1);
@@ -97,7 +211,7 @@ export default function RegisterPage() {
         const errorData = err?.error;
         
         if (status === 409) {
-          setEmailError('Email already exists');
+          setEmailError('This email is already registered');
           setCurrentStep(2);
         } else {
           const messages: string[] = Array.isArray(errorData?.message)
@@ -109,7 +223,7 @@ export default function RegisterPage() {
           const isPasswordError = messages.some((m: string) => /password/i.test(m));
           
           if (status === 400 && isPasswordError) {
-            setPasswordError('Password does not meet requirements');
+            setPasswordError('Password does not meet the server\'s requirements.');
             setCurrentStep(3);
           } else {
             setGeneralError('Registration failed. Please try again.');
@@ -121,42 +235,6 @@ export default function RegisterPage() {
     }
   };
 
-  const previousStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(prev => prev - 1);
-    }
-  };
-
-  const toggleInterest = (interest: string) => {
-    setInterests(prev => 
-      prev.includes(interest) 
-        ? prev.filter(i => i !== interest)
-        : [...prev, interest]
-    );
-  };
-
-  const isStepInvalid = () => {
-    if (currentStep === 1) return !role;
-    if (currentStep === 2) return !firstName || !lastName || !email;
-    if (currentStep === 3) return !password || password !== confirmPassword;
-    return false;
-  };
-
-  // Password strength helper
-  const getPasswordStrength = () => {
-    if (!password) return 0;
-    let score = 0;
-    if (/[a-z]/.test(password)) score++;
-    if (/[A-Z]/.test(password)) score++;
-    if (/[0-9]/.test(password)) score++;
-    if (/[^A-Za-z0-9]/.test(password)) score++;
-    if (password.length < 8) return Math.min(score, 2);
-    if (password.length < 10) return Math.min(score, 3);
-    return Math.min(score, 4);
-  };
-
-  const strength = getPasswordStrength();
-
   return (
     <AuthLayout>
       <AuthLogo />
@@ -165,7 +243,7 @@ export default function RegisterPage() {
         <div className="auth-card-header">
           <AuthTabs activeTab="signup" onTabChange={handleTabChange} />
           
-          <div className="mb-4 max-[360px]:mb-3">
+          <div className="mb-3 max-[360px]:mb-2">
             <div className="flex justify-between items-center mb-1.5">
               <span className="text-xs font-semibold text-text-secondary uppercase tracking-wider max-[360px]:text-2xs">
                 Step {currentStep} of {totalSteps}
@@ -184,7 +262,7 @@ export default function RegisterPage() {
         </div>
 
         {generalError && (
-          <div className="auth-error flex items-start gap-2 rounded-xl border border-error bg-error/10 px-3 py-2 text-sm text-error shadow-sm mb-4 animate-in slide-in-from-top-2 fade-in duration-300">
+          <div className="auth-error flex items-start gap-2 rounded-lg border border-error bg-error/10 px-3 py-2 text-sm text-error shadow-sm mb-3 animate-in slide-in-from-top-2 fade-in duration-300">
              <svg className="w-4 h-4 mt-[2px] shrink-0 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
              </svg>
@@ -203,7 +281,7 @@ export default function RegisterPage() {
 
             {/* Step 2: Account Info */}
             {currentStep === 2 && (
-              <div className="animate-fade-in space-y-3 max-[360px]:space-y-2.5">
+              <div className="animate-fade-in space-y-1.5 max-[360px]:space-y-1">
                 <div className="grid grid-cols-1">
                   <AuthInput
                     id="firstName"
@@ -211,7 +289,10 @@ export default function RegisterPage() {
                     placeholder="John"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
+                    onBlur={() => setTouched(t => ({ ...t, firstName: true }))}
                     required
+                    error={getFirstNameError()}
+                    showSuccess={touched.firstName && firstName.length > 0 && !getFirstNameError()}
                     icon={
                       <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
@@ -224,7 +305,10 @@ export default function RegisterPage() {
                     placeholder="Doe"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
+                    onBlur={() => setTouched(t => ({ ...t, lastName: true }))}
                     required
+                    error={getLastNameError()}
+                    showSuccess={touched.lastName && lastName.length > 0 && !getLastNameError()}
                     icon={
                       <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
@@ -242,8 +326,10 @@ export default function RegisterPage() {
                     setEmail(e.target.value);
                     if (emailError) setEmailError('');
                   }}
+                  onBlur={() => setTouched(t => ({ ...t, email: true }))}
                   required
-                  error={emailError}
+                  error={getEmailError() || emailError}
+                  showSuccess={touched.email && email.length > 0 && !getEmailError() && !emailError}
                   icon={
                     <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
@@ -255,7 +341,7 @@ export default function RegisterPage() {
 
             {/* Step 3: Security Info */}
             {currentStep === 3 && (
-              <div className="animate-fade-in space-y-3 max-[360px]:space-y-2.5">
+              <div className="animate-fade-in space-y-1.5 max-[360px]:space-y-1">
                 <PasswordInput
                   id="password"
                   label="Password"
@@ -265,8 +351,9 @@ export default function RegisterPage() {
                     setPassword(e.target.value);
                     if (passwordError) setPasswordError('');
                   }}
+                  onBlur={() => setTouched(t => ({ ...t, password: true }))}
                   required
-                  error={passwordError}
+                  error={getPasswordError() || passwordError}
                 />
                 
                 {password && (
@@ -275,16 +362,16 @@ export default function RegisterPage() {
                       <span className="text-xs text-text-secondary">Password strength</span>
                       <span className={`text-xs font-medium ${
                         strength <= 1 ? 'text-red-500' : 
-                        strength === 2 ? 'text-orange-500' : 
-                        strength === 3 ? 'text-yellow-500' : 'text-green-500'
+                        strength === 2 ? 'text-[#ff8800]' : 
+                        strength === 3 ? 'text-[#ffc300]' : 'text-green-500'
                       }`}>
                         {strength <= 1 ? 'Weak' : strength === 2 ? 'Fair' : strength === 3 ? 'Good' : 'Strong'}
                       </span>
                     </div>
-                    <div className="flex gap-1 h-1.5 mt-1 mb-5">
-                      <div className={`flex-1 rounded-full transition-colors duration-300 ${strength >= 1 ? (strength <= 1 ? 'bg-red-500' : strength === 2 ? 'bg-orange-500' : strength === 3 ? 'bg-yellow-500' : 'bg-green-500') : 'bg-gray-200'}`}></div>
-                      <div className={`flex-1 rounded-full transition-colors duration-300 ${strength >= 2 ? (strength === 2 ? 'bg-orange-500' : strength === 3 ? 'bg-yellow-500' : 'bg-green-500') : 'bg-gray-200'}`}></div>
-                      <div className={`flex-1 rounded-full transition-colors duration-300 ${strength >= 3 ? (strength === 3 ? 'bg-yellow-500' : 'bg-green-500') : 'bg-gray-200'}`}></div>
+                    <div className="flex gap-1 h-1.5 mt-1 mb-3">
+                      <div className={`flex-1 rounded-full transition-colors duration-300 ${strength >= 1 ? (strength <= 1 ? 'bg-red-500' : strength === 2 ? 'bg-[#ff8800]' : strength === 3 ? 'bg-[#ffc300]' : 'bg-green-500') : 'bg-gray-200'}`}></div>
+                      <div className={`flex-1 rounded-full transition-colors duration-300 ${strength >= 2 ? (strength === 2 ? 'bg-[#ff8800]' : strength === 3 ? 'bg-[#ffc300]' : 'bg-green-500') : 'bg-gray-200'}`}></div>
+                      <div className={`flex-1 rounded-full transition-colors duration-300 ${strength >= 3 ? (strength === 3 ? 'bg-[#ffc300]' : 'bg-green-500') : 'bg-gray-200'}`}></div>
                       <div className={`flex-1 rounded-full transition-colors duration-300 ${strength >= 4 ? 'bg-green-500' : 'bg-gray-200'}`}></div>
                     </div>
                   </div>
@@ -296,15 +383,16 @@ export default function RegisterPage() {
                   placeholder="Confirm your password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
+                  onBlur={() => setTouched(t => ({ ...t, confirmPassword: true }))}
                   required
-                  error={password && confirmPassword && password !== confirmPassword ? "Passwords do not match." : ""}
+                  error={getConfirmPasswordError() || getConfirmPasswordMismatchError()}
                 />
               </div>
             )}
 
             {/* Step 4: Profile Setup (Student Only) */}
             {currentStep === 4 && (
-              <div className="space-y-3 animate-fade-in max-[360px]:space-y-2.5">
+              <div className="space-y-2 animate-fade-in max-[360px]:space-y-1.5">
                 <div className="relative w-full">
                   <label className="block text-sm font-medium text-text-primary mb-1">
                     Current Level
@@ -367,7 +455,7 @@ export default function RegisterPage() {
             )}
           </div>
 
-          <div className="auth-card-actions mt-4 flex gap-2.5 items-center max-[360px]:mt-3 max-[360px]:gap-2">
+          <div className="auth-card-actions mt-3 flex gap-2.5 items-center max-[360px]:mt-2 max-[360px]:gap-2">
             {currentStep > 1 && (
               <button
                 type="button"
@@ -389,9 +477,9 @@ export default function RegisterPage() {
         </form>
 
         {currentStep === 2 && (
-          <div className="auth-card-social mt-4">
+          <div className="auth-card-social mt-3">
             <AuthDivider>or continue with</AuthDivider>
-            <div className="mt-1.5 max-[360px]:mt-1">
+            <div className="mt-1 max-[360px]:mt-0.5">
               <SocialLogin />
             </div>
           </div>

@@ -20,7 +20,7 @@ export default function AuthInput({
   const isError = !!error;
   
   return (
-    <div className="relative w-full mb-2 group">
+    <div className="relative w-full mb-1.5 group">
       {label && id && (
         <label htmlFor={id} className="block text-sm font-medium text-text-primary mb-1.5 transition-colors group-focus-within:text-primary">
           {label}
@@ -37,7 +37,7 @@ export default function AuthInput({
         <input
           id={id}
           type={type}
-          className={`w-full bg-surface text-text-primary rounded-xl py-2.5 ${icon ? 'pl-[2.75rem]' : 'pl-4'} pr-4 border transition-all duration-300 focus:outline-none focus:ring-[3px] focus:ring-primary/20 focus:border-primary hover:border-primary/50 placeholder:text-gray-400/80 ${
+          className={`w-full bg-surface text-text-primary rounded-lg py-2.5 ${icon ? 'pl-[2.75rem]' : 'pl-4'} pr-4 border transition-all duration-300 focus:outline-none focus:ring-[3px] focus:ring-primary/20 focus:border-primary hover:border-primary/50 placeholder:text-gray-400/80 ${
             isError 
               ? 'border-error focus:ring-error/20 focus:border-error hover:border-error/70' 
               : showSuccess 
