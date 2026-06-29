@@ -26,7 +26,28 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [touched, setTouched] = useState({ email: false, password: false });
   const queryClient = useQueryClient();
+
+  // Validation helpers
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  const emailRegexTest = (emailStr: string) => emailRegex.test(emailStr);
+
+  const getEmailError = () => {
+    if (!touched.email) return "";
+    if (!email) return "Email Address is required.";
+    if (!emailRegexTest(email)) return "Please enter a valid email address.";
+    return "";
+  };
+
+  const getPasswordError = () => {
+    if (!touched.password) return "";
+    if (!password) return "Password is required.";
+    if (password.length < 6) return "Minimum length is 6 characters.";
+    return "";
+  };
+
+  const isLoginFormValid = emailRegexTest(email) && password.length >= 6;
 
   const handleTabChange = (tab: "signin" | "signup") => {
     setActiveTab(tab);
@@ -36,6 +57,11 @@ export default function LoginPage() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
+    setTouched({ email: true, password: true });
+    if (!isLoginFormValid) {
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
 
     try {
@@ -89,7 +115,7 @@ export default function LoginPage() {
         </div>
 
         {errorMessage && (
-          <div className="auth-error flex items-start gap-2 rounded-xl border border-error bg-error/10 px-3 py-2 text-sm text-error shadow-sm mb-4 animate-in slide-in-from-top-2 fade-in duration-300">
+          <div className="auth-error flex items-start gap-2 rounded-lg border border-error bg-error/10 px-3 py-2 text-sm text-error shadow-sm mb-3 animate-in slide-in-from-top-2 fade-in duration-300">
             <svg
               className="w-4 h-4 mt-[2px] shrink-0 text-error"
               fill="none"
@@ -109,9 +135,9 @@ export default function LoginPage() {
 
         <form
           onSubmit={onSubmit}
-          className="auth-card-form space-y-2 sm:space-y-3"
+          className="auth-card-form space-y-1 sm:space-y-1.5"
         >
-          <div className="auth-step-region space-y-2 sm:space-y-3">
+          <div className="auth-step-region space-y-1 sm:space-y-1.5">
             <AuthInput
               id="email"
               type="email"
@@ -119,8 +145,10 @@ export default function LoginPage() {
               placeholder="name@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              onBlur={() => setTouched(t => ({ ...t, email: true }))}
               required
-              showSuccess={email.length > 5 && email.includes("@")}
+              error={getEmailError()}
+              showSuccess={touched.email && email.length > 0 && emailRegexTest(email)}
               icon={
                 <svg
                   className="h-5 w-5 text-text-secondary"
@@ -142,25 +170,27 @@ export default function LoginPage() {
               label="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              onBlur={() => setTouched(t => ({ ...t, password: true }))}
               required
+              error={getPasswordError()}
             />
             <RememberMe checked={rememberMe} onChange={setRememberMe} />
           </div>
 
-          <div className="auth-card-actions mt-2">
+          <div className="auth-card-actions mt-1.5">
             <AuthButton
               type="submit"
               loading={isLoading}
-              disabled={!email || !password}
+              disabled={!isLoginFormValid}
             >
               Sign In
             </AuthButton>
           </div>
         </form>
 
-        <div className="auth-card-social mt-4">
+        <div className="auth-card-social mt-3">
           <AuthDivider>or continue with</AuthDivider>
-          <div className="mt-4">
+          <div className="mt-3">
             <SocialLogin
               onGoogle={() => console.log("Google login")}
               onGithub={() => console.log("Github login")}
