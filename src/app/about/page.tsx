@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, Variants } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
 // ─── Team Data ────────────────────────────────────────────────────────────────
@@ -11,7 +11,7 @@ const TEAM = [
     initials: "HE",
     role: "Frontend Developer",
     gradient: "from-sky-500 to-cyan-400",
-    image: "/Hedra Emad.jpg",
+    image: "https://res.cloudinary.com/dtyhtiu5i/image/upload/v1782690776/116974143_n0f0de.jpg",
     github: "https://github.com",
     linkedin: "https://linkedin.com",
   },
@@ -20,7 +20,7 @@ const TEAM = [
     initials: "AM",
     role: "Frontend Developer",
     gradient: "from-amber-500 to-yellow-400",
-    image: "/Aliaa Mohammed.jpg",
+    image: "https://res.cloudinary.com/dtyhtiu5i/image/upload/v1782690891/271958319_fdg0l8.jpg",
     github: "https://github.com",
     linkedin: "https://linkedin.com",
   },
@@ -29,7 +29,7 @@ const TEAM = [
     initials: "FM",
     role: "UI/UX & Frontend",
     gradient: "from-pink-500 to-rose-400",
-    image: "/Fatma Mohamed.png",
+    image: "https://res.cloudinary.com/dtyhtiu5i/image/upload/v1782690891/176094471_yr6drs.png",
     github: "https://github.com",
     linkedin: "https://linkedin.com",
   },
@@ -38,7 +38,7 @@ const TEAM = [
     initials: "NM",
     role: "Backend Developer",
     gradient: "from-emerald-500 to-teal-400",
-    image: "/Nada Mahmoud.jpg",
+    image: "https://res.cloudinary.com/dtyhtiu5i/image/upload/v1782690890/121636515_gdcunf.jpg",
     github: "https://github.com",
     linkedin: "https://linkedin.com",
   },
@@ -47,7 +47,7 @@ const TEAM = [
     initials: "KM",
     role: "Full-Stack Developer",
     gradient: "from-violet-600 to-blue-500",
-    image: "/Kareem Mohamed.jpeg",
+    image: "https://res.cloudinary.com/dtyhtiu5i/image/upload/v1782690935/WhatsApp_Image_2026-03-05_at_4.35.54_AM_bxijfg.jpg",
     github: "https://github.com",
     linkedin: "https://linkedin.com",
   },
@@ -79,7 +79,7 @@ const STACK = [
   { name: "Vercel", color: "bg-slate-100 text-slate-700 border-slate-200" },
 ];
 
-const fadeUp = {
+const fadeUp : Variants = {
   hidden: { opacity: 0, y: 24 },
   visible: (i: number) => ({
     opacity: 1,
