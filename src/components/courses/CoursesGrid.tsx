@@ -8,8 +8,8 @@ import { Course } from "@/types/course";
 
 function SkeletonCard() {
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden
-                    shadow-[0_2px_12px_rgba(0,0,0,0.06)] animate-pulse">
+    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden
+                    shadow-md animate-pulse">
       <div className="h-[168px] bg-slate-200" />
       <div className="px-4 pt-4 pb-0">
         <div className="h-5 w-24 bg-slate-200 rounded-full mb-3" />
@@ -76,6 +76,10 @@ interface Props {
 export default function CoursesGrid({
   courses, isLoading, isFetching, onReset, limit,
 }: Props) {
+  // Deduplicate courses by id (or _id for API responses)
+  const uniqueCourses = Array.from(
+    new Map(courses.map(c => [c.id || (c as any)._id, c])).values()
+  );
 
   return (
     <div className={`
@@ -85,9 +89,9 @@ export default function CoursesGrid({
     `}>
       {isLoading
         ? Array.from({ length: limit }).map((_, i) => <SkeletonCard key={i} />)
-        : courses.length === 0
+        : uniqueCourses.length === 0
           ? <EmptyState onReset={onReset} />
-          : courses.map((course) => <CourseCard key={course.id} course={course} />)
+          : uniqueCourses.map((course) => <CourseCard key={course.id || (course as any)._id} course={course} />)
       }
     </div>
   );

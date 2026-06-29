@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { motion } from "framer-motion";
 import { Clock, Users, BookOpen, Heart } from "lucide-react";
 
 import { Course, CourseLevel } from "@/types/course";
@@ -13,6 +14,7 @@ import { getCart } from "@/lib/api/checkout";
 import { useSession } from "@/providers/SessionProvider";
 import { useCartContext } from "@/contexts/CartContext";
 import Toast from "@/components/ui/Toast";
+import DotsLoader from "@/components/ui/DotsLoader";
 
 // ─── Helpers
 
@@ -95,31 +97,6 @@ function CartIcon() {
   );
 }
 
-function Spinner() {
-  return (
-    <svg
-      className="animate-spin w-4 h-4"
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-    >
-      <circle
-        className="opacity-25"
-        cx="12"
-        cy="12"
-        r="10"
-        stroke="currentColor"
-        strokeWidth="3"
-      />
-      <path
-        className="opacity-75"
-        fill="currentColor"
-        d="M4 12a8 8 0 018-8v8H4z"
-      />
-    </svg>
-  );
-}
-
 export default function CourseCard({ course }: Props) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -162,45 +139,33 @@ export default function CourseCard({ course }: Props) {
     });
   }
 
-  const discount =
-    course.price > 0
-      ? Math.round(
-          ((course.price * 1.8 - course.price) / (course.price * 1.8)) * 100,
-        )
-      : 0;
-
-  const instructorName =
-    typeof course.instructorId === "object" && course.instructorId?.name
-      ? course.instructorId.name
-      : "Instructor";
+   const raw = course.instructor ?? course.instructorId;
+  const instructorName = raw
+    ? `${raw.firstName ?? ""} ${raw.lastName ?? ""}`.trim()
+    : "—";
 
   const instructorInitials =
-    instructorName
-      .split(" ")
-      .map((w: string) => w[0] ?? "")
-      .slice(0, 2)
+    [raw?.firstName?.[0] ?? "", raw?.lastName?.[0] ?? ""]
       .join("")
       .toUpperCase() || "IN";
-
   const categoryName =
     typeof course.categoryId === "object" && course.categoryId?.name
       ? course.categoryId.name
       : "Course";
 
   const safeThumbnail = getSafeImageSrc(course.thumbnail);
-  // console.log("COURSE CARD IMAGE:", course.title, course.thumbnail);
+ 
   return (
     <>
       {showToast && <Toast onDismiss={() => setShowToast(false)} />}
       <Link href={`/courses/${course.id}`} className="group block">
-      <article
+      <motion.article
+        whileHover={{ y: -4, boxShadow: "0 20px 40px rgba(59,24,146,0.15)" }}
+        transition={{ duration: 0.2, ease: "easeOut" }}
         className="
-          bg-white rounded-2xl border border-slate-200 overflow-hidden
-          flex flex-col h-full
-          shadow-[0_2px_12px_rgba(0,0,0,0.07)]
-          hover:shadow-[0_14px_40px_rgba(0,0,0,0.13)]
-          hover:-translate-y-1.5
-          transition-all duration-300 cursor-pointer
+          rounded-xl shadow-md bg-white cursor-pointer
+          overflow-hidden flex flex-col h-full
+          border border-slate-200
         "
       >
         {/* ── Thumbnail — fixed 168px ── */}
@@ -233,7 +198,7 @@ export default function CourseCard({ course }: Props) {
           </span>
 
           {/* wishlist */}
-          <button
+          {/* <button
             type="button"
             onClick={(e) => {
               e.preventDefault();
@@ -252,7 +217,7 @@ export default function CourseCard({ course }: Props) {
             `}
           >
             <Heart size={14} fill={wished ? "currentColor" : "none"} />
-          </button>
+          </button> */}
 
           {/* hover overlay */}
           <div
@@ -371,14 +336,6 @@ export default function CourseCard({ course }: Props) {
               <span className="text-[17px] font-black text-slate-900 leading-none tracking-tight">
                 ${course.price.toFixed(2)}
               </span>
-              {discount > 0 && (
-                <span
-                  className="text-[10px] font-bold bg-emerald-100 text-emerald-700
-                                 px-1.5 py-[3px] rounded-full whitespace-nowrap"
-                >
-                  {discount}% OFF
-                </span>
-              )}
             </div>
 
             <button
@@ -387,13 +344,13 @@ export default function CourseCard({ course }: Props) {
               disabled={isPending}
               aria-label="Add to cart"
               className="
-                bg-[#3B1892] text-white rounded-xl px-4 py-2 text-sm font-semibold
-                hover:bg-[#2f1275] transition-colors duration-150
+                bg-[#3B1892] text-white rounded-lg px-5 py-2.5 text-sm font-semibold
+                hover:bg-[#5B3DB8] transition-colors duration-200
                 flex items-center gap-1.5 flex-shrink-0
                 disabled:opacity-50 disabled:cursor-not-allowed
               "
             >
-              {isPending ? <Spinner /> : <CartIcon />}
+              {isPending ? <DotsLoader /> : <CartIcon />}
               <span className="whitespace-nowrap">Add to Cart</span>
             </button>
           </div>
@@ -404,7 +361,7 @@ export default function CourseCard({ course }: Props) {
             </p>
           )}
         </div>
-      </article>
+      </motion.article>
     </Link>
     </>
   );
