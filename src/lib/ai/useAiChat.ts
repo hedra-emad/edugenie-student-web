@@ -18,7 +18,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || '/api/proxy';
 
-export type AiChatEvent = 'lesson_chat' | 'course_chat' | 'roadmap_chat';
+export type AiChatEvent =
+  | 'lesson_chat'
+  | 'course_chat'
+  | 'roadmap_chat'
+  | 'coach_chat';
 
 export interface AiChatMessage {
   id: string;
@@ -91,6 +95,8 @@ function resolveRequest(
       const goal = (context.goal as string | undefined) ?? '';
       return { url: `${API_BASE}/ai/roadmap-chat`, extra: { goal } };
     }
+    case 'coach_chat':
+      return { url: `${API_BASE}/ai/coach-chat`, extra: {} };
   }
 }
 

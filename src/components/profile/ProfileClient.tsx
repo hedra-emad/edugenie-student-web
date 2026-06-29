@@ -11,11 +11,12 @@ import ProfileStatsStrip from "./ProfileStatsStrip";
 import LevelSelector from "./LevelSelector";
 import TagsEditor from "./TagsEditor";
 import MyLearning from "./MyLearning";
+import MyRoadmaps from "./MyRoadmaps";
 import CertificatesWidget from "./CertificatesWidget";
 import AccountInfoWidget from "./AccountInfoWidget";
 import ChangePasswordForm from "./ChangePasswordForm";
 
-type MainTab = "learning" | "security";
+type MainTab = "learning" | "roadmaps" | "security";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -86,6 +87,17 @@ export default function ProfileClient({ initialProfile, token }: Props) {
               </button>
               <button
                 type="button"
+                onClick={() => setActiveTab("roadmaps")}
+                className={`pb-3 text-sm font-medium transition-colors duration-150 ${
+                  activeTab === "roadmaps"
+                    ? "border-b-2 border-[#3B1892] text-[#3B1892] -mb-px"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                Roadmaps
+              </button>
+              <button
+                type="button"
                 onClick={() => setActiveTab("security")}
                 className={`pb-3 text-sm font-medium transition-colors duration-150 ${
                   activeTab === "security"
@@ -100,6 +112,12 @@ export default function ProfileClient({ initialProfile, token }: Props) {
             {activeTab === "learning" && (
               <motion.div variants={itemVariants}>
                 <MyLearning />
+              </motion.div>
+            )}
+
+            {activeTab === "roadmaps" && (
+              <motion.div variants={itemVariants}>
+                <MyRoadmaps />
               </motion.div>
             )}
 

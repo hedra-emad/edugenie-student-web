@@ -21,10 +21,13 @@ export async function generateMetadata({
 
 export default async function LearnPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ courseId: string }>;
+  searchParams: Promise<{ lesson?: string }>;
 }) {
   const { courseId } = await params;
+  const { lesson: requestedLessonId } = await searchParams;
 
   // Read JWT from cookies for server-side authenticated requests
   const cookieStore = await cookies();
@@ -35,18 +38,22 @@ export default async function LearnPage({
     getCourseForPlayer(courseId, token),
     getResumePosition(courseId, token),
   ]);
-  // console.log("token:", token);
-  // console.log("course:", course);
   // Hard redirect if the course doesn't exist or is inaccessible
   if (!course) redirect("/courses");
 
-  // Determine the starting lesson:
-  // 1. Use resume position if available
-  // 2. Fall back to the first available/in_progress lesson
-  // 3. Fall back to the very first lesson
   const allLessons = course.sections.flatMap((s) => s.lessons);
 
+  // Deep-link: `?lesson=<id>` (e.g. from a tutor citation) opens that exact
+  // lesson, as long as it exists and the student has it unlocked.
+  const deepLinked = requestedLessonId
+    ? allLessons.find(
+        (l) => l.id === requestedLessonId && l.state !== "locked",
+      )
+    : undefined;
+
+  // Otherwise: resume → first available/in_progress → first lesson.
   const startLessonId =
+    deepLinked?.id ??
     resume?.lessonId ??
     allLessons.find(
       (l) => l.state === "in_progress" || l.state === "available",
@@ -54,7 +61,9 @@ export default async function LearnPage({
     allLessons[0]?.id ??
     "";
 
-  const initialWatchedDuration = resume?.watchedDuration ?? 0;
+  // Resume's watched-duration only applies to the resumed lesson, not a
+  // deep-linked one.
+  const initialWatchedDuration = deepLinked ? 0 : (resume?.watchedDuration ?? 0);
 
   if (!startLessonId) redirect("/courses");
 

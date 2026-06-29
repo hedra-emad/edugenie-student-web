@@ -10,6 +10,7 @@ import VideoPlayer, { type VideoPlayerHandle } from "./VideoPlayer";
 import LessonSidebar from "./LessonSidebar";
 import TabBar from "./TabBar";
 import AiTutorPanel from "./AiTutorPanel";
+import PracticeQuizModal from "@/components/ai/PracticeQuizModal";
 
 interface Props {
   course: PlayerCourse;
@@ -25,6 +26,14 @@ export default function PlayerLayout({
   const router = useRouter();
   const videoPlayerRef = useRef<VideoPlayerHandle>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [quizSection, setQuizSection] = useState<{
+    sectionId: string;
+    label: string;
+  } | null>(null);
+  const openQuiz = useCallback(
+    (sectionId: string, label: string) => setQuizSection({ sectionId, label }),
+    [],
+  );
 
   // ── Active lesson state ───────────────────────────────────────────────────
   const findLesson = useCallback(
@@ -193,6 +202,7 @@ export default function PlayerLayout({
               course={course}
               activeLessonId={activeLesson.id}
               onLessonClick={handleLessonClick}
+              onQuizSection={openQuiz}
             />
           </div>
 
@@ -202,6 +212,7 @@ export default function PlayerLayout({
               course={course}
               activeLessonId={activeLesson.id}
               onLessonClick={handleLessonClick}
+              onQuizSection={openQuiz}
             />
           </div>
         </div>
@@ -229,9 +240,19 @@ export default function PlayerLayout({
               course={course}
               activeLessonId={activeLesson.id}
               onLessonClick={handleLessonClick}
+              onQuizSection={openQuiz}
             />
           </div>
         </div>
+      )}
+
+      {/* Targeted "Quiz Me" practice for a section */}
+      {quizSection && (
+        <PracticeQuizModal
+          sectionId={quizSection.sectionId}
+          label={quizSection.label}
+          onClose={() => setQuizSection(null)}
+        />
       )}
     </div>
   );
