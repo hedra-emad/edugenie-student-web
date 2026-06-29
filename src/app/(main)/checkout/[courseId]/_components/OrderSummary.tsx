@@ -261,13 +261,13 @@ export default function OrderSummary({
               </span>
             </div>
 
-            {/* Badge 2 — Mobile Wallet */}
+            {/* Badge 2 — meeza */}
            
             
 <div className="flex items-center justify-center px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl">
               <Image
-                src="/1596022647Mask Group 17402.png"
-                alt="Credit Card"
+                src="/meeza.png"
+                alt="Meeza"
                 width={110}
                 height={28}
                 className="h-6 w-auto object-contain"
@@ -282,7 +282,7 @@ export default function OrderSummary({
             <div className="flex items-center justify-center px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl">
               <Image
                 src="/vc.png"
-                alt="Credit Card"
+                alt="Vodafone Cash"
                 width={110}
                 height={28}
                 className="h-6 w-auto object-contain"
@@ -297,7 +297,7 @@ export default function OrderSummary({
             <div className="flex items-center justify-center px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl">
               <Image
                 src="/InstaPay_Logo.png"
-                alt="Credit Card"
+                alt="Instapay"
                 width={110}
                 height={28}
                 className="h-6 w-auto object-contain"
