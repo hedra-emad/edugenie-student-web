@@ -7,7 +7,7 @@ interface AuthTabsProps {
 
 export default function AuthTabs({ activeTab, onTabChange }: AuthTabsProps) {
   return (
-    <div className="relative flex p-1 bg-gray-100/80 backdrop-blur-sm rounded-xl mb-6 shadow-inner border border-gray-200/50">
+    <div className="relative flex p-1 bg-gray-100/80 backdrop-blur-sm rounded-lg mb-6 shadow-inner border border-gray-200/50">
       <div 
         className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-white rounded-lg shadow-sm transition-all duration-300 ease-out border border-gray-200/50 ${
           activeTab === 'signin' ? 'left-1' : 'left-[calc(50%+2px)]'

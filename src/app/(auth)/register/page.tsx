@@ -282,7 +282,7 @@ export default function RegisterPage() {
             {/* Step 2: Account Info */}
             {currentStep === 2 && (
               <div className="animate-fade-in space-y-1 max-[360px]:space-y-1 mb-11">
-                <div className="grid grid-cols-2 gap-5">
+                <div className="grid grid-cols-2 gap-5 mb-4">
                   <AuthInput
                     id="firstName"
                     label="First Name"
@@ -365,7 +365,7 @@ export default function RegisterPage() {
                         strength === 2 ? 'text-[#ff8800]' : 
                         strength === 3 ? 'text-[#ffc300]' : 'text-green-500'
                       }`}>
-                        {!password ? '—' : strength <= 1 ? 'Weak' : strength === 2 ? 'Fair' : strength === 3 ? 'Good' : 'Strong'}
+                        {!password ? '' : strength <= 1 ? 'Weak' : strength === 2 ? 'Fair' : strength === 3 ? 'Good' : 'Strong'}
                       </span>
                     </div>
                     <div className="flex gap-1 h-1.5 mt-1 mb-3">
@@ -391,7 +391,7 @@ export default function RegisterPage() {
 
             {/* Step 4: Profile Setup (Student Only) */}
             {currentStep === 4 && (
-              <div className="space-y-2 animate-fade-in max-[360px]:space-y-1.5">
+              <div className="space-y-4 animate-fade-in max-[360px]:space-y-1.5">
                 <div className="relative w-full">
                   <label className="block text-sm font-medium text-text-primary mb-1">
                     Current Level
@@ -399,7 +399,7 @@ export default function RegisterPage() {
                   <button
                     type="button"
                     onClick={() => setOpenLevel(!openLevel)}
-                    className={`w-full bg-white border py-2 pl-4 pr-10 text-sm shadow-sm transition-all duration-200 text-left relative focus:outline-none focus:ring-[3px] focus:ring-primary/20 ${
+                    className={`w-full bg-white border py-2 pl-4 pr-10 text-sm transition-all duration-200 text-left relative shadow-none focus:outline-none focus:ring-0 ${
                       openLevel || level ? 'border-primary' : 'border-gray-200 hover:border-primary/50'
                     } ${
                       openLevel ? 'rounded-t-xl rounded-b-none' : 'rounded-xl'
@@ -431,24 +431,24 @@ export default function RegisterPage() {
                   )}
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-text-primary mb-1">Areas of Interest</label>
-                  <div className="flex flex-wrap gap-2 max-[360px]:gap-1.5">
-                    {AVAILABLE_INTERESTS.map(interest => (
-                      <button
-                        key={interest}
-                        type="button"
-                        onClick={() => toggleInterest(interest)}
-                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 border max-[360px]:px-3 max-[360px]:py-1 max-[360px]:text-xs-alt ${
-                          interests.includes(interest)
-                            ? 'bg-primary/10 border-primary text-primary shadow-sm transform -translate-y-[1px]'
-                            : 'bg-surface border-gray-200 text-gray-400 hover:border-gray-300 hover:text-gray-600'
-                        }`}
-                      >
-                        {interest}
-                      </button>
-                    ))}
-                  </div>
+                <div className='mb-8'>
+                  <label className="block text-sm font-medium text-text-primary mb-4">Areas of Interest</label>
+                  <div className="grid grid-cols-3 gap-x-2 gap-y-3 max-[360px]:gap-x-1.5 justify-items-center">
+                  {AVAILABLE_INTERESTS.map(interest => (
+                    <button
+                      key={interest}
+                      type="button"
+                      onClick={() => toggleInterest(interest)}
+                      className={`px-3 py-2.5 rounded-full text-sm font-medium transition-all duration-200 border w-full text-center whitespace-nowrap overflow-hidden text-ellipsis max-[360px]:px-2 max-[360px]:py-2 max-[360px]:text-xs ${
+                        interests.includes(interest)
+                          ? 'bg-primary/10 border-primary text-primary shadow-sm transform -translate-y-[1px]'
+                          : 'bg-surface border-gray-200 text-gray-400 hover:border-gray-300 hover:text-gray-600'
+                      }`}
+                    >
+                      {interest}
+                    </button>
+                  ))}
+              </div>
                 </div>
               </div>
             )}
@@ -478,7 +478,7 @@ export default function RegisterPage() {
         {currentStep === 1     && (
           <div className="auth-card-social mt-3">
             <AuthDivider>or continue with</AuthDivider>
-            <div className="mt-1 max-[360px]:mt-0.5">
+            <div className="mt-5 max-[360px]:mt-0.5">
               <SocialLogin />
             </div>
           </div>
