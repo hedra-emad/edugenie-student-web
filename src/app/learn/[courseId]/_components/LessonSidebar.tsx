@@ -7,6 +7,8 @@ import SectionAccordion from "./SectionAccordion";
 interface Props {
   course: PlayerCourse;
   activeLessonId: string;
+  /** Live set of completed lesson ids (updates as the student finishes them). */
+  completedLessons?: Set<string>;
   onLessonClick: (lesson: PlayerLesson) => void;
   onQuizSection: (sectionId: string, label: string) => void;
 }
@@ -41,16 +43,26 @@ export function LessonSidebarSkeleton() {
 export default function LessonSidebar({
   course,
   activeLessonId,
+  completedLessons: completedSet,
   onLessonClick,
   onQuizSection,
 }: Props) {
+  const done = completedSet ?? new Set<string>();
+  const isDone = (id: string, state: string) =>
+    state === "completed" || done.has(id);
+
+  // Count progress over OWNED sections only (matches the backend scope).
   const totalLessons = course.sections.reduce(
-    (a, s) => a + s.lessons.length,
+    (a, s) => a + (s.isOwned ? s.lessons.length : 0),
     0,
   );
 
   const completedLessons = course.sections.reduce(
-    (a, s) => a + s.lessons.filter((l) => l.state === "completed").length,
+    (a, s) =>
+      a +
+      (s.isOwned
+        ? s.lessons.filter((l) => isDone(l.id, l.state)).length
+        : 0),
     0,
   );
 
@@ -90,6 +102,7 @@ export default function LessonSidebar({
             activeLessonId={activeLessonId}
             globalLessonIndex={sectionStartIndexes[index]}
             defaultOpen={section.id === activeSectionId}
+            completedLessons={done}
             onLessonClick={onLessonClick}
             onQuizSection={onQuizSection}
           />

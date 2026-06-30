@@ -124,8 +124,10 @@ export default function PlayerLayout({
   }, []);
 
   // ── Derived ───────────────────────────────────────────────────────────────
+  // Progress is measured over what the student OWNS, so a section-buyer can
+  // reach 100% (matches the backend's scope-aware progressPercentage).
   const totalLessons = course.sections.reduce(
-    (a, s) => a + s.lessons.length,
+    (a, s) => a + (s.isOwned ? s.lessons.length : 0),
     0,
   );
   const completedCount = completedLessons.size;
@@ -201,6 +203,7 @@ export default function PlayerLayout({
             <LessonSidebar
               course={course}
               activeLessonId={activeLesson.id}
+              completedLessons={completedLessons}
               onLessonClick={handleLessonClick}
               onQuizSection={openQuiz}
             />
@@ -211,6 +214,7 @@ export default function PlayerLayout({
             <LessonSidebar
               course={course}
               activeLessonId={activeLesson.id}
+              completedLessons={completedLessons}
               onLessonClick={handleLessonClick}
               onQuizSection={openQuiz}
             />
@@ -239,6 +243,7 @@ export default function PlayerLayout({
             <LessonSidebar
               course={course}
               activeLessonId={activeLesson.id}
+              completedLessons={completedLessons}
               onLessonClick={handleLessonClick}
               onQuizSection={openQuiz}
             />

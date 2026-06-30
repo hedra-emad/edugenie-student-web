@@ -1,9 +1,10 @@
 'use client';
 // _components/CoachClient.tsx
 // Tier-4 AI Learning Coach. On load it pulls a deterministic learning snapshot
-// (progress + weak spots) for the stats strip AND auto-asks the coach "where am
-// I / what next" so the page opens with proactive, data-grounded coaching.
-// Follow-ups are typed in the chat.
+// (progress + weak spots) for the stats strip. The chat is CHOICE-FIRST: the
+// coach does NOT speak first — the student picks a starter prompt (or types),
+// which becomes the opening user turn (satisfying the Bedrock start-with-user
+// rule). Follow-ups are typed in the chat.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAiChat } from '@/lib/ai/useAiChat';
@@ -15,9 +16,42 @@ import {
   SparkleIcon,
 } from '@/components/ai/chatUi';
 import PracticeQuizModal from '@/components/ai/PracticeQuizModal';
+import RecoveryPlanCard from '@/components/ai/RecoveryPlanCard';
+import {
+  getActiveRemediation,
+  type RemediationPlan,
+} from '@/lib/api/remediation';
 
-const OPENING = 'Where am I in my learning, and what should I focus on next?';
 const SNAPSHOT_URL = '/api/proxy/ai/coach/snapshot';
+
+// When tapped and the student has an active recovery plan, this starter scrolls
+// to the plan card instead of chatting.
+const RECOVER_STARTER = 'Help me recover a section I keep failing.';
+
+// Conversation starters: a short title + subtitle for a tidy 2×2 grid, and the
+// full `prompt` sent to the coach as the opening user turn.
+const STARTERS = [
+  {
+    label: 'Where am I?',
+    sub: 'Progress & next step',
+    prompt: 'Where am I in my learning, and what should I focus on next?',
+  },
+  {
+    label: 'Review weak spots',
+    sub: 'What to revisit',
+    prompt: 'Review my weak spots and tell me what to revisit.',
+  },
+  {
+    label: 'Plan my week',
+    sub: 'Build a study schedule',
+    prompt: 'Plan my study week.',
+  },
+  {
+    label: 'Recover a section',
+    sub: 'Get back on track',
+    prompt: RECOVER_STARTER,
+  },
+] as const;
 
 interface Snapshot {
   totalCourses: number;
@@ -46,7 +80,7 @@ interface Snapshot {
 export default function CoachClient() {
   const [input, setInput] = useState('');
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
-  const [tick, setTick] = useState(0);
+  const [recovery, setRecovery] = useState<RemediationPlan[]>([]);
   const [quizSection, setQuizSection] = useState<{
     sectionId: string;
     label: string;
@@ -61,7 +95,6 @@ export default function CoachClient() {
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const sentRef = useRef(false);
 
   // Pull the snapshot for the stats strip.
   const fetchSnapshot = useCallback(async () => {
@@ -74,16 +107,8 @@ export default function CoachClient() {
   }, []);
   useEffect(() => {
     void fetchSnapshot();
+    void getActiveRemediation().then(setRecovery);
   }, [fetchSnapshot]);
-
-  // Auto-ask the opening question once the connection is ready (user-first, so
-  // the Bedrock "start with a user message" rule holds).
-  useEffect(() => {
-    if (connection === 'connected' && !sentRef.current) {
-      sentRef.current = true;
-      send(OPENING);
-    }
-  }, [connection, send, tick]);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -92,6 +117,22 @@ export default function CoachClient() {
 
   const ready = connection === 'connected';
   const canSend = ready && !isStreaming && input.trim().length > 0;
+
+  // The conversation hasn't started until the student picks a starter or types.
+  const notStarted = messages.length === 0;
+
+  // Send a starter prompt as the opening user turn. The recovery starter jumps
+  // to the plan card instead of chatting when the student actually has one.
+  const startWith = (prompt: string) => {
+    if (prompt === RECOVER_STARTER && recovery.length > 0) {
+      document
+        .getElementById(`recovery-${recovery[0].sectionId}`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    if (!ready || isStreaming) return;
+    send(prompt);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,10 +143,9 @@ export default function CoachClient() {
   };
 
   const refresh = () => {
-    reset();
-    sentRef.current = false;
-    setTick((t) => t + 1); // re-fire the opening effect
+    reset(); // back to the choice-first starter screen
     void fetchSnapshot();
+    void getActiveRemediation().then(setRecovery);
   };
 
   return (
@@ -198,8 +238,11 @@ export default function CoachClient() {
         </div>
       )}
 
+      {/* Active quiz-recovery plans (failed a section 3×) */}
+      <RecoveryPlanCard plans={recovery} />
+
       {/* Chat card */}
-      <div className="flex h-[62vh] min-h-[440px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="flex h-[70vh] min-h-[540px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         {/* Connection strip */}
         <div className="flex flex-shrink-0 items-center justify-between border-b border-slate-100 px-4 py-2.5">
           <p className="flex items-center gap-1.5 text-[11.5px] font-medium text-slate-400">
@@ -245,6 +288,45 @@ export default function CoachClient() {
               body="The assistant is temporarily unavailable."
               action={{ label: 'Try again', onClick: reconnect }}
             />
+          ) : notStarted ? (
+            <div className="flex h-full flex-col items-center justify-center px-2 py-4 text-center">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#3B1892] to-[#5B3DB8] text-white shadow-md">
+                <SparkleIcon className="h-6 w-6" />
+              </div>
+              <p className="text-[17px] font-bold tracking-tight text-slate-800">
+                Where would you like to start?
+              </p>
+              <p className="mt-1.5 max-w-sm text-[13px] leading-relaxed text-slate-400">
+                Pick a starting point and I&apos;ll coach you from your real
+                progress — or just ask your own question below.
+              </p>
+              <div className="mt-6 grid w-full max-w-xl grid-cols-1 gap-3 sm:grid-cols-2">
+                {STARTERS.map((s) => (
+                  <button
+                    key={s.prompt}
+                    type="button"
+                    onClick={() => startWith(s.prompt)}
+                    disabled={!ready || isStreaming}
+                    className="group flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-left transition-all hover:-translate-y-0.5 hover:border-[#3B1892]/40 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
+                  >
+                    <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[#3B1892]/10 text-[#3B1892] transition-colors group-hover:bg-[#3B1892] group-hover:text-white">
+                      <SparkleIcon className="h-4 w-4" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-[13.5px] font-semibold text-slate-800">
+                        {s.label}
+                      </span>
+                      <span className="block text-[11.5px] text-slate-400">
+                        {s.sub}
+                      </span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+              {!ready && (
+                <p className="mt-5 text-[11.5px] text-slate-400">Connecting…</p>
+              )}
+            </div>
           ) : (
             messages.map((m) => <MessageBubble key={m.id} message={m} />)
           )}
