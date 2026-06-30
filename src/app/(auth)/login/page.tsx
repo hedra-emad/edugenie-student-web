@@ -15,10 +15,8 @@ import SocialLogin from "@/components/auth/SocialLogin";
 import { login, verifyExchangeToken, handoffCode } from "@/lib/api/auth";
 import { useQueryClient } from "@tanstack/react-query";
 
-const ANGULAR_URL = 
+const ANGULAR_URL =
   process.env.NEXT_PUBLIC_ANGULAR_APP_URL || "http://localhost:4200";
-const ADMIN_APP_URL =
-  process.env.NEXT_PUBLIC_ADMIN_APP_URL || "http://localhost:4200/admin-login";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -70,14 +68,8 @@ export default function LoginPage() {
       const response = await login({ email, password, rememberMe });
       const role = response?.data?.user?.role;
       const exchangeToken = response?.data?.exchangeToken;
+      // const user = response?.data?.user;
 
-      // Admins and super admins must not enter the Next.js app
-      if (role === "admin" || role === "superadmin") {
-        window.location.href = ADMIN_APP_URL;
-        return;
-      }
-
-      // Students and instructors continue into the Next.js app
       if (role === "student") {
         if (exchangeToken) {
           await verifyExchangeToken({ token: exchangeToken });
@@ -89,19 +81,11 @@ export default function LoginPage() {
         return;
       }
 
-      if (role === "instructor") {
-        // Angular Instructor Dashboard
-        const handoffResponse = await handoffCode();
-        const code = handoffResponse?.code;
-
-        if (!code) throw new Error("No handoff code returned");
-
-        window.location.href = `${ANGULAR_URL}/auth/redeem?code=${code}`;
-        return;
-      }
-
-      // Unknown role — redirect to admin login as a safe fallback
-      window.location.href = ADMIN_APP_URL;
+      // Non-student → Angular dashboard
+      const handoffResponse = await handoffCode();
+      const code = handoffResponse?.code;
+      if (!code) throw new Error("No handoff code returned");
+      window.location.href = `${ANGULAR_URL}/auth/redeem?code=${code}`;
     } catch (err: unknown) {
       console.error("Login error:", err);
       const status = (err as { status?: number })?.status;
@@ -209,7 +193,6 @@ export default function LoginPage() {
           <div className="mt-3">
             <SocialLogin
               onGoogle={() => console.log("Google login")}
-              onGithub={() => console.log("Github login")}
             />
           </div>
         </div>
