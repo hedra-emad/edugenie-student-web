@@ -262,7 +262,7 @@ export default function RegisterPage() {
         </div>
 
         {generalError && (
-          <div className="auth-error flex items-start gap-2 rounded-lg border border-error bg-error/10 px-3 py-2 text-sm text-error shadow-sm mb-3 animate-in slide-in-from-top-2 fade-in duration-300">
+          <div className="auth-error flex items-start gap-2 rounded-lg border border-error bg-error/10 px-3 py-2 text-sm text-error shadow-sm mb-1 animate-in slide-in-from-top-2 fade-in duration-300">
              <svg className="w-4 h-4 mt-[2px] shrink-0 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
              </svg>
@@ -281,12 +281,12 @@ export default function RegisterPage() {
 
             {/* Step 2: Account Info */}
             {currentStep === 2 && (
-              <div className="animate-fade-in space-y-1.5 max-[360px]:space-y-1">
-                <div className="grid grid-cols-1">
+              <div className="animate-fade-in space-y-1 max-[360px]:space-y-1 mb-11">
+                <div className="grid grid-cols-2 gap-5">
                   <AuthInput
                     id="firstName"
                     label="First Name"
-                    placeholder="John"
+                    placeholder="Enter your first name"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                     onBlur={() => setTouched(t => ({ ...t, firstName: true }))}
@@ -302,7 +302,7 @@ export default function RegisterPage() {
                   <AuthInput
                     id="lastName"
                     label="Last Name"
-                    placeholder="Doe"
+                    placeholder="Enter your last name"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
                     onBlur={() => setTouched(t => ({ ...t, lastName: true }))}
@@ -315,12 +315,12 @@ export default function RegisterPage() {
                       </svg>
                     }
                   />
-                </div>
+                </div>  
                 <AuthInput
                   id="email"
                   type="email"
                   label="Email Address"
-                  placeholder="john@example.com"
+                  placeholder="Enter your email address"
                   value={email}
                   onChange={(e) => {
                     setEmail(e.target.value);
@@ -356,26 +356,25 @@ export default function RegisterPage() {
                   error={getPasswordError() || passwordError}
                 />
                 
-                {password && (
                   <div>
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-text-secondary">Password strength</span>
                       <span className={`text-xs font-medium ${
+                        !password ? 'text-gray-400' :
                         strength <= 1 ? 'text-red-500' : 
                         strength === 2 ? 'text-[#ff8800]' : 
                         strength === 3 ? 'text-[#ffc300]' : 'text-green-500'
                       }`}>
-                        {strength <= 1 ? 'Weak' : strength === 2 ? 'Fair' : strength === 3 ? 'Good' : 'Strong'}
+                        {!password ? '—' : strength <= 1 ? 'Weak' : strength === 2 ? 'Fair' : strength === 3 ? 'Good' : 'Strong'}
                       </span>
                     </div>
                     <div className="flex gap-1 h-1.5 mt-1 mb-3">
-                      <div className={`flex-1 rounded-full transition-colors duration-300 ${strength >= 1 ? (strength <= 1 ? 'bg-red-500' : strength === 2 ? 'bg-[#ff8800]' : strength === 3 ? 'bg-[#ffc300]' : 'bg-green-500') : 'bg-gray-200'}`}></div>
-                      <div className={`flex-1 rounded-full transition-colors duration-300 ${strength >= 2 ? (strength === 2 ? 'bg-[#ff8800]' : strength === 3 ? 'bg-[#ffc300]' : 'bg-green-500') : 'bg-gray-200'}`}></div>
-                      <div className={`flex-1 rounded-full transition-colors duration-300 ${strength >= 3 ? (strength === 3 ? 'bg-[#ffc300]' : 'bg-green-500') : 'bg-gray-200'}`}></div>
-                      <div className={`flex-1 rounded-full transition-colors duration-300 ${strength >= 4 ? 'bg-green-500' : 'bg-gray-200'}`}></div>
+                      <div className={`flex-1 rounded-full transition-colors duration-300 ${password && strength >= 1 ? (strength <= 1 ? 'bg-red-500' : strength === 2 ? 'bg-[#ff8800]' : strength === 3 ? 'bg-[#ffc300]' : 'bg-green-500') : 'bg-gray-200'}`}></div>
+                      <div className={`flex-1 rounded-full transition-colors duration-300 ${password && strength >= 2 ? (strength === 2 ? 'bg-[#ff8800]' : strength === 3 ? 'bg-[#ffc300]' : 'bg-green-500') : 'bg-gray-200'}`}></div>
+                      <div className={`flex-1 rounded-full transition-colors duration-300 ${password && strength >= 3 ? (strength === 3 ? 'bg-[#ffc300]' : 'bg-green-500') : 'bg-gray-200'}`}></div>
+                      <div className={`flex-1 rounded-full transition-colors duration-300 ${password && strength >= 4 ? 'bg-green-500' : 'bg-gray-200'}`}></div>
                     </div>
                   </div>
-                )}
 
                 <PasswordInput
                   id="confirmPassword"
@@ -455,28 +454,28 @@ export default function RegisterPage() {
             )}
           </div>
 
-          <div className="auth-card-actions mt-3 flex gap-2.5 items-center max-[360px]:mt-2 max-[360px]:gap-2">
-            {currentStep > 1 && (
-              <button
-                type="button"
-                onClick={previousStep}
-                className="flex items-center justify-center h-btn-back px-4 rounded-xl border border-primary text-primary bg-transparent hover:bg-primary/5 hover:shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-1 transform hover:-translate-y-[1px] active:translate-y-[0px]"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-            )}
+          <div className="auth-card-actions mt-3 flex gap-2.5 items-stretch max-[360px]:mt-2 max-[360px]:gap-2">
+  {currentStep > 1 && (
+    <button
+      type="button"
+      onClick={previousStep}
+      className="flex items-center justify-center px-4 rounded-xl border border-primary text-primary bg-transparent hover:bg-primary/5 hover:shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-1 transform hover:-translate-y-[1px] active:translate-y-[0px]"
+    >
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+      </svg>
+    </button>
+  )}
 
-            <div className="flex-1 w-full">
-              <AuthButton type="submit" disabled={isStepInvalid()} loading={isSubmitting}>
-                {currentStep >= totalSteps ? 'Register' : 'Continue'}
-              </AuthButton>
-            </div>
-          </div>
+  <div className="flex-1 w-full">
+    <AuthButton type="submit" disabled={isStepInvalid()} loading={isSubmitting}>
+      {currentStep >= totalSteps ? 'Register' : 'Continue'}
+    </AuthButton>
+  </div>
+</div>
         </form>
 
-        {currentStep === 2 && (
+        {currentStep === 1     && (
           <div className="auth-card-social mt-3">
             <AuthDivider>or continue with</AuthDivider>
             <div className="mt-1 max-[360px]:mt-0.5">

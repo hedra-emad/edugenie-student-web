@@ -17,7 +17,7 @@ export default function PasswordInput({
   const isError = !!error;
 
   return (
-    <div className="relative w-full mb-3 group">
+    <div className="relative w-full mb-1 group">
       {label && id && (
         <label htmlFor={id} className="block text-sm font-medium text-text-primary mb-1.5 transition-colors group-focus-within:text-primary">
           {label}
@@ -59,14 +59,18 @@ export default function PasswordInput({
         </button>
       </div>
 
-      {isError && (
-        <div className="text-xs mt-1.5 ml-1 text-error animate-in slide-in-from-top-1 fade-in duration-200 flex items-start gap-1" aria-live="polite">
-          <svg className="w-3.5 h-3.5 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span className="block leading-relaxed">{error}</span>
-        </div>
-      )}
+      {/* Error block always rendered to reserve space; content/visibility toggled */}
+    <div
+      className={`mt-1.5 ml-1 text-error flex items-start gap-1 min-h-[1rem] transition-opacity duration-200 ${
+        isError ? 'opacity-100' : 'opacity-0 pointer-events-none'
+      }`}
+      aria-live="polite"
+    >
+      <svg className="w-3 h-3 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <span className="block leading-relaxed text-[10px]">{error || '\u00A0'}</span>
+    </div>
     </div>
   );
 }
