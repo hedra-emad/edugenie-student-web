@@ -12,7 +12,7 @@ import AuthButton from '@/components/auth/AuthButton';
 import AuthDivider from '@/components/auth/AuthDivider';
 import SocialLogin from '@/components/auth/SocialLogin';
 import RoleSelector from '@/components/auth/RoleSelector';
-import { register, login, handoffCode } from '@/lib/api/auth';
+import { register, login, handoffCode, getGoogleAuthUrl } from '@/lib/api/auth';
 
 const AVAILABLE_INTERESTS = ['AI & ML', 'Design', 'Business', 'Web Dev', 'Data Science'];
 
@@ -479,7 +479,11 @@ export default function RegisterPage() {
           <div className="auth-card-social mt-3">
             <AuthDivider>or continue with</AuthDivider>
             <div className="mt-5 max-[360px]:mt-0.5">
-              <SocialLogin />
+              <SocialLogin
+                onGoogle={() => {
+                  window.location.href = getGoogleAuthUrl(role);
+                }}
+              />
             </div>
           </div>
         )}

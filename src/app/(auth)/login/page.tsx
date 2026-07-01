@@ -12,7 +12,7 @@ import RememberMe from "@/components/auth/RememberMe";
 import AuthButton from "@/components/auth/AuthButton";
 import AuthDivider from "@/components/auth/AuthDivider";
 import SocialLogin from "@/components/auth/SocialLogin";
-import { login, verifyExchangeToken, handoffCode } from "@/lib/api/auth";
+import { login, verifyExchangeToken, handoffCode, getGoogleAuthUrl } from "@/lib/api/auth";
 import { useQueryClient } from "@tanstack/react-query";
 
 const ANGULAR_URL =
@@ -192,7 +192,9 @@ export default function LoginPage() {
           <AuthDivider>or continue with</AuthDivider>
           <div className="mt-3">
             <SocialLogin
-              onGoogle={() => console.log("Google login")}
+              onGoogle={() => {
+                window.location.href = getGoogleAuthUrl("student");
+              }}
             />
           </div>
         </div>
