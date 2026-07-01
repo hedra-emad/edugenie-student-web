@@ -12,6 +12,20 @@ const BASE_URL = typeof window === 'undefined' ? SERVER_API_URL : '/api/proxy';
 const AUTH_API_URL = `${BASE_URL}/auth`;
 const USERS_API_URL = `${BASE_URL}/users`;
 
+/**
+ * Absolute Google OAuth start URL on the NestJS backend. This is a full-page
+ * browser navigation (backend → Google → backend → auth-callback), so it must
+ * hit the real API origin, NOT the same-origin /api/proxy. `role` only affects
+ * NEW accounts (existing users keep their role); anything but `instructor` is
+ * clamped to `student` server-side.
+ */
+export function getGoogleAuthUrl(role: 'student' | 'instructor' = 'student'): string {
+  const base = resolveApiBase(
+    process.env.NEXT_PUBLIC_API_URL || 'https://edugenie-api.vercel.app',
+  );
+  return `${base}/auth/google?role=${encodeURIComponent(role)}`;
+}
+
 export async function login(credentials: Record<string, any>) {
   const res = await fetchWithTimeout(`${AUTH_API_URL}/login`, {
     method: 'POST',

@@ -1,9 +1,10 @@
 'use client';
 // _components/CoachClient.tsx
-// Tier-4 AI Learning Coach. On load it pulls a deterministic learning snapshot
-// (progress + weak spots) for the stats strip AND auto-asks the coach "where am
-// I / what next" so the page opens with proactive, data-grounded coaching.
-// Follow-ups are typed in the chat.
+// Tier-4 AI Learning Coach. Choice-first: the page opens on a starter screen and
+// nothing is sent until the student picks a prompt (or types one) — this also
+// keeps the Bedrock "start with a user message" rule. A deterministic snapshot
+// (progress + weak spots) feeds the stats strip; active recovery plans surface
+// above the chat.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAiChat } from '@/lib/ai/useAiChat';
@@ -15,9 +16,51 @@ import {
   SparkleIcon,
 } from '@/components/ai/chatUi';
 import PracticeQuizModal from '@/components/ai/PracticeQuizModal';
+import RecoveryPlanCard from '@/components/ai/RecoveryPlanCard';
+import {
+  getActiveRemediation,
+  type RemediationPlan,
+} from '@/lib/api/remediation';
 
-const OPENING = 'Where am I in my learning, and what should I focus on next?';
 const SNAPSHOT_URL = '/api/proxy/ai/coach/snapshot';
+
+// Sentinel: this starter scrolls to the recovery card instead of sending.
+const RECOVER_STARTER = '__recover__';
+
+interface Starter {
+  label: string;
+  sub: string;
+  prompt: string;
+  icon: 'compass' | 'target' | 'chart' | 'shield';
+}
+
+const STARTERS: Starter[] = [
+  {
+    label: 'Where am I?',
+    sub: 'Progress across my courses',
+    prompt: 'Where am I in my learning, and what should I focus on next?',
+    icon: 'compass',
+  },
+  {
+    label: 'What next?',
+    sub: 'Pick my next lesson',
+    prompt: 'What is the single most important thing I should work on next?',
+    icon: 'target',
+  },
+  {
+    label: 'My weak spots',
+    sub: 'Where I keep slipping',
+    prompt:
+      'Which topics am I weakest in based on my quiz scores, and how do I fix them?',
+    icon: 'chart',
+  },
+  {
+    label: 'Recovery plan',
+    sub: 'Bounce back from a fail',
+    prompt: RECOVER_STARTER,
+    icon: 'shield',
+  },
+];
 
 interface Snapshot {
   totalCourses: number;
@@ -46,7 +89,7 @@ interface Snapshot {
 export default function CoachClient() {
   const [input, setInput] = useState('');
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
-  const [tick, setTick] = useState(0);
+  const [recovery, setRecovery] = useState<RemediationPlan[]>([]);
   const [quizSection, setQuizSection] = useState<{
     sectionId: string;
     label: string;
@@ -61,29 +104,20 @@ export default function CoachClient() {
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const sentRef = useRef(false);
 
-  // Pull the snapshot for the stats strip.
-  const fetchSnapshot = useCallback(async () => {
+  // Deterministic snapshot + active recovery plans.
+  const fetchAux = useCallback(async () => {
     try {
       const res = await fetch(SNAPSHOT_URL, { credentials: 'include' });
       if (res.ok) setSnapshot((await res.json()) as Snapshot);
     } catch {
       /* non-fatal — the chat still works without the strip */
     }
+    setRecovery(await getActiveRemediation());
   }, []);
   useEffect(() => {
-    void fetchSnapshot();
-  }, [fetchSnapshot]);
-
-  // Auto-ask the opening question once the connection is ready (user-first, so
-  // the Bedrock "start with a user message" rule holds).
-  useEffect(() => {
-    if (connection === 'connected' && !sentRef.current) {
-      sentRef.current = true;
-      send(OPENING);
-    }
-  }, [connection, send, tick]);
+    void fetchAux();
+  }, [fetchAux]);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -92,6 +126,21 @@ export default function CoachClient() {
 
   const ready = connection === 'connected';
   const canSend = ready && !isStreaming && input.trim().length > 0;
+  const notStarted = messages.length === 0;
+
+  const startWith = (prompt: string) => {
+    if (prompt === RECOVER_STARTER) {
+      if (recovery.length > 0) {
+        document
+          .getElementById(`recovery-${recovery[0].sectionId}`)
+          ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        send('I recently struggled with a section. How can I recover?');
+      }
+      return;
+    }
+    if (ready) send(prompt);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,9 +152,7 @@ export default function CoachClient() {
 
   const refresh = () => {
     reset();
-    sentRef.current = false;
-    setTick((t) => t + 1); // re-fire the opening effect
-    void fetchSnapshot();
+    void fetchAux();
   };
 
   return (
@@ -146,6 +193,9 @@ export default function CoachClient() {
           />
         </div>
       )}
+
+      {/* Active recovery plans */}
+      <RecoveryPlanCard plans={recovery} />
 
       {/* Weak spots — drill them with a targeted quiz */}
       {snapshot && snapshot.weakSpots.length > 0 && (
@@ -199,7 +249,7 @@ export default function CoachClient() {
       )}
 
       {/* Chat card */}
-      <div className="flex h-[62vh] min-h-[440px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="flex h-[70vh] min-h-[540px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         {/* Connection strip */}
         <div className="flex flex-shrink-0 items-center justify-between border-b border-slate-100 px-4 py-2.5">
           <p className="flex items-center gap-1.5 text-[11.5px] font-medium text-slate-400">
@@ -218,21 +268,23 @@ export default function CoachClient() {
                 ? 'Connecting…'
                 : 'Offline'}
           </p>
-          <button
-            type="button"
-            onClick={refresh}
-            disabled={isStreaming}
-            className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-[11.5px] font-medium text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 disabled:opacity-50"
-          >
-            <RefreshIcon className="h-3.5 w-3.5" />
-            Refresh
-          </button>
+          {!notStarted && (
+            <button
+              type="button"
+              onClick={refresh}
+              disabled={isStreaming}
+              className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-[11.5px] font-medium text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 disabled:opacity-50"
+            >
+              <RefreshIcon className="h-3.5 w-3.5" />
+              New chat
+            </button>
+          )}
         </div>
 
-        {/* Messages */}
+        {/* Body */}
         <div
           ref={scrollRef}
-          className="flex-1 space-y-4 overflow-y-auto px-4 py-5 sm:px-6"
+          className="flex-1 overflow-y-auto px-4 py-5 sm:px-6"
         >
           {connection === 'unauthenticated' ? (
             <StateNotice
@@ -245,8 +297,14 @@ export default function CoachClient() {
               body="The assistant is temporarily unavailable."
               action={{ label: 'Try again', onClick: reconnect }}
             />
+          ) : notStarted ? (
+            <StarterScreen ready={ready} onPick={startWith} />
           ) : (
-            messages.map((m) => <MessageBubble key={m.id} message={m} />)
+            <div className="space-y-4">
+              {messages.map((m) => (
+                <MessageBubble key={m.id} message={m} />
+              ))}
+            </div>
           )}
         </div>
 
@@ -289,6 +347,96 @@ export default function CoachClient() {
       )}
     </div>
   );
+}
+
+// ── Choice-first starter screen (symmetric 2×2 grid) ─────────────────────────
+function StarterScreen({
+  ready,
+  onPick,
+}: {
+  ready: boolean;
+  onPick: (prompt: string) => void;
+}) {
+  return (
+    <div className="flex h-full flex-col items-center justify-center py-6 text-center">
+      <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-100 text-[#3B1892]">
+        <SparkleIcon className="h-6 w-6" />
+      </div>
+      <h2 className="text-[17px] font-bold text-slate-800">
+        How can I help you today?
+      </h2>
+      <p className="mt-1 max-w-sm text-[13px] text-slate-400">
+        Pick a starting point, or just type your own question below.
+      </p>
+
+      <div className="mt-6 grid w-full max-w-xl grid-cols-1 gap-3 sm:grid-cols-2">
+        {STARTERS.map((s) => (
+          <button
+            key={s.label}
+            type="button"
+            disabled={!ready}
+            onClick={() => onPick(s.prompt)}
+            className="group flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-left transition-all hover:-translate-y-0.5 hover:border-[#3B1892]/40 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
+          >
+            <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-violet-50 text-[#3B1892] transition-colors group-hover:bg-[#3B1892] group-hover:text-white">
+              <StarterIcon icon={s.icon} />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-[13.5px] font-bold text-slate-800">
+                {s.label}
+              </span>
+              <span className="block truncate text-[11.5px] text-slate-400">
+                {s.sub}
+              </span>
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StarterIcon({ icon }: { icon: Starter['icon'] }) {
+  const common = {
+    className: 'h-5 w-5',
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 2,
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+  };
+  switch (icon) {
+    case 'compass':
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="10" />
+          <path d="M16.24 7.76l-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z" />
+        </svg>
+      );
+    case 'target':
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="10" />
+          <circle cx="12" cy="12" r="6" />
+          <circle cx="12" cy="12" r="2" />
+        </svg>
+      );
+    case 'chart':
+      return (
+        <svg {...common}>
+          <path d="M3 3v18h18" />
+          <path d="M18 17V9M13 17V5M8 17v-3" />
+        </svg>
+      );
+    case 'shield':
+      return (
+        <svg {...common}>
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          <path d="M9 12l2 2 4-4" />
+        </svg>
+      );
+  }
 }
 
 function Stat({

@@ -1,5 +1,8 @@
 // src/types/player.ts
 export type LessonState = "locked" | "available" | "in_progress" | "completed";
+
+/** Why a section is locked (mirrors backend `applyStudentAccess`). */
+export type SectionLockReason = "not_purchased" | "locked_progress" | null;
 export interface PlayerLesson {
   id: string;
   title: string;
@@ -17,6 +20,15 @@ export interface PlayerSection {
   description: string;
   isOwned: boolean;
   isCompleted: boolean;
+  /** True when the student may open this section (owned AND previous gate passed). */
+  isUnlocked: boolean;
+  /** True when this section has an approved quiz that gates the next one. */
+  hasQuiz: boolean;
+  /** Why the section is locked, if it is. */
+  lockReason: SectionLockReason;
+  /** The section whose quiz must be passed to unlock this one (progress lock). */
+  requiredSectionId: string | null;
+  requiredSectionTitle: string | null;
   lessons: PlayerLesson[];
 }
 
@@ -47,6 +59,12 @@ export interface ProgressResponse {
   sectionCompleted: boolean;
   quizRequired: boolean;
   quizSectionId: string | null;
+  /** Scope-aware course progress (%), when the backend returns it. */
+  courseProgress?: number;
+  /** Number of completed lessons within the student's owned scope. */
+  completedLessons?: number;
+  /** Total lessons within the student's owned scope. */
+  totalLessons?: number;
 }
 
 export interface Note {

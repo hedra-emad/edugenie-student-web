@@ -7,6 +7,7 @@ import SectionAccordion from "./SectionAccordion";
 interface Props {
   course: PlayerCourse;
   activeLessonId: string;
+  completedLessons?: Set<string>;
   onLessonClick: (lesson: PlayerLesson) => void;
   onQuizSection: (sectionId: string, label: string) => void;
 }
@@ -41,16 +42,21 @@ export function LessonSidebarSkeleton() {
 export default function LessonSidebar({
   course,
   activeLessonId,
+  completedLessons,
   onLessonClick,
   onQuizSection,
 }: Props) {
-  const totalLessons = course.sections.reduce(
+  // Scope-aware counts — only sections the student owns count toward progress.
+  const ownedSections = course.sections.filter((s) => s.isOwned);
+  const totalLessons = ownedSections.reduce(
     (a, s) => a + s.lessons.length,
     0,
   );
 
-  const completedLessons = course.sections.reduce(
-    (a, s) => a + s.lessons.filter((l) => l.state === "completed").length,
+  const isDone = (lessonId: string, state: string) =>
+    completedLessons?.has(lessonId) || state === "completed";
+  const completedCount = ownedSections.reduce(
+    (a, s) => a + s.lessons.filter((l) => isDone(l.id, l.state)).length,
     0,
   );
 
@@ -75,7 +81,7 @@ export default function LessonSidebar({
           Course Contents
         </p>
         <p className="text-xs text-slate-500 mt-0.5">
-          {completedLessons} of {totalLessons} lessons complete
+          {completedCount} of {totalLessons} lessons complete
         </p>
       </div>
 
@@ -90,6 +96,7 @@ export default function LessonSidebar({
             activeLessonId={activeLessonId}
             globalLessonIndex={sectionStartIndexes[index]}
             defaultOpen={section.id === activeSectionId}
+            completedLessons={completedLessons}
             onLessonClick={onLessonClick}
             onQuizSection={onQuizSection}
           />
