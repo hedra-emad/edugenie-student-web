@@ -246,8 +246,8 @@ export default function EnrollCard({ course }: { course: Course }) {
   const btnLabel = (() => {
     if (btnState === "enrolled") return "Go to Course";
     if (btnState === "disabled") return "Select at least one section";
-    if (btnState === "full") return `Buy Full Course — $${fullCoursePrice}`;
-    return `Buy Selected — $${selectedTotal}`;
+    if (btnState === "full") return `Buy Full Course — EGP${fullCoursePrice}`;
+    return `Buy Selected — EGP${selectedTotal}`;
   })();
 
   const helperText = (() => {
@@ -455,10 +455,10 @@ export default function EnrollCard({ course }: { course: Course }) {
                 </span>
                 <span className="text-[20px] font-extrabold text-slate-900 leading-none">
                   {btnState === "disabled"
-                    ? "$0"
+                    ? "EGP0"
                     : btnState === "full"
-                      ? `$${fullCoursePrice}`
-                      : `$${selectedTotal}`}
+                      ? `EGP${fullCoursePrice}`
+                      : `EGP${selectedTotal}`}
                 </span>
               </div>
             )}

@@ -219,7 +219,7 @@ export default function CoursesFilterBar({
 
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
-              $
+              EGP
             </span>
             <input
               type="number"
@@ -242,7 +242,7 @@ export default function CoursesFilterBar({
 
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
-              $
+              EGP
             </span>
             <input
               type="number"
@@ -324,13 +324,13 @@ export default function CoursesFilterBar({
             )}
             {filters.minPrice !== "" && (
               <Chip
-                label={`Min $${filters.minPrice}`}
+                label={`Min EGP${filters.minPrice}`}
                 onRemove={() => onFilterChange({ minPrice: "" })}
               />
             )}
             {filters.maxPrice !== "" && (
               <Chip
-                label={`Max $${filters.maxPrice}`}
+                label={`Max EGP${filters.maxPrice}`}
                 onRemove={() => onFilterChange({ maxPrice: "" })}
               />
             )}

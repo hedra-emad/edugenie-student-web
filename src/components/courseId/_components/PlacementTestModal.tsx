@@ -240,9 +240,9 @@ export default function PlacementTestModal({ courseId, onClose }: Props) {
                 {adding ? (
                   <Spinner />
                 ) : result.mode === "full" ? (
-                  `Add full course — $${result.coursePrice}`
+                  `Add full course — EGP${result.coursePrice}`
                 ) : (
-                  `Add ${result.sections.length} section${result.sections.length > 1 ? "s" : ""} — $${result.totalPrice}`
+                  `Add ${result.sections.length} section${result.sections.length > 1 ? "s" : ""} — EGP${result.totalPrice}`
                 )}
               </button>
             )}
@@ -289,7 +289,7 @@ function ResultView({ result }: { result: PlacementRecommendation }) {
               </span>
             ) : (
               <span className="shrink-0 text-[11px] font-bold text-violet-700 bg-violet-50 px-2.5 py-1 rounded-full">
-                Recommended{typeof r.price === "number" ? ` · $${r.price}` : ""}
+                Recommended{typeof r.price === "number" ? ` · EGP${r.price}` : ""}
               </span>
             )}
           </div>

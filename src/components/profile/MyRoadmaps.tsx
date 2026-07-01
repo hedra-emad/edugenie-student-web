@@ -257,7 +257,7 @@ function RoadmapCard({
           >
             {busy
               ? "Adding…"
-              : `Buy remaining ${remainingItems.length} · $${remainingPrice}`}
+              : `Buy remaining ${remainingItems.length} · EGP${remainingPrice}`}
           </button>
         )}
       </div>

@@ -384,7 +384,7 @@ function SuccessCard({
                 )}
               </div>
               <span className="text-[13px] font-bold text-slate-800 flex-shrink-0">
-                ${item.price}
+                EGP{item.price}
               </span>
             </div>
           ))}
@@ -397,7 +397,7 @@ function SuccessCard({
             Total paid
           </span>
           <span className="text-[18px] font-extrabold" style={{ color: BRAND }}>
-            ${order.total}
+            EGP{order.total}
           </span>
         </div>
 

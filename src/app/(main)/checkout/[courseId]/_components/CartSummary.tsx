@@ -116,7 +116,7 @@ export default function CartSummary({ items }: CartSummaryProps) {
                 </span>
               </div>
               <span className="text-[15px] font-extrabold text-slate-900 flex-shrink-0">
-                ${item.price.toFixed(2)}
+                EGP{item.price.toFixed(2)}
               </span>
             </div>
           );
@@ -154,7 +154,7 @@ export default function CartSummary({ items }: CartSummaryProps) {
                     </span>
                   </div>
                   <span className="text-[12.5px] font-semibold text-slate-800 flex-shrink-0 ml-3">
-                    ${section.price.toFixed(2)}
+                    EGP{section.price.toFixed(2)}
                   </span>
                 </div>
               ))}
@@ -162,7 +162,7 @@ export default function CartSummary({ items }: CartSummaryProps) {
 
             <div className="flex justify-end mt-2 pt-2 border-t border-slate-100">
               <span className="text-[13px] font-extrabold text-slate-900">
-                ${groupTotal.toFixed(2)}
+                EGP{groupTotal.toFixed(2)}
               </span>
             </div>
           </div>
