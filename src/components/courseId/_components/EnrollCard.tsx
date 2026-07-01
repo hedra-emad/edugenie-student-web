@@ -168,7 +168,7 @@ function SectionRow({
           className={`text-[13px] font-bold flex-shrink-0
           ${isChecked ? "text-violet-700" : "text-slate-700"}`}
         >
-          ${price}
+          EGP{price}
         </span>
       )}
     </div>

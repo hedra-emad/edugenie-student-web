@@ -334,7 +334,7 @@ export default function CourseCard({ course }: Props) {
           <div className="flex items-center justify-between gap-2 pt-3">
             <div className="flex items-baseline gap-1.5">
               <span className="text-[17px] font-black text-slate-900 leading-none tracking-tight">
-                ${course.price.toFixed(2)}
+                EGP{course.price.toFixed(2)}
               </span>
             </div>
 
