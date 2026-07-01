@@ -262,7 +262,7 @@ export default function RegisterPage() {
         </div>
 
         {generalError && (
-          <div className="auth-error flex items-start gap-2 rounded-lg border border-error bg-error/10 px-3 py-2 text-sm text-error shadow-sm mb-3 animate-in slide-in-from-top-2 fade-in duration-300">
+          <div className="auth-error flex items-start gap-2 rounded-lg border border-error bg-error/10 px-3 py-2 text-sm text-error shadow-sm mb-1 animate-in slide-in-from-top-2 fade-in duration-300">
              <svg className="w-4 h-4 mt-[2px] shrink-0 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
              </svg>
@@ -281,12 +281,12 @@ export default function RegisterPage() {
 
             {/* Step 2: Account Info */}
             {currentStep === 2 && (
-              <div className="animate-fade-in space-y-1.5 max-[360px]:space-y-1">
-                <div className="grid grid-cols-1">
+              <div className="animate-fade-in space-y-1 max-[360px]:space-y-1 mb-11">
+                <div className="grid grid-cols-2 gap-5 mb-4">
                   <AuthInput
                     id="firstName"
                     label="First Name"
-                    placeholder="John"
+                    placeholder="Enter your first name"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                     onBlur={() => setTouched(t => ({ ...t, firstName: true }))}
@@ -302,7 +302,7 @@ export default function RegisterPage() {
                   <AuthInput
                     id="lastName"
                     label="Last Name"
-                    placeholder="Doe"
+                    placeholder="Enter your last name"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
                     onBlur={() => setTouched(t => ({ ...t, lastName: true }))}
@@ -315,12 +315,12 @@ export default function RegisterPage() {
                       </svg>
                     }
                   />
-                </div>
+                </div>  
                 <AuthInput
                   id="email"
                   type="email"
                   label="Email Address"
-                  placeholder="john@example.com"
+                  placeholder="Enter your email address"
                   value={email}
                   onChange={(e) => {
                     setEmail(e.target.value);
@@ -356,26 +356,25 @@ export default function RegisterPage() {
                   error={getPasswordError() || passwordError}
                 />
                 
-                {password && (
                   <div>
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-text-secondary">Password strength</span>
                       <span className={`text-xs font-medium ${
+                        !password ? 'text-gray-400' :
                         strength <= 1 ? 'text-red-500' : 
                         strength === 2 ? 'text-[#ff8800]' : 
                         strength === 3 ? 'text-[#ffc300]' : 'text-green-500'
                       }`}>
-                        {strength <= 1 ? 'Weak' : strength === 2 ? 'Fair' : strength === 3 ? 'Good' : 'Strong'}
+                        {!password ? '' : strength <= 1 ? 'Weak' : strength === 2 ? 'Fair' : strength === 3 ? 'Good' : 'Strong'}
                       </span>
                     </div>
                     <div className="flex gap-1 h-1.5 mt-1 mb-3">
-                      <div className={`flex-1 rounded-full transition-colors duration-300 ${strength >= 1 ? (strength <= 1 ? 'bg-red-500' : strength === 2 ? 'bg-[#ff8800]' : strength === 3 ? 'bg-[#ffc300]' : 'bg-green-500') : 'bg-gray-200'}`}></div>
-                      <div className={`flex-1 rounded-full transition-colors duration-300 ${strength >= 2 ? (strength === 2 ? 'bg-[#ff8800]' : strength === 3 ? 'bg-[#ffc300]' : 'bg-green-500') : 'bg-gray-200'}`}></div>
-                      <div className={`flex-1 rounded-full transition-colors duration-300 ${strength >= 3 ? (strength === 3 ? 'bg-[#ffc300]' : 'bg-green-500') : 'bg-gray-200'}`}></div>
-                      <div className={`flex-1 rounded-full transition-colors duration-300 ${strength >= 4 ? 'bg-green-500' : 'bg-gray-200'}`}></div>
+                      <div className={`flex-1 rounded-full transition-colors duration-300 ${password && strength >= 1 ? (strength <= 1 ? 'bg-red-500' : strength === 2 ? 'bg-[#ff8800]' : strength === 3 ? 'bg-[#ffc300]' : 'bg-green-500') : 'bg-gray-200'}`}></div>
+                      <div className={`flex-1 rounded-full transition-colors duration-300 ${password && strength >= 2 ? (strength === 2 ? 'bg-[#ff8800]' : strength === 3 ? 'bg-[#ffc300]' : 'bg-green-500') : 'bg-gray-200'}`}></div>
+                      <div className={`flex-1 rounded-full transition-colors duration-300 ${password && strength >= 3 ? (strength === 3 ? 'bg-[#ffc300]' : 'bg-green-500') : 'bg-gray-200'}`}></div>
+                      <div className={`flex-1 rounded-full transition-colors duration-300 ${password && strength >= 4 ? 'bg-green-500' : 'bg-gray-200'}`}></div>
                     </div>
                   </div>
-                )}
 
                 <PasswordInput
                   id="confirmPassword"
@@ -392,7 +391,7 @@ export default function RegisterPage() {
 
             {/* Step 4: Profile Setup (Student Only) */}
             {currentStep === 4 && (
-              <div className="space-y-2 animate-fade-in max-[360px]:space-y-1.5">
+              <div className="space-y-4 animate-fade-in max-[360px]:space-y-1.5">
                 <div className="relative w-full">
                   <label className="block text-sm font-medium text-text-primary mb-1">
                     Current Level
@@ -400,7 +399,7 @@ export default function RegisterPage() {
                   <button
                     type="button"
                     onClick={() => setOpenLevel(!openLevel)}
-                    className={`w-full bg-white border py-2 pl-4 pr-10 text-sm shadow-sm transition-all duration-200 text-left relative focus:outline-none focus:ring-[3px] focus:ring-primary/20 ${
+                    className={`w-full bg-white border py-2 pl-4 pr-10 text-sm transition-all duration-200 text-left relative shadow-none focus:outline-none focus:ring-0 ${
                       openLevel || level ? 'border-primary' : 'border-gray-200 hover:border-primary/50'
                     } ${
                       openLevel ? 'rounded-t-xl rounded-b-none' : 'rounded-xl'
@@ -432,54 +431,54 @@ export default function RegisterPage() {
                   )}
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-text-primary mb-1">Areas of Interest</label>
-                  <div className="flex flex-wrap gap-2 max-[360px]:gap-1.5">
-                    {AVAILABLE_INTERESTS.map(interest => (
-                      <button
-                        key={interest}
-                        type="button"
-                        onClick={() => toggleInterest(interest)}
-                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 border max-[360px]:px-3 max-[360px]:py-1 max-[360px]:text-xs-alt ${
-                          interests.includes(interest)
-                            ? 'bg-primary/10 border-primary text-primary shadow-sm transform -translate-y-[1px]'
-                            : 'bg-surface border-gray-200 text-gray-400 hover:border-gray-300 hover:text-gray-600'
-                        }`}
-                      >
-                        {interest}
-                      </button>
-                    ))}
-                  </div>
+                <div className='mb-8'>
+                  <label className="block text-sm font-medium text-text-primary mb-4">Areas of Interest</label>
+                  <div className="grid grid-cols-3 gap-x-2 gap-y-3 max-[360px]:gap-x-1.5 justify-items-center">
+                  {AVAILABLE_INTERESTS.map(interest => (
+                    <button
+                      key={interest}
+                      type="button"
+                      onClick={() => toggleInterest(interest)}
+                      className={`px-3 py-2.5 rounded-full text-sm font-medium transition-all duration-200 border w-full text-center whitespace-nowrap overflow-hidden text-ellipsis max-[360px]:px-2 max-[360px]:py-2 max-[360px]:text-xs ${
+                        interests.includes(interest)
+                          ? 'bg-primary/10 border-primary text-primary shadow-sm transform -translate-y-[1px]'
+                          : 'bg-surface border-gray-200 text-gray-400 hover:border-gray-300 hover:text-gray-600'
+                      }`}
+                    >
+                      {interest}
+                    </button>
+                  ))}
+              </div>
                 </div>
               </div>
             )}
           </div>
 
-          <div className="auth-card-actions mt-3 flex gap-2.5 items-center max-[360px]:mt-2 max-[360px]:gap-2">
-            {currentStep > 1 && (
-              <button
-                type="button"
-                onClick={previousStep}
-                className="flex items-center justify-center h-btn-back px-4 rounded-xl border border-primary text-primary bg-transparent hover:bg-primary/5 hover:shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-1 transform hover:-translate-y-[1px] active:translate-y-[0px]"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-            )}
+          <div className="auth-card-actions mt-3 flex gap-2.5 items-stretch max-[360px]:mt-2 max-[360px]:gap-2">
+  {currentStep > 1 && (
+    <button
+      type="button"
+      onClick={previousStep}
+      className="flex items-center justify-center px-4 rounded-xl border border-primary text-primary bg-transparent hover:bg-primary/5 hover:shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-1 transform hover:-translate-y-[1px] active:translate-y-[0px]"
+    >
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+      </svg>
+    </button>
+  )}
 
-            <div className="flex-1 w-full">
-              <AuthButton type="submit" disabled={isStepInvalid()} loading={isSubmitting}>
-                {currentStep >= totalSteps ? 'Register' : 'Continue'}
-              </AuthButton>
-            </div>
-          </div>
+  <div className="flex-1 w-full">
+    <AuthButton type="submit" disabled={isStepInvalid()} loading={isSubmitting}>
+      {currentStep >= totalSteps ? 'Register' : 'Continue'}
+    </AuthButton>
+  </div>
+</div>
         </form>
 
-        {currentStep === 2 && (
+        {currentStep === 1     && (
           <div className="auth-card-social mt-3">
             <AuthDivider>or continue with</AuthDivider>
-            <div className="mt-1 max-[360px]:mt-0.5">
+            <div className="mt-5 max-[360px]:mt-0.5">
               <SocialLogin />
             </div>
           </div>

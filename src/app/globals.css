@@ -84,3 +84,11 @@ body {
   margin: 0;
   font-family: Roboto, "Helvetica Neue", sans-serif;
 }
+
+.auth-page button:not(:disabled) {
+  cursor: pointer;
+}
+
+.auth-page button:disabled {
+  cursor: not-allowed;
+}
