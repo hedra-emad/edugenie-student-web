@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
-import { Suspense } from "react";
+import React, { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import AuthLayout from "@/components/auth/AuthLayout";
 import AuthLogo from "@/components/auth/AuthLogo";
 import AuthCard from "@/components/auth/AuthCard";
@@ -199,7 +199,15 @@ const ANGULAR_URL =
               required
               error={getPasswordError()}
             />
-            <RememberMe checked={rememberMe} onChange={setRememberMe} />
+            <div className="flex items-center justify-between gap-3">
+              <RememberMe checked={rememberMe} onChange={setRememberMe} />
+              <Link
+                href="/forgot-password"
+                className="whitespace-nowrap text-sm font-medium text-[#3B1892] hover:underline"
+              >
+                Forgot password?
+              </Link>
+            </div>
           </div>
 
           <div className="auth-card-actions">
