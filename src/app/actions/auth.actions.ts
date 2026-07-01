@@ -2,6 +2,7 @@
 
 import { cookies } from 'next/headers';
 import { resolveApiBase } from '@/lib/apiBase';
+import { fetchWithTimeout } from '@/lib/api/fetchWithTimeout';
 
 const REMOTE_API =
   process.env.NESTJS_API_URL ||
@@ -22,12 +23,14 @@ export async function generateHandoffCodeAction(): Promise<{ code: string; expir
     throw new Error('Not authenticated');
   }
 
-  const res = await fetch(`${API_URL}/auth/handoff-code`, {
+  const res = await fetchWithTimeout(`${API_URL}/auth/handoff-code`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Cookie: `jwt=${jwt}`,
     },
+    timeout: 10000,
+    maxRetries: 3,
   });
 
   if (!res.ok) {
