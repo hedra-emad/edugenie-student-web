@@ -202,7 +202,7 @@ const ANGULAR_URL =
             <RememberMe checked={rememberMe} onChange={setRememberMe} />
           </div>
 
-          <div className="auth-card-actions mt-1.5">
+          <div className="auth-card-actions">
             <AuthButton
               type="submit"
               loading={isLoading}
