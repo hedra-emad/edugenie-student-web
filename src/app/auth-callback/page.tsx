@@ -33,7 +33,19 @@ function AuthCallbackContent() {
         router.refresh();
       } catch (err) {
         console.error("Verification error:", err);
-        window.location.href = `${dashboardUrl}/login?error=invalid_token`;
+        const errorMessage = (err as any)?.message || "Authentication failed";
+        const isNetworkError =
+          errorMessage.includes("ECONNRESET") ||
+          errorMessage.includes("ECONNREFUSED") ||
+          errorMessage.includes("timeout") ||
+          errorMessage.includes("AbortError");
+
+        if (isNetworkError) {
+          // Transient connection error - show a more helpful message
+          window.location.href = `${dashboardUrl}/login?error=connection_error`;
+        } else {
+          window.location.href = `${dashboardUrl}/login?error=invalid_token`;
+        }
       }
     };
 

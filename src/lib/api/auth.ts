@@ -1,6 +1,7 @@
 // On the server (SSR), call NestJS directly.
 // In the browser, go through /api/proxy so cookies stay same-domain.
 import { resolveApiBase } from "@/lib/apiBase";
+import { fetchWithTimeout } from "./fetchWithTimeout";
 
 const REMOTE_API =
   process.env.NESTJS_API_URL ||
@@ -26,11 +27,13 @@ export function getGoogleAuthUrl(role: 'student' | 'instructor' = 'student'): st
 }
 
 export async function login(credentials: Record<string, any>) {
-  const res = await fetch(`${AUTH_API_URL}/login`, {
+  const res = await fetchWithTimeout(`${AUTH_API_URL}/login`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(credentials),
+    timeout: 10000,
+    maxRetries: 3,
   });
 
   if (!res.ok) {
@@ -98,10 +101,12 @@ export async function getProfile() {
 }
 
 export async function handoffCode() {
-  const res = await fetch(`${AUTH_API_URL}/handoff-code`, {
+  const res = await fetchWithTimeout(`${AUTH_API_URL}/handoff-code`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
+    timeout: 10000,
+    maxRetries: 3,
   });
 
   if (!res.ok) {
@@ -135,11 +140,13 @@ export async function redeemCode(payload: { code: string }) {
 }
 
 export async function verifyExchangeToken(payload: { token: string }) {
-  const res = await fetch(`${AUTH_API_URL}/verify-exchange-token`, {
+  const res = await fetchWithTimeout(`${AUTH_API_URL}/verify-exchange-token`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
+    timeout: 10000, // Give longer timeout for auth callback flow
+    maxRetries: 3,
   });
 
   if (!res.ok) {
