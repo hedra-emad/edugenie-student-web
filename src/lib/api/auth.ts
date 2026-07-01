@@ -152,3 +152,40 @@ export async function verifyExchangeToken(payload: { token: string }) {
 
   return res.json();
 }
+
+// ── Email verification + password reset (Phase 4) ───────────────────────────
+
+async function postPublic(path: string, body: Record<string, unknown>) {
+  const res = await fetch(`${AUTH_API_URL}/${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const json: { message?: string; data?: { message?: string } } = await res
+    .json()
+    .catch(() => ({}));
+  if (!res.ok) {
+    const errObj: Error & { status?: number } = new Error(
+      json.message ?? `Request failed: ${res.status}`,
+    );
+    errObj.status = res.status;
+    throw errObj;
+  }
+  return json;
+}
+
+export function verifyEmail(payload: { token: string }) {
+  return postPublic('verify-email', payload);
+}
+
+export function resendVerification(payload: { email: string }) {
+  return postPublic('resend-verification', payload);
+}
+
+export function forgotPassword(payload: { email: string }) {
+  return postPublic('forgot-password', payload);
+}
+
+export function resetPassword(payload: { token: string; password: string }) {
+  return postPublic('reset-password', payload);
+}

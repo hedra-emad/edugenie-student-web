@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import AuthLayout from "@/components/auth/AuthLayout";
 import AuthLogo from "@/components/auth/AuthLogo";
 import AuthCard from "@/components/auth/AuthCard";
@@ -174,7 +175,15 @@ export default function LoginPage() {
               required
               error={getPasswordError()}
             />
-            <RememberMe checked={rememberMe} onChange={setRememberMe} />
+            <div className="flex items-center justify-between gap-3">
+              <RememberMe checked={rememberMe} onChange={setRememberMe} />
+              <Link
+                href="/forgot-password"
+                className="whitespace-nowrap text-sm font-medium text-[#3B1892] hover:underline"
+              >
+                Forgot password?
+              </Link>
+            </div>
           </div>
 
           <div className="auth-card-actions">
