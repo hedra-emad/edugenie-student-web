@@ -44,4 +44,10 @@ export interface EnrolledCourse {
   thumbnail: string;
   progressPercent: number; // 0–100
   enrolledAt: string;      // ISO string
+  /** Whether the student owns the full course or only specific sections. */
+  accessType?: "full" | "section";
+  /** How many sections are owned (section access only). */
+  ownedSectionCount?: number;
+  /** True once the enrolled scope is fully completed. */
+  isCompleted?: boolean;
 }

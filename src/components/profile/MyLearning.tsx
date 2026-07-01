@@ -18,13 +18,13 @@ export default function MyLearning() {
   const { data: courses = [], isLoading } = useEnrollments();
 
   const filtered = useMemo(() => {
+    const done = (c: (typeof courses)[number]) =>
+      c.isCompleted ?? c.progressPercent === 100;
     if (activeTab === "in-progress") {
-      return courses.filter(
-        (c) => c.progressPercent > 0 && c.progressPercent < 100
-      );
+      return courses.filter((c) => c.progressPercent > 0 && !done(c));
     }
     if (activeTab === "completed") {
-      return courses.filter((c) => c.progressPercent === 100);
+      return courses.filter(done);
     }
     return courses;
   }, [courses, activeTab]);

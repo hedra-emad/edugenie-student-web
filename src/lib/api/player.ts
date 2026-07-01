@@ -155,6 +155,14 @@ export async function saveProgress(
       quizRequired: Boolean(raw.quizRequired),
       quizSectionId:
         typeof raw.quizSectionId === "string" ? raw.quizSectionId : null,
+      courseProgress:
+        typeof raw.courseProgress === "number" ? raw.courseProgress : undefined,
+      completedLessons:
+        typeof raw.completedLessons === "number"
+          ? raw.completedLessons
+          : undefined,
+      totalLessons:
+        typeof raw.totalLessons === "number" ? raw.totalLessons : undefined,
     };
   } catch {
     return null;
@@ -238,12 +246,30 @@ function normaliseSection(raw: Record<string, unknown>) {
     ? (raw.lessons as Record<string, unknown>[]).map(normaliseLesson)
     : [];
 
+  const isOwned = Boolean(raw.isOwned);
+  const lockReason = (
+    raw.lockReason === "not_purchased" || raw.lockReason === "locked_progress"
+      ? raw.lockReason
+      : null
+  ) as import("@/types/player").SectionLockReason;
+
   return {
     id: String(raw.id),
     title: typeof raw.title === "string" ? raw.title : "Section",
     description: typeof raw.description === "string" ? raw.description : "",
-    isOwned: Boolean(raw.isOwned),
+    isOwned,
     isCompleted: Boolean(raw.isCompleted),
+    // When the backend omits `isUnlocked` (older payloads), fall back to ownership.
+    isUnlocked:
+      typeof raw.isUnlocked === "boolean" ? raw.isUnlocked : isOwned,
+    hasQuiz: Boolean(raw.hasQuiz),
+    lockReason,
+    requiredSectionId:
+      typeof raw.requiredSectionId === "string" ? raw.requiredSectionId : null,
+    requiredSectionTitle:
+      typeof raw.requiredSectionTitle === "string"
+        ? raw.requiredSectionTitle
+        : null,
     lessons,
   };
 }

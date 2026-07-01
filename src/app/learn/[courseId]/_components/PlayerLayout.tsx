@@ -124,8 +124,9 @@ export default function PlayerLayout({
   }, []);
 
   // ── Derived ───────────────────────────────────────────────────────────────
+  // Scope-aware: only owned sections count toward the header progress.
   const totalLessons = course.sections.reduce(
-    (a, s) => a + s.lessons.length,
+    (a, s) => a + (s.isOwned ? s.lessons.length : 0),
     0,
   );
   const completedCount = completedLessons.size;
@@ -201,6 +202,7 @@ export default function PlayerLayout({
             <LessonSidebar
               course={course}
               activeLessonId={activeLesson.id}
+              completedLessons={completedLessons}
               onLessonClick={handleLessonClick}
               onQuizSection={openQuiz}
             />
@@ -211,6 +213,7 @@ export default function PlayerLayout({
             <LessonSidebar
               course={course}
               activeLessonId={activeLesson.id}
+              completedLessons={completedLessons}
               onLessonClick={handleLessonClick}
               onQuizSection={openQuiz}
             />
@@ -239,6 +242,7 @@ export default function PlayerLayout({
             <LessonSidebar
               course={course}
               activeLessonId={activeLesson.id}
+              completedLessons={completedLessons}
               onLessonClick={handleLessonClick}
               onQuizSection={openQuiz}
             />

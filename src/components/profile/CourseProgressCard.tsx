@@ -9,7 +9,8 @@ interface Props {
 }
 
 export default function CourseProgressCard({ course }: Props) {
-  const isCompleted = course.progressPercent === 100;
+  const isCompleted = course.isCompleted ?? course.progressPercent === 100;
+  const isSectionAccess = course.accessType === "section";
 
   return (
     <Link
@@ -35,6 +36,24 @@ export default function CourseProgressCard({ course }: Props) {
                       group-hover:text-[#3B1892] transition-colors duration-150 leading-snug">
           {course.title}
         </p>
+
+        {/* Access chip — mirrors the player's lock treatment: partial vs full */}
+        {isSectionAccess ? (
+          <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10.5px] font-semibold text-[#3B1892]">
+            <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <rect x="5" y="11" width="14" height="10" rx="2" />
+              <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+            </svg>
+            Section access
+            {course.ownedSectionCount
+              ? ` · ${course.ownedSectionCount} section${course.ownedSectionCount === 1 ? "" : "s"}`
+              : ""}
+          </span>
+        ) : (
+          <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10.5px] font-semibold text-slate-500">
+            Full course
+          </span>
+        )}
 
         {/* Progress bar */}
         <div className="mt-2">
