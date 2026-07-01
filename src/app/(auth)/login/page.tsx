@@ -214,7 +214,7 @@ const ANGULAR_URL =
         </form>
 
         <div className="auth-card-social mt-3">
-          <AuthDivider>or continue with</AuthDivider>
+          <AuthDivider>or continue with </AuthDivider>
           <div className="mt-3">
             <SocialLogin onGoogle={() => redirectToGoogleAuth()} />
           </div>
