@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import AuthLayout from "@/components/auth/AuthLayout";
 import AuthLogo from "@/components/auth/AuthLogo";
 import AuthCard from "@/components/auth/AuthCard";
@@ -12,14 +13,17 @@ import RememberMe from "@/components/auth/RememberMe";
 import AuthButton from "@/components/auth/AuthButton";
 import AuthDivider from "@/components/auth/AuthDivider";
 import SocialLogin from "@/components/auth/SocialLogin";
+import { redirectToGoogleAuth } from "@/lib/api/auth/googleAuth";
 import { login, verifyExchangeToken, handoffCode } from "@/lib/api/auth";
 import { useQueryClient } from "@tanstack/react-query";
 
 const ANGULAR_URL =
   process.env.NEXT_PUBLIC_ANGULAR_APP_URL || "http://localhost:4200";
 
-export default function LoginPage() {
+ function LoginPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const oauthError = searchParams.get("error");
   const [activeTab, setActiveTab] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -113,7 +117,26 @@ export default function LoginPage() {
         <div className="auth-card-header">
           <AuthTabs activeTab={activeTab} onTabChange={handleTabChange} />
         </div>
-
+        {oauthError === "invalid_token" && (
+          <div className="auth-error flex items-start gap-2 rounded-lg border border-error bg-error/10 px-3 py-2 text-sm text-error shadow-sm mb-3 animate-in slide-in-from-top-2 fade-in duration-300">
+            <svg
+              className="w-4 h-4 mt-[2px] shrink-0 text-error"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <span className="leading-relaxed">
+              Google sign-in failed. Please try again.
+            </span>
+          </div>
+        )}
         {errorMessage && (
           <div className="auth-error flex items-start gap-2 rounded-lg border border-error bg-error/10 px-3 py-2 text-sm text-error shadow-sm mb-3 animate-in slide-in-from-top-2 fade-in duration-300">
             <svg
@@ -145,10 +168,12 @@ export default function LoginPage() {
               placeholder="name@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              onBlur={() => setTouched(t => ({ ...t, email: true }))}
+              onBlur={() => setTouched((t) => ({ ...t, email: true }))}
               required
               error={getEmailError()}
-              showSuccess={touched.email && email.length > 0 && emailRegexTest(email)}
+              showSuccess={
+                touched.email && email.length > 0 && emailRegexTest(email)
+              }
               icon={
                 <svg
                   className="h-5 w-5 text-text-secondary"
@@ -170,7 +195,7 @@ export default function LoginPage() {
               label="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              onBlur={() => setTouched(t => ({ ...t, password: true }))}
+              onBlur={() => setTouched((t) => ({ ...t, password: true }))}
               required
               error={getPasswordError()}
             />
@@ -189,14 +214,19 @@ export default function LoginPage() {
         </form>
 
         <div className="auth-card-social mt-3">
-          <AuthDivider>or continue with</AuthDivider>
+          <AuthDivider>or continue with </AuthDivider>
           <div className="mt-3">
-            <SocialLogin
-              onGoogle={() => console.log("Google login")}
-            />
+            <SocialLogin onGoogle={() => redirectToGoogleAuth()} />
           </div>
         </div>
       </AuthCard>
     </AuthLayout>
+  );
+}
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginPageContent />
+    </Suspense>
   );
 }
