@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { resolveApiBase } from "@/lib/apiBase";
 
 // Direct (browser → API) base so we can clear the API-domain cookie too.
@@ -10,9 +9,6 @@ const API_BASE = resolveApiBase(
 );
 
 export default function LogoutPage() {
-  const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
-
   useEffect(() => {
     let isMounted = true;
 
@@ -28,12 +24,13 @@ export default function LogoutPage() {
           credentials: "include",
         }),
       ]);
-      try {
-        if (isMounted) router.push("/");
-      } catch (err) {
-        console.error("Logout error:", err);
-        if (isMounted) router.push("/");
-      }
+
+      // Full-document navigation (NOT router.push): the header and session are
+      // server components derived from the `jwt` cookie. A soft nav would keep
+      // the stale "logged-in" UI — and leave the login link non-functional —
+      // until a manual refresh. A hard load re-runs SSR with the now-cleared
+      // cookies and resets all client caches.
+      if (isMounted) window.location.replace("/");
     }
 
     handleLogout();
@@ -41,7 +38,7 @@ export default function LogoutPage() {
     return () => {
       isMounted = false;
     };
-  }, [router]);
+  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
