@@ -33,18 +33,18 @@ const mdComponents: Components = {
       </a>
     );
   },
-  p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+  p: ({ children }) => <p className="mb-2.5 last:mb-0">{children}</p>,
   ul: ({ children }) => (
-    <ul className="mb-2 list-disc space-y-1 pl-5 marker:text-slate-400 last:mb-0">
+    <ul className="mb-2.5 list-disc space-y-1.5 pl-5 marker:text-[#3B1892]/50 last:mb-0">
       {children}
     </ul>
   ),
   ol: ({ children }) => (
-    <ol className="mb-2 list-decimal space-y-1 pl-5 marker:text-slate-400 last:mb-0">
+    <ol className="mb-2.5 list-decimal space-y-1.5 pl-5 marker:text-[#3B1892]/50 last:mb-0">
       {children}
     </ol>
   ),
-  li: ({ children }) => <li className="pl-0.5">{children}</li>,
+  li: ({ children }) => <li className="pl-0.5 leading-relaxed">{children}</li>,
   strong: ({ children }) => (
     <strong className="font-semibold text-slate-900">{children}</strong>
   ),
