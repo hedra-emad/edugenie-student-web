@@ -14,7 +14,7 @@ import AuthButton from "@/components/auth/AuthButton";
 import AuthDivider from "@/components/auth/AuthDivider";
 import SocialLogin from "@/components/auth/SocialLogin";
 import { redirectToGoogleAuth } from "@/lib/api/auth/googleAuth";
-import { login, verifyExchangeToken, handoffCode } from "@/lib/api/auth";
+import { login, verifyExchangeToken, handoffCode, logout } from "@/lib/api/auth";
 import { useQueryClient } from "@tanstack/react-query";
 
 const ANGULAR_URL =
@@ -85,11 +85,22 @@ const ANGULAR_URL =
         return;
       }
 
-      // Non-student → Angular dashboard
-      const handoffResponse = await handoffCode();
-      const code = handoffResponse?.code;
-      if (!code) throw new Error("No handoff code returned");
-      window.location.href = `${ANGULAR_URL}/auth/redeem?code=${code}`;
+      if (role === "instructor") {
+        // Instructor → hand off to the Angular dashboard.
+        const handoffResponse = await handoffCode();
+        const code = handoffResponse?.code;
+        if (!code) throw new Error("No handoff code returned");
+        window.location.href = `${ANGULAR_URL}/auth/redeem?code=${code}`;
+        return;
+      }
+
+      // admin / superadmin — this app is for students and instructors only.
+      // The backend already minted a session cookie, so revoke it before
+      // turning them away toward the admin dashboard.
+      await logout().catch(() => {});
+      setErrorMessage(
+        "Administrator accounts can't sign in here. Please use the admin dashboard.",
+      );
     } catch (err: unknown) {
       console.error("Login error:", err);
       const status = (err as { status?: number })?.status;

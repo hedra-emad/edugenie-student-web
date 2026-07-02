@@ -3,7 +3,7 @@
 import { useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import { verifyExchangeToken } from "@/lib/api/auth";
+import { verifyExchangeToken, logout } from "@/lib/api/auth";
 
 function AuthCallbackContent() {
   const searchParams = useSearchParams();
@@ -27,7 +27,18 @@ function AuthCallbackContent() {
       try {
         // Goes through /api/proxy so the backend's Set-Cookie is rewritten as a
         // first-party HttpOnly cookie on this (student-web) domain.
-        await verifyExchangeToken({ token });
+        const result = await verifyExchangeToken({ token });
+
+        // This app is for students and instructors only. If an admin account
+        // arrives here (e.g. via "Continue with Google"), revoke the session
+        // that was just minted and send them to the admin dashboard instead.
+        const role = result?.data?.user?.role;
+        if (role === "admin" || role === "superadmin") {
+          await logout().catch(() => {});
+          window.location.href = `${dashboardUrl}/admin-login?error=use_dashboard`;
+          return;
+        }
+
         // Land the student on their home page.
         router.replace("/");
         router.refresh();
