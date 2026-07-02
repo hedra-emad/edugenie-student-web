@@ -7,6 +7,20 @@ const BASE_URL =
   'https://edugenie-api.vercel.app';
 const SERVER_API_URL = resolveApiBase(BASE_URL);
 
+// The browser-facing refresh cookie only needs to reach the proxy's own auth
+// routes (/api/proxy/auth/*), so scope it there — it never rides along on
+// regular API traffic.
+const REFRESH_COOKIE_BROWSER_PATH = '/api/proxy/auth';
+
+// Auth endpoints whose own 401 must NOT trigger a silent refresh+retry
+// (failed login is failed login; refresh recursion would loop).
+const NO_REFRESH_PATHS = new Set([
+  'auth/login',
+  'auth/register',
+  'auth/refresh',
+  'auth/logout',
+]);
+
 export async function GET(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   return forwardRequest(req, (await params).path, 'GET');
 }
@@ -33,6 +47,60 @@ function isCrossSiteMutation(req: NextRequest, method: string): boolean {
   return origin !== req.nextUrl.origin;
 }
 
+function readCookie(cookieHeader: string, name: string): string | null {
+  return (
+    cookieHeader
+      .split(';')
+      .map((c) => c.trim())
+      .find((c) => c.startsWith(`${name}=`))
+      ?.slice(name.length + 1) ?? null
+  );
+}
+
+/**
+ * Re-mints a backend Set-Cookie for the browser: the proxy is same-origin, so
+ * SameSite=Lax is sufficient (vs the backend's cross-site SameSite=None), and
+ * the refresh cookie gets the proxy-local path. Max-Age is carried over from
+ * the backend so cookie and token lifetimes stay in sync (including Max-Age=0
+ * deletions on logout / dead-session refreshes).
+ */
+function remintCookie(backendCookie: string): string | null {
+  const [pair, ...attrs] = backendCookie.split(';').map((s) => s.trim());
+  const eq = pair.indexOf('=');
+  if (eq < 0) return null;
+  const name = pair.slice(0, eq);
+  const value = pair.slice(eq + 1);
+  if (name !== 'jwt' && name !== 'refreshToken') return backendCookie;
+
+  const maxAge = attrs
+    .find((a) => a.toLowerCase().startsWith('max-age='))
+    ?.slice('max-age='.length);
+  const expires = attrs
+    .find((a) => a.toLowerCase().startsWith('expires='))
+    ?.slice('expires='.length);
+
+  const isProd = process.env.NODE_ENV === 'production';
+  return [
+    `${name}=${value}`,
+    `Path=${name === 'refreshToken' ? REFRESH_COOKIE_BROWSER_PATH : '/'}`,
+    'HttpOnly',
+    isProd ? 'Secure' : '',
+    'SameSite=Lax',
+    maxAge !== undefined ? `Max-Age=${maxAge}` : '',
+    // clearCookie() signals deletion via Expires instead of Max-Age.
+    maxAge === undefined && expires ? `Expires=${expires}` : '',
+  ]
+    .filter(Boolean)
+    .join('; ');
+}
+
+function collectCookies(res: Response): string[] {
+  return res.headers
+    .getSetCookie()
+    .map(remintCookie)
+    .filter((c): c is string => c !== null);
+}
+
 async function forwardRequest(
   req: NextRequest,
   pathSegments: string[],
@@ -48,21 +116,25 @@ async function forwardRequest(
   const search = req.nextUrl.search;
   const url = `${SERVER_API_URL}/${path}${search}`;
 
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+  const cookieHeader = req.headers.get('cookie') ?? '';
+  let jwtToken = readCookie(cookieHeader, 'jwt');
+  const refreshToken = readCookie(cookieHeader, 'refreshToken');
+
+  const buildHeaders = (): Record<string, string> => {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (jwtToken) headers['Authorization'] = `Bearer ${jwtToken}`;
+    // The backend refresh endpoint reads the httpOnly cookie via cookie-parser.
+    if (path === 'auth/refresh' && refreshToken) {
+      headers['cookie'] = `refreshToken=${refreshToken}`;
+    }
+    // logout revokes the refresh session server-side — pass the cookie along.
+    if (path === 'auth/logout' && refreshToken) {
+      headers['cookie'] = `refreshToken=${refreshToken}`;
+    }
+    return headers;
   };
 
-  const cookieHeader = req.headers.get('cookie') ?? '';
-  const jwtToken =
-    cookieHeader
-      .split(';')
-      .map((c) => c.trim())
-      .find((c) => c.startsWith('jwt='))
-      ?.slice('jwt='.length) ?? null;
-
-  if (jwtToken) headers['Authorization'] = `Bearer ${jwtToken}`;
-
-  const init: RequestInit = { method, headers };
+  const init: RequestInit = { method, headers: buildHeaders() };
 
   if (method !== 'GET' && method !== 'DELETE') {
     try {
@@ -70,13 +142,49 @@ async function forwardRequest(
     } catch { /* no body */ }
   }
 
-  const backendRes = await fetch(url, init);
+  let backendRes = await fetch(url, init);
+
+  // Cookies to forward to the browser (refresh rotation happens mid-flight,
+  // before the final response is built).
+  const pendingCookies: string[] = [];
+
+  // ── Silent session refresh ────────────────────────────────────────────────
+  // Access JWTs are short-lived (15 min). On a 401 for a normal API call, spend
+  // the refresh cookie server-side, then retry the original request ONCE.
+  if (
+    backendRes.status === 401 &&
+    refreshToken &&
+    !NO_REFRESH_PATHS.has(path)
+  ) {
+    const refreshRes = await fetch(`${SERVER_API_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        cookie: `refreshToken=${refreshToken}`,
+      },
+    });
+
+    // Forward the rotated (or, on failure, cleared) cookies either way.
+    pendingCookies.push(...collectCookies(refreshRes));
+
+    if (refreshRes.ok) {
+      const newJwt = refreshRes.headers
+        .getSetCookie()
+        .map((c) => c.match(/^jwt=([^;]+)/)?.[1])
+        .find(Boolean);
+      if (newJwt) {
+        jwtToken = newJwt;
+        // init.body is a string (already read), so the retry is safe.
+        backendRes = await fetch(url, { ...init, headers: buildHeaders() });
+      }
+    }
+  }
 
   // Server-Sent Events (AI tutor): pipe the stream straight through instead of
   // buffering with .text(), so tokens reach the browser word-by-word.
   const contentType = backendRes.headers.get('content-type') ?? '';
   if (contentType.includes('text/event-stream') && backendRes.body) {
-    return new NextResponse(backendRes.body, {
+    const sseRes = new NextResponse(backendRes.body, {
       status: backendRes.status,
       headers: {
         'Content-Type': 'text/event-stream; charset=utf-8',
@@ -85,6 +193,10 @@ async function forwardRequest(
         'X-Accel-Buffering': 'no',
       },
     });
+    for (const cookie of pendingCookies) {
+      sseRes.headers.append('set-cookie', cookie);
+    }
+    return sseRes;
   }
 
   const body = await backendRes.text();
@@ -99,28 +211,10 @@ async function forwardRequest(
     },
   });
 
-  const setCookie = backendRes.headers.get('set-cookie');
-  if (setCookie) {
-    const jwtMatch = setCookie.match(/jwt=([^;]+)/);
-    if (jwtMatch) {
-      const isProd = process.env.NODE_ENV === 'production';
-      // The proxy is same-origin, so SameSite=Lax is sufficient and avoids the
-      // cross-site exposure of SameSite=None. Secure only in production (HTTPS).
-      const cookie = [
-        `jwt=${jwtMatch[1]}`,
-        'Path=/',
-        'HttpOnly',
-        isProd ? 'Secure' : '',
-        'SameSite=Lax',
-        'Max-Age=86400',
-      ]
-        .filter(Boolean)
-        .join('; ');
-
-      res.headers.set('set-cookie', cookie);
-    } else {
-      res.headers.set('set-cookie', setCookie);
-    }
+  // Mid-flight refresh cookies first, then the final response's own cookies
+  // (same-name cookies later in the header list win in the browser).
+  for (const cookie of [...pendingCookies, ...collectCookies(backendRes)]) {
+    res.headers.append('set-cookie', cookie);
   }
 
   return res;
