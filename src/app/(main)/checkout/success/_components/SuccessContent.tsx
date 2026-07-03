@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import { getOrder } from "@/lib/api/checkout";
 import type { Order } from "@/types/checkout";
+import Button, { buttonClasses } from "@/components/ui/Button";
 
 const BRAND = "#3B1892";
 const ENROLLMENTS_PATH = "/profile"; // My Learning lives here (default tab)
@@ -249,13 +250,9 @@ function Processing({
         <span className="font-semibold text-slate-700">My Learning</span> within
         a moment. You can head there now and refresh if needed.
       </p>
-      <button
-        onClick={onContinue}
-        className="w-full py-3 rounded-xl text-[14px] font-bold text-white transition-opacity hover:opacity-90"
-        style={{ backgroundColor: BRAND }}
-      >
+      <Button onClick={onContinue} fullWidth>
         Go to My Learning
-      </button>
+      </Button>
       <p className="text-[11px] text-slate-400 mt-4">
         Reference #{orderId.slice(-8)}
       </p>
@@ -293,14 +290,13 @@ function Failed() {
       <div className="flex flex-col sm:flex-row gap-3">
         <Link
           href="/cart"
-          className="flex-1 py-3 rounded-xl text-[14px] font-bold text-white text-center transition-opacity hover:opacity-90"
-          style={{ backgroundColor: BRAND }}
+          className={buttonClasses({ variant: "primary", className: "flex-1" })}
         >
           Back to Cart
         </Link>
         <Link
           href="/courses"
-          className="flex-1 py-3 rounded-xl text-[14px] font-semibold text-slate-600 bg-white border border-slate-200 text-center hover:bg-slate-50 transition-colors"
+          className={buttonClasses({ variant: "outline", className: "flex-1" })}
         >
           Browse Courses
         </Link>
@@ -409,22 +405,23 @@ function SuccessCard({
       </div>
 
       {/* Primary action */}
-      <button
+      <Button
         onClick={onContinue}
-        className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-[14px] font-bold text-white transition-opacity hover:opacity-90"
-        style={{ backgroundColor: BRAND }}
+        fullWidth
+        rightIcon={
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2.5}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M12 5l7 7-7 7" />
+          </svg>
+        }
       >
         Start Learning
-        <svg
-          className="w-4 h-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2.5}
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M12 5l7 7-7 7" />
-        </svg>
-      </button>
+      </Button>
 
       {/* Auto-redirect note + secondary action */}
       <p className="text-center text-[12px] text-slate-400 mt-4">

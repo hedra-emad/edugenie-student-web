@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import type { PlayerLesson } from "@/types/player";
+import Button from "@/components/ui/Button";
 import NotesSidebar from "./NotesSidebar";
 
 interface Props {
@@ -43,14 +44,15 @@ export function AIChatPanel() {
           className="flex-1 bg-slate-50 text-slate-800 text-sm rounded-lg px-3 py-2
                      border border-slate-200 outline-none placeholder:text-slate-400"
         />
-        <button
+        <Button
           type="button"
+          variant="primary"
+          size="sm"
           disabled
-          className="bg-[#3B1892] opacity-50 text-white rounded-lg px-3 py-2 text-sm
-                     font-semibold flex-shrink-0"
+          className="flex-shrink-0"
         >
           Send
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -111,14 +113,15 @@ export default function TabBar({
                       {nextLesson.title}
                     </p>
                   </div>
-                  <button
+                  <Button
                     type="button"
+                    variant="primary"
+                    size="sm"
                     onClick={onNextLesson}
-                    className="shrink-0 bg-[#3B1892] text-white text-xs font-bold
-                               px-3 py-1.5 rounded-lg hover:bg-violet-800 transition-colors"
+                    className="shrink-0"
                   >
                     Next
-                  </button>
+                  </Button>
                 </div>
               </>
             )}

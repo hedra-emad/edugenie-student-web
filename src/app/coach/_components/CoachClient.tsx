@@ -16,6 +16,7 @@ import {
   SparkleIcon,
 } from '@/components/ai/chatUi';
 import PracticeQuizModal from '@/components/ai/PracticeQuizModal';
+import Button from '@/components/ui/Button';
 import RecoveryPlanCard from '@/components/ai/RecoveryPlanCard';
 import {
   getActiveRemediation,
@@ -229,19 +230,19 @@ export default function CoachClient() {
                     {w.courseTitle} · last score {w.score}%
                   </p>
                 </div>
-                <button
-                  type="button"
+                <Button
+                  size="sm"
                   onClick={() =>
                     setQuizSection({
                       sectionId: w.sectionId,
                       label: `${w.courseTitle} › ${w.sectionTitle}`,
                     })
                   }
-                  className="flex flex-shrink-0 items-center gap-1.5 rounded-lg bg-[#3B1892] px-3 py-2 text-[12px] font-semibold text-white transition-colors hover:bg-[#2A1069]"
+                  leftIcon={<SparkleIcon className="h-3.5 w-3.5" />}
+                  className="flex-shrink-0"
                 >
-                  <SparkleIcon className="h-3.5 w-3.5" />
                   Quiz me
-                </button>
+                </Button>
               </div>
             ))}
           </div>
@@ -269,15 +270,15 @@ export default function CoachClient() {
                 : 'Offline'}
           </p>
           {!notStarted && (
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={refresh}
               disabled={isStreaming}
-              className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-[11.5px] font-medium text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 disabled:opacity-50"
+              leftIcon={<RefreshIcon className="h-3.5 w-3.5" />}
             >
-              <RefreshIcon className="h-3.5 w-3.5" />
               New chat
-            </button>
+            </Button>
           )}
         </div>
 
@@ -326,14 +327,15 @@ export default function CoachClient() {
             }
             className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-[14px] text-slate-700 outline-none transition-colors placeholder:text-slate-400 focus:border-[#3B1892] focus:ring-1 focus:ring-[#3B1892] disabled:cursor-not-allowed disabled:opacity-60"
           />
-          <button
+          <Button
             type="submit"
+            size="icon"
             disabled={!canSend}
-            className="flex h-[46px] w-[46px] flex-shrink-0 items-center justify-center rounded-xl bg-[#3B1892] text-white transition-all hover:bg-[#2A1069] disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex-shrink-0"
             aria-label="Send message"
           >
             <SendIcon className="h-5 w-5" />
-          </button>
+          </Button>
         </form>
       </div>
 

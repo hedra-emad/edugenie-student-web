@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { X, Plus } from "lucide-react";
+import Button from "@/components/ui/Button";
 import type { ProfileUpdatePayload } from "@/types/profile.types";
 
 const MAX_TAGS = 10;
@@ -113,19 +114,17 @@ export default function TagsEditor({ tags, field, label, onChange, isPending }: 
           />
         ) : (
           !atMax && (
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={() => setAdding(true)}
               disabled={isPending}
               aria-label={`Add a ${field}`}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium
-                         border border-dashed border-slate-300 text-slate-500
-                         hover:border-[#3B1892] hover:text-[#3B1892]
-                         transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+              leftIcon={<Plus size={12} aria-hidden="true" />}
             >
-              <Plus size={12} aria-hidden="true" />
               Add {field}
-            </button>
+            </Button>
           )
         )}
       </div>

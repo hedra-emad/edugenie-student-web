@@ -7,6 +7,7 @@ import { logout } from "@/lib/api/auth";
 import { getCart } from "@/lib/api/checkout";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/providers/SessionProvider";
+import Button, { buttonClasses } from "@/components/ui/Button";
 
 const navLinks = [
   { label: "Home", href: "/" },
@@ -201,13 +202,13 @@ export default function Header({ isStudent, displayName, avatarUrl = null }: Hea
             <div className="flex items-center gap-2">
               <Link
                 href="/login"
-                className="text-sm font-medium text-gray-700 hover:text-indigo-700 transition-colors duration-150 px-3 py-1.5"
+                className={buttonClasses({ variant: "ghost", size: "sm" })}
               >
                 Login
               </Link>
               <Link
                 href="/register"
-                className="rounded-lg bg-primary px-4 py-1.5 text-sm font-semibold text-white hover:bg-primary-light transition-colors duration-150"
+                className={buttonClasses({ variant: "primary", size: "sm" })}
               >
                 Sign Up
               </Link>
@@ -218,19 +219,18 @@ export default function Header({ isStudent, displayName, avatarUrl = null }: Hea
           {isStudent && (
             <div className="flex items-center gap-3">
               <UserAvatar displayName={displayName} avatarUrl={avatarUrl} />
-              <button
-                onClick={handleLogout}
-                className="text-sm font-medium text-gray-500 hover:text-red-500 transition-colors duration-150 px-2 py-1"
-              >
+              <Button variant="destructiveOutline" size="sm" onClick={handleLogout}>
                 Logout
-              </button>
+              </Button>
             </div>
           )}
 
           {/* Mobile hamburger */}
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => setMenuOpen(!menuOpen)}
-            className="md:hidden p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+            className="md:hidden"
             aria-label="Toggle menu"
           >
             {menuOpen ? (
@@ -242,7 +242,7 @@ export default function Header({ isStudent, displayName, avatarUrl = null }: Hea
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             )}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -309,10 +309,10 @@ export default function Header({ isStudent, displayName, avatarUrl = null }: Hea
           {/* Guest → Login + Sign Up */}
           {!isStudent && (
             <div className="flex gap-2 pt-1">
-              <Link href="/login" className="flex-1 text-center rounded-lg border border-gray-200 py-2 text-sm font-medium text-gray-700 hover:border-indigo-400 transition-colors">
+              <Link href="/login" className={buttonClasses({ variant: "outline", className: "flex-1" })}>
                 Login
               </Link>
-              <Link href="/register" className="flex-1 text-center rounded-lg bg-primary py-2 text-sm font-semibold text-white hover:bg-primary-light transition-colors">
+              <Link href="/register" className={buttonClasses({ variant: "primary", className: "flex-1" })}>
                 Sign Up
               </Link>
             </div>
@@ -329,12 +329,13 @@ export default function Header({ isStudent, displayName, avatarUrl = null }: Hea
                 <Avatar displayName={displayName} avatarUrl={avatarUrl} />
                 <span className="text-sm font-medium text-gray-700">{displayName ?? "My account"}</span>
               </Link>
-              <button
+              <Button
+                variant="destructiveOutline"
                 onClick={handleLogout}
-                className="flex-1 text-center rounded-lg border border-red-200 py-2 text-sm font-medium text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors"
+                className="flex-1"
               >
                 Logout
-              </button>
+              </Button>
             </div>
           )}
         </div>

@@ -9,6 +9,7 @@ import type { Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
 import type { AiChatMessage } from "@/lib/ai/useAiChat";
+import Button from "@/components/ui/Button";
 
 // Full markdown for assistant messages — bold, italics, lists, headings, code,
 // blockquotes, and links. Internal links ([x](/courses/id)) use Next <Link> for
@@ -227,13 +228,14 @@ export function StateNotice({
         {body}
       </p>
       {action && (
-        <button
-          type="button"
+        <Button
+          variant="primary"
+          size="sm"
           onClick={action.onClick}
-          className="mt-4 rounded-xl bg-[#3B1892] px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-[#2A1069]"
+          className="mt-4"
         >
           {action.label}
-        </button>
+        </Button>
       )}
     </div>
   );

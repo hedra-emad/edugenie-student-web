@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import Link from "next/link";
+import { buttonClasses } from "@/components/ui/Button";
 import {
   Code2,        // Development
   Palette,      // UI/UX Design
@@ -467,7 +468,7 @@ export default function CategoriesSection() {
         <div className="mt-8 flex justify-center sm:hidden">
           <Link
             href="/categories"
-            className="bg-violet-700 text-white text-sm font-bold px-6 py-3 rounded-xl"
+            className={buttonClasses({ variant: "primary" })}
           >
             Browse All Categories →
           </Link>

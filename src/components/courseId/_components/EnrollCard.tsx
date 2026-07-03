@@ -11,6 +11,7 @@ import type {
 import { addToCartAction } from "@/app/actions/cart.actions";
 import { useSession } from "@/providers/SessionProvider";
 import PlacementTestModal from "./PlacementTestModal";
+import Button from "@/components/ui/Button";
 import DotsLoader from "@/components/ui/DotsLoader";
 import { useCourseAccess } from "./CourseAccessProvider";
 function getSafeImageSrc(src: string | null | undefined): string | null {
@@ -175,7 +176,7 @@ function SectionRow({
   );
 }
 
-// (DotsLoader imported — used for button loading state)
+// (DotsLoader — shared loading indicator, matches <Button loading>)
 
 // ─── Main
 export default function EnrollCard({ course }: { course: Course }) {
@@ -405,14 +406,17 @@ export default function EnrollCard({ course }: { course: Course }) {
                     </p>
                   </div>
                 </div>
-                <button
+                <Button
+                  variant="success"
+                  size="sm"
+                  fullWidth
                   onClick={() =>
                     startTransition(() => router.push(`/learn/${courseId}`))
                   }
-                  className="mt-3 w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[13px] font-bold transition-colors"
+                  className="mt-3"
                 >
                   Continue learning
-                </button>
+                </Button>
               </div>
             )}
 
@@ -485,19 +489,25 @@ export default function EnrollCard({ course }: { course: Course }) {
             )}
 
             {!isFullyOwned && (
-              <button
+              <Button
+                variant="outline"
+                size="sm"
+                fullWidth
                 onClick={toggleAllSections}
-                className="w-full mt-2.5 py-2.5 rounded-xl text-[12.5px] font-semibold text-violet-600 border border-violet-200 hover:bg-violet-50 transition-all duration-150"
+                className="mt-2.5"
               >
                 {selectedIds.size === availableSections.length
                   ? "Unselect All"
                   : "Select All Sections"}
-              </button>
+              </Button>
             )}
 
             {/* AI placement test — "buy only what you need" */}
             {!isFullyOwned && availableSections.length > 0 && (
-              <button
+              <Button
+                variant="secondary"
+                size="sm"
+                fullWidth
                 onClick={() => {
                   if (!isAuthenticated) {
                     router.push("/login");
@@ -505,13 +515,15 @@ export default function EnrollCard({ course }: { course: Course }) {
                   }
                   setShowPlacement(true);
                 }}
-                className="w-full mt-2.5 py-2.5 rounded-xl text-[12.5px] font-semibold text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-100 transition-all duration-150 flex items-center justify-center gap-1.5"
+                leftIcon={
+                  <svg className="w-[15px] h-[15px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                    <path d="M12 2l1.9 5.7L20 9.5l-5.1 2L12 17l-1.9-5.5L5 9.5l5.1-1.8L12 2z" />
+                  </svg>
+                }
+                className="mt-2.5"
               >
-                <svg className="w-[15px] h-[15px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                  <path d="M12 2l1.9 5.7L20 9.5l-5.1 2L12 17l-1.9-5.5L5 9.5l5.1-1.8L12 2z" />
-                </svg>
                 Take the AI placement test — skip what you know
-              </button>
+              </Button>
             )}
 
             {showPlacement && (

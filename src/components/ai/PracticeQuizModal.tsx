@@ -5,6 +5,7 @@
 // course player, the course detail page, etc.).
 
 import { useCallback, useEffect, useState } from "react";
+import Button from "@/components/ui/Button";
 import {
   generatePracticeQuiz,
   submitPracticeQuiz,
@@ -126,16 +127,17 @@ export default function PracticeQuizModal({
               )}
             </div>
           </div>
-          <button
-            type="button"
+          <Button
+            variant="ghostOnColor"
+            size="icon"
             onClick={onClose}
-            className="-mr-1 rounded-lg p-1.5 text-white/80 transition-colors hover:bg-white/15 hover:text-white"
             aria-label="Close"
+            className="-mr-1"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
               <path d="M18 6 6 18M6 6l12 12" />
             </svg>
-          </button>
+          </Button>
         </div>
 
         {/* Progress bar (while answering) */}
@@ -170,13 +172,9 @@ export default function PracticeQuizModal({
                 </svg>
               </div>
               <p className="text-[13.5px] font-medium text-slate-600">{error}</p>
-              <button
-                type="button"
-                onClick={() => load(difficulty)}
-                className="mt-4 rounded-xl bg-[#3B1892] px-4 py-2 text-[13px] font-semibold text-white transition-colors hover:bg-[#2A1069]"
-              >
+              <Button size="sm" onClick={() => load(difficulty)} className="mt-4">
                 Try again
-              </button>
+              </Button>
             </Centered>
           )}
 
@@ -302,31 +300,19 @@ export default function PracticeQuizModal({
                   ? `${answeredCount}/${quiz.questions.length} answered`
                   : ""}
               </span>
-              <button
-                type="button"
+              <Button
                 onClick={submit}
                 disabled={!allAnswered || phase === "grading"}
-                className="rounded-xl bg-[#3B1892] px-6 py-2.5 text-[13px] font-semibold text-white shadow-sm transition-all hover:bg-[#2A1069] disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {phase === "grading" ? "Grading…" : "Submit answers"}
-              </button>
+              </Button>
             </>
           ) : phase === "result" ? (
             <>
-              <button
-                type="button"
-                onClick={() => retake(difficulty)}
-                className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-[13px] font-semibold text-slate-600 transition-colors hover:bg-slate-100"
-              >
+              <Button variant="outline" onClick={() => retake(difficulty)}>
                 Retake
-              </button>
-              <button
-                type="button"
-                onClick={() => retake("HARD")}
-                className="rounded-xl bg-[#3B1892] px-5 py-2.5 text-[13px] font-semibold text-white shadow-sm transition-all hover:bg-[#2A1069]"
-              >
-                Harder quiz →
-              </button>
+              </Button>
+              <Button onClick={() => retake("HARD")}>Harder quiz →</Button>
             </>
           ) : (
             <span className="text-[11.5px] text-slate-400">

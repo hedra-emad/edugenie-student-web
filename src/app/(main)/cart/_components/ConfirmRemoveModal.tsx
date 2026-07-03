@@ -2,6 +2,7 @@
 // src/app/(main)/cart/_components/ConfirmRemoveModal.tsx
 
 import { useRef, useEffect, type KeyboardEvent } from "react";
+import Button from "@/components/ui/Button";
 
 interface ConfirmRemoveModalProps {
   itemTitle: string;
@@ -61,22 +62,25 @@ export default function ConfirmRemoveModal({
       onKeyDown={handleKeyDown}
     >
       <span className="text-[12px] text-slate-500">Remove?</span>
-      <button
+      <Button
         ref={cancelRef}
+        variant="ghost"
+        size="sm"
         onClick={onCancel}
         aria-label={`Cancel removing ${itemTitle}`}
-        className="min-h-[44px] px-2 text-[12px] font-semibold text-slate-400 hover:text-slate-600 transition-colors"
       >
         Cancel
-      </button>
-      <button
+      </Button>
+      <Button
         ref={confirmRef}
+        variant="ghost"
+        size="sm"
         onClick={onConfirm}
         aria-label={`Confirm remove ${itemTitle}`}
-        className="min-h-[44px] px-2 text-[12px] font-bold text-red-500 hover:text-red-700 transition-colors"
+        className="text-red-500 hover:text-red-700"
       >
         Remove
-      </button>
+      </Button>
     </div>
   );
 }

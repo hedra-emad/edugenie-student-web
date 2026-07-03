@@ -14,7 +14,7 @@ import { getCart } from "@/lib/api/checkout";
 import { useSession } from "@/providers/SessionProvider";
 import { useCartContext } from "@/contexts/CartContext";
 import Toast from "@/components/ui/Toast";
-import DotsLoader from "@/components/ui/DotsLoader";
+import Button from "@/components/ui/Button";
 
 // ─── Helpers
 
@@ -338,21 +338,16 @@ export default function CourseCard({ course }: Props) {
               </span>
             </div>
 
-            <button
+            <Button
               type="button"
               onClick={handleAddToCart}
-              disabled={isPending}
+              loading={isPending}
               aria-label="Add to cart"
-              className="
-                bg-[#3B1892] text-white rounded-lg px-5 py-2.5 text-sm font-semibold
-                hover:bg-[#5B3DB8] transition-colors duration-200
-                flex items-center gap-1.5 flex-shrink-0
-                disabled:opacity-50 disabled:cursor-not-allowed
-              "
+              leftIcon={<CartIcon />}
+              className="flex-shrink-0"
             >
-              {isPending ? <DotsLoader /> : <CartIcon />}
               <span className="whitespace-nowrap">Add to Cart</span>
-            </button>
+            </Button>
           </div>
 
           {cartError && (

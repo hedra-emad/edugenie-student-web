@@ -6,6 +6,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Button from "@/components/ui/Button";
 import {
   getSectionQuiz,
   startSectionQuiz,
@@ -23,8 +24,6 @@ type Phase =
   | "submitting"
   | "result"
   | "error";
-
-const BRAND = "#3B1892";
 
 function formatMinutes(min: number): string {
   if (!min || min <= 0) return "No limit";
@@ -274,15 +273,15 @@ export default function SectionQuizClient({
               })}
             </div>
 
-            <button
-              type="button"
+            <Button
+              size="lg"
+              fullWidth
               onClick={doSubmit}
               disabled={phase === "submitting"}
-              className="mt-6 w-full rounded-xl px-4 py-3.5 text-[15px] font-bold text-white transition-opacity disabled:opacity-60"
-              style={{ backgroundColor: BRAND }}
+              className="mt-6"
             >
               {phase === "submitting" ? "Submitting…" : "Submit quiz"}
-            </button>
+            </Button>
             {answeredCount < quiz.questions.length && phase === "taking" && (
               <p className="mt-2 text-center text-[12.5px] text-slate-400">
                 {quiz.questions.length - answeredCount} question
@@ -355,15 +354,15 @@ function QuizIntro({
         </Warn>
       </div>
 
-      <button
-        type="button"
+      <Button
+        size="lg"
+        fullWidth
         onClick={onBegin}
         disabled={noAttempts}
-        className="mt-6 w-full rounded-xl px-4 py-3.5 text-[15px] font-bold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
-        style={{ backgroundColor: BRAND }}
+        className="mt-6"
       >
         {noAttempts ? "No attempts remaining" : "Start quiz"}
-      </button>
+      </Button>
     </div>
   );
 }

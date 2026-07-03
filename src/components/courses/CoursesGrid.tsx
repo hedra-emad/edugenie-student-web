@@ -2,6 +2,7 @@
 
 import { BookOpen } from "lucide-react";
 import CourseCard from "./CourseCard";
+import Button from "@/components/ui/Button";
 import { Course } from "@/types/course";
 
 // ─── Skeleton Card 
@@ -47,18 +48,9 @@ function EmptyState({ onReset }: { onReset: () => void }) {
       <p className="text-sm text-slate-400 max-w-xs leading-relaxed mb-6">
         We couldnt find any courses matching your filters. Try adjusting your search.
       </p>
-      <button
-        type="button"
-        onClick={onReset}
-        className="
-          px-6 py-2.5 rounded-full bg-[#3B1892] text-white
-          text-sm font-bold
-          hover:bg-violet-700 hover:shadow-[0_4px_14px_rgba(124,58,237,0.4)]
-          transition-all duration-200
-        "
-      >
+      <Button type="button" onClick={onReset}>
         Clear All Filters
-      </button>
+      </Button>
     </div>
   );
 }

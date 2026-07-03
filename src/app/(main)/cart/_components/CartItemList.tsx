@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useState } from "react";
 import type { CartItem } from "@/types/checkout";
 import ConfirmRemoveModal from "./ConfirmRemoveModal";
-import DotsLoader from "@/components/ui/DotsLoader";
+import Button from "@/components/ui/Button";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -59,7 +59,7 @@ function Thumbnail({ src, alt }: { src: string; alt: string }) {
   );
 }
 
-// (DotsLoader imported for button loading states)
+// (Remove buttons use <Button loading> — the shared spinner, not DotsLoader)
 
 
 // ─── Trash icon ───────────────────────────────────────────────────────────────
@@ -179,14 +179,16 @@ export default function CartItemList({
                     onCancel={handleCancel}
                   />
                 ) : (
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => handleRemoveClick(removeId)}
                     disabled={isRemoving}
+                    loading={isRemoving}
                     aria-label={`Remove ${item.courseTitle}`}
-                    className="min-w-[44px] min-h-[44px] rounded-lg flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors duration-150 disabled:opacity-40"
                   >
-                    {isRemoving ? <DotsLoader /> : <TrashIcon />}
-                  </button>
+                    <TrashIcon />
+                  </Button>
                 )}
               </div>
             </div>
@@ -250,14 +252,16 @@ export default function CartItemList({
                             onCancel={handleCancel}
                           />
                         ) : (
-                          <button
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => handleRemoveClick(removeId)}
                             disabled={isRemoving}
+                            loading={isRemoving}
                             aria-label={`Remove ${section.sectionTitle ?? "Section"}`}
-                            className="min-w-[44px] min-h-[44px] rounded-md flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors duration-150 disabled:opacity-40"
                           >
-                            {isRemoving ? <DotsLoader /> : <TrashIcon size="w-3.5 h-3.5" />}
-                          </button>
+                            <TrashIcon size="w-3.5 h-3.5" />
+                          </Button>
                         )}
                       </div>
                     </div>

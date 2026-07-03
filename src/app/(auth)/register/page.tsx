@@ -12,6 +12,7 @@ import AuthButton from '@/components/auth/AuthButton';
 import AuthDivider from '@/components/auth/AuthDivider';
 import SocialLogin from '@/components/auth/SocialLogin';
 import RoleSelector from '@/components/auth/RoleSelector';
+import Button from '@/components/ui/Button';
 import { register, login, handoffCode } from '@/lib/api/auth';
 import { redirectToGoogleAuth } from '@/lib/api/auth/googleAuth';
 
@@ -457,15 +458,17 @@ export default function RegisterPage() {
 
           <div className="auth-card-actions mt-3 flex gap-2.5 items-stretch max-[360px]:mt-2 max-[360px]:gap-2">
   {currentStep > 1 && (
-    <button
-      type="button"
+    <Button
+      variant="outline"
+      size="icon"
       onClick={previousStep}
-      className="flex items-center justify-center px-4 rounded-xl border border-primary text-primary bg-transparent hover:bg-primary/5 hover:shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-1 transform hover:-translate-y-[1px] active:translate-y-[0px]"
+      aria-label="Previous step"
+      className="h-full w-12"
     >
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
       </svg>
-    </button>
+    </Button>
   )}
 
   <div className="flex-1 w-full">

@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import Button from "@/components/ui/Button";
 
 // ─── Types
 
@@ -308,18 +309,9 @@ function InstructorCard({ instructor }: { instructor: Instructor }) {
           </div>
         </div>
 
-        <button
-          type="button"
-          className="
-            text-xs font-bold text-violet-600 border border-violet-200
-            bg-violet-50 hover:bg-violet-600 hover:text-white hover:border-violet-600
-            px-3 py-1.5 rounded-full
-            transition-all duration-200
-            whitespace-nowrap
-          "
-        >
+        <Button variant="secondary" size="sm" className="whitespace-nowrap">
           View Profile
-        </button>
+        </Button>
       </div>
     </article>
   );

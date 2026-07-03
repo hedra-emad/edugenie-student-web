@@ -10,6 +10,7 @@ import {
   useImperativeHandle,
 } from "react";
 import type { PlayerLesson, ProgressResponse } from "@/types/player";
+import Button from "@/components/ui/Button";
 import { useVideoProgress } from "@/hooks/useVideoProgress";
 import { usePlayerKeyboard } from "@/hooks/usePlayerKeyboard";
 
@@ -354,25 +355,27 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPlayer(
           {/* Left: play + volume + time */}
           <div className="flex items-center gap-3">
             {/* Play/Pause */}
-            <button
+            <Button
               type="button"
+              variant="ghostOnColor"
+              size="icon"
               onClick={togglePlay}
-              className="text-white hover:text-slate-200 transition-colors"
               aria-label={isPlaying ? "Pause" : "Play"}
             >
               {isPlaying ? <PauseIcon /> : <PlayIcon />}
-            </button>
+            </Button>
 
             {/* Volume */}
             <div className="flex items-center gap-1.5 group/vol">
-              <button
+              <Button
                 type="button"
+                variant="ghostOnColor"
+                size="icon"
                 onClick={toggleMute}
-                className="text-white/70 hover:text-white transition-colors"
                 aria-label={muted ? "Unmute" : "Mute"}
               >
                 {muted || volume === 0 ? <VolumeMuteIcon /> : <VolumeHighIcon />}
-              </button>
+              </Button>
               <input
                 type="range"
                 min={0}
@@ -401,15 +404,15 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPlayer(
           <div className="flex items-center gap-3 relative">
             {/* Speed selector */}
             <div className="relative">
-              <button
+              <Button
                 type="button"
+                variant="ghostOnColor"
+                size="sm"
                 onClick={() => setShowSpeedMenu((v) => !v)}
-                className="text-[12px] font-bold text-white/70 hover:text-white transition-colors
-                           px-2 py-1 rounded-lg hover:bg-white/10"
                 aria-label={`Playback speed: ${speed}x`}
               >
                 {speed}x
-              </button>
+              </Button>
 
               {showSpeedMenu && (
                 <div className="absolute bottom-full right-0 mb-2 bg-slate-800 border border-slate-700
@@ -437,14 +440,15 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPlayer(
             </div>
 
             {/* Fullscreen */}
-            <button
+            <Button
               type="button"
+              variant="ghostOnColor"
+              size="icon"
               onClick={toggleFullscreen}
-              className="text-white/70 hover:text-white transition-colors"
               aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
             >
               {isFullscreen ? <ExitFullscreenIcon /> : <FullscreenIcon />}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

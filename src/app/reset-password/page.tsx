@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Loader2, CheckCircle2 } from "lucide-react";
 import { resetPassword } from "@/lib/api/auth";
+import Button, { buttonClasses } from "@/components/ui/Button";
 
 function ResetPasswordContent() {
   const searchParams = useSearchParams();
@@ -59,7 +60,7 @@ function ResetPasswordContent() {
             </p>
             <Link
               href="/login"
-              className="mt-6 inline-block rounded-xl bg-[#3B1892] px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-[#2A1069]"
+              className={`mt-6 inline-flex ${buttonClasses({ variant: "primary" })}`}
             >
               Go to sign in
             </Link>
@@ -100,14 +101,9 @@ function ResetPasswordContent() {
                 />
               </div>
               {error && <p className="text-sm text-rose-600">{error}</p>}
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#3B1892] px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-[#2A1069] disabled:opacity-60"
-              >
-                {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+              <Button type="submit" fullWidth loading={loading}>
                 Reset password
-              </button>
+              </Button>
             </form>
           </>
         )}

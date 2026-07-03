@@ -12,6 +12,7 @@ import {
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import Button from "@/components/ui/Button";
 
 // ─── Types ────
 interface TrendingTag {
@@ -210,20 +211,10 @@ function SearchBar() {
       />
 
       {/* Button */}
-      <button
-        type="submit"
-        className="
-          bg-[#3B1892] hover:bg-violet-600 active:bg-violet-800
-          text-white font-bold
-          text-[12px] sm:text-sm
-          px-3 py-2.5 sm:px-6 sm:py-3 
-          rounded-xl transition-colors duration-150
-          whitespace-nowrap flex-shrink-0
-        "
-      >
+      <Button type="submit" className="flex-shrink-0">
         <span className="sm:hidden">Search</span>
-        <span className="hidden sm:inline">Search Courses</span> 
-      </button>
+        <span className="hidden sm:inline">Search Courses</span>
+      </Button>
     </form>
   );
 }
