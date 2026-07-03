@@ -94,7 +94,10 @@ export default async function HeaderServer() {
             u.firstName && u.lastName
               ? `${u.firstName} ${u.lastName}`
               : (u.firstName ?? displayName);
-          avatarUrl = u.avatar ?? avatarUrl;
+          // The fresh profile is authoritative — use its avatar even when it's
+          // null (i.e. the user just removed their picture), otherwise a delete
+          // would fall back to the stale avatar baked into the JWT.
+          avatarUrl = u.avatar ?? null;
         }
       }
     } catch {

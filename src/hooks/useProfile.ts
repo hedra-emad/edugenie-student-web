@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchProfile, updateProfile, uploadAvatar, changePassword } from "@/lib/api/profile.api";
+import { fetchProfile, updateProfile, uploadAvatar, deleteAvatar, changePassword } from "@/lib/api/profile.api";
 import type { ProfileUpdatePayload, UserProfile } from "@/types/profile.types";
 
 export function useProfile(token: string, initialData?: UserProfile) {
@@ -60,6 +60,43 @@ export function useUploadAvatar(token: string) {
     onMutate: async () => {
       await qc.cancelQueries({ queryKey: ["profile", token] });
       const prev = qc.getQueryData<UserProfile>(["profile", token]);
+      return { prev };
+    },
+
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) {
+        qc.setQueryData<UserProfile>(["profile", token], ctx.prev);
+      }
+    },
+
+    onSuccess: (data) => {
+      qc.setQueryData<UserProfile>(["profile", token], data);
+    },
+
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["profile", token] });
+    },
+  });
+}
+
+export function useDeleteAvatar(token: string) {
+  const qc = useQueryClient();
+
+  return useMutation<
+    UserProfile,
+    Error,
+    void,
+    { prev: UserProfile | undefined }
+  >({
+    mutationFn: () => deleteAvatar(token).then((r) => r.data),
+
+    onMutate: async () => {
+      await qc.cancelQueries({ queryKey: ["profile", token] });
+      const prev = qc.getQueryData<UserProfile>(["profile", token]);
+      // Optimistically clear the avatar so the initials show immediately.
+      qc.setQueryData<UserProfile>(["profile", token], (old) =>
+        old ? { ...old, avatar: undefined, photo: undefined } : old
+      );
       return { prev };
     },
 

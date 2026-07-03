@@ -34,19 +34,43 @@ export async function updateProfile(
   return res.json();
 }
 
+/**
+ * Upload / replace the profile picture. The backend endpoint is the shared
+ * `PATCH /api/users/profile` with a multipart `profileImage` field — it uploads
+ * to Cloudinary (folder `avatars`), destroys any previous image, and returns the
+ * updated profile with the new `avatar` URL. Do NOT set Content-Type manually:
+ * the browser must add the multipart boundary itself.
+ */
 export async function uploadAvatar(
   token: string,
   file: File
 ): Promise<ProfileResponse> {
   const form = new FormData();
-  form.append("avatar", file);
+  form.append("profileImage", file);
 
-  const res = await fetch(`${BASE}/api/users/avatar`, {
-    method: "POST",
+  const res = await fetch(`${BASE}/api/users/profile`, {
+    method: "PATCH",
     headers: { Authorization: `Bearer ${token}` },
     body: form,
   });
   if (!res.ok) throw new Error("UPLOAD_AVATAR_FAILED");
+  return res.json();
+}
+
+/**
+ * Remove the profile picture. Sends `{ avatar: null }` to the same endpoint;
+ * the backend destroys the Cloudinary image and clears `avatar`/`avatarPublicId`.
+ */
+export async function deleteAvatar(token: string): Promise<ProfileResponse> {
+  const res = await fetch(`${BASE}/api/users/profile`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ avatar: null }),
+  });
+  if (!res.ok) throw new Error("DELETE_AVATAR_FAILED");
   return res.json();
 }
 
