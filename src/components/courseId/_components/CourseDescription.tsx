@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from "react";
+import Button from "@/components/ui/Button";
 
 interface Props {
   description: string;
@@ -27,12 +28,14 @@ export default function CourseDescription({ description, requirements }: Props) 
           )}
         </div>
         {isLong && (
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setExpanded((v) => !v)}
-            className="mt-2 text-[13px] font-semibold text-violet-700 hover:text-violet-900 transition-colors"
+            className="mt-2"
           >
             {expanded ? "Show less" : "Show more"}
-          </button>
+          </Button>
         )}
       </div>
 

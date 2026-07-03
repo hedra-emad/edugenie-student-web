@@ -79,7 +79,7 @@ export default function ProfileHero({ profile, mutation }: Props) {
         }
       );
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
     [profile.firstName, profile.lastName, mutation]
   );
 

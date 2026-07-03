@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useChangePassword } from "@/hooks/useProfile";
 import { Eye, EyeOff, Lock, CheckCircle } from "lucide-react";
-import DotsLoader from "@/components/ui/DotsLoader";
+import Button from "@/components/ui/Button";
 import type { ChangePasswordPayload } from "@/lib/api/profile.api";
 
 export default function ChangePasswordForm() {
@@ -154,18 +154,9 @@ export default function ChangePasswordForm() {
           </div>
         ))}
 
-        <button
-          type="submit"
-          disabled={isPending}
-          className="w-full flex items-center justify-center gap-2
-                     bg-[#3B1892] hover:bg-[#5B3DB8]
-                     disabled:opacity-60 disabled:cursor-not-allowed
-                     text-white text-sm font-semibold
-                     py-2.5 rounded-lg
-                     transition-colors duration-150"
-        >
-          {isPending ? <DotsLoader /> : (isPending ? "Saving..." : "Update Password")}
-        </button>
+        <Button type="submit" fullWidth loading={isPending}>
+          Update Password
+        </Button>
       </form>
     </div>
   );

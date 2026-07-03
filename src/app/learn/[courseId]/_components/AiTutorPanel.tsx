@@ -7,6 +7,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useAiChat } from "@/lib/ai/useAiChat";
+import Button from "@/components/ui/Button";
 import {
   MessageBubble,
   SparkleIcon,
@@ -204,14 +205,16 @@ export default function AiTutorPanel({
           }
           className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-[13.5px] text-slate-700 outline-none transition-colors placeholder:text-slate-400 focus:border-[#3B1892] focus:ring-1 focus:ring-[#3B1892] disabled:cursor-not-allowed disabled:opacity-60"
         />
-        <button
+        <Button
           type="submit"
+          variant="primary"
+          size="icon"
           disabled={!canSend}
-          className="flex h-[42px] w-[42px] flex-shrink-0 items-center justify-center rounded-xl bg-[#3B1892] text-white transition-all hover:bg-[#2A1069] disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex-shrink-0"
           aria-label="Send message"
         >
           <SendIcon className="h-[18px] w-[18px]" />
-        </button>
+        </Button>
       </form>
     </div>
   );

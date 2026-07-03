@@ -2,6 +2,7 @@
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { PaginationMeta } from "@/types/course";
+import Button from "@/components/ui/Button";
 
 interface Props {
   pagination: PaginationMeta;
@@ -114,23 +115,14 @@ function PageBtn({
   "aria-label"?: string;
 }) {
   return (
-    <button
-      type="button"
+    <Button
+      variant={active ? "primary" : "outline"}
+      size="icon"
       onClick={onClick}
       disabled={disabled}
       aria-label={ariaLabel}
-      className={`
-        w-9 h-9 flex items-center justify-center rounded-xl text-sm font-semibold
-        transition-all duration-150 select-none
-        ${ active
-            ? "bg-[#3B1892] text-white shadow-[0_4px_12px_rgba(124,58,237,0.4)]"
-            : disabled
-              ? "text-slate-300 cursor-not-allowed"
-              : "text-slate-500 hover:bg-violet-50 hover:text-violet-600 border border-slate-200"
-        }
-      `}
     >
       {children}
-    </button>
+    </Button>
   );
 }

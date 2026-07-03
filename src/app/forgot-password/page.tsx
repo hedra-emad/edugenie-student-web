@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Loader2, MailCheck } from "lucide-react";
+import { MailCheck } from "lucide-react";
 import { forgotPassword } from "@/lib/api/auth";
+import Button from "@/components/ui/Button";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -69,14 +70,9 @@ export default function ForgotPasswordPage() {
                 />
               </div>
               {error && <p className="text-sm text-rose-600">{error}</p>}
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#3B1892] px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-[#2A1069] disabled:opacity-60"
-              >
-                {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+              <Button type="submit" fullWidth loading={loading}>
                 Send reset link
-              </button>
+              </Button>
             </form>
             <p className="mt-4 text-center text-sm text-gray-500">
               Remembered it?{" "}

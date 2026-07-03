@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Button from "@/components/ui/Button";
 interface ErrorProps {
   error: Error & { digest?: string };
   reset: () => void;
@@ -40,12 +41,9 @@ export default function ProfileError({ reset }: ErrorProps) {
 
         {/* Actions */}
         <div className="flex items-center gap-3">
-          <button
-            onClick={reset}
-            className="bg-[#3B1892] text-white rounded-xl px-4 py-2 text-sm font-semibold hover:bg-[#2f1275] transition-colors duration-150"
-          >
+          <Button variant="primary" size="sm" onClick={reset}>
             Try again
-          </button>
+          </Button>
           <Link
             href="/"
             className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors duration-150"

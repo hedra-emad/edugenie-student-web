@@ -4,6 +4,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import Button, { buttonClasses } from "@/components/ui/Button";
 
 function FailedContent() {
   const router = useRouter();
@@ -81,29 +82,30 @@ function FailedContent() {
 
       {/* Action buttons */}
       <div className="flex flex-col sm:flex-row gap-3">
-        <button
+        <Button
           onClick={() => router.back()}
-          className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-[14px] font-bold text-white transition-opacity hover:opacity-90 active:scale-[0.98]"
-          style={{ backgroundColor: "#3B1892" }}
+          className="flex-1"
+          leftIcon={
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
+          }
         >
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-            />
-          </svg>
           Try Again
-        </button>
+        </Button>
         <Link
           href="/courses"
-          className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-[14px] font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition-colors duration-150 active:scale-[0.98]"
+          className={buttonClasses({ variant: "outline", className: "flex-1" })}
         >
           Go to Courses
         </Link>

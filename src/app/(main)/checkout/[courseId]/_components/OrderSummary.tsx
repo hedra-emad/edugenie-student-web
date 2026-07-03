@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import DotsLoader from "@/components/ui/DotsLoader";
+import Button from "@/components/ui/Button";
 import type { CartItem } from "@/types/checkout";
 import Image from "next/image";
 
@@ -194,12 +195,13 @@ export default function OrderSummary({
                   placeholder="Enter coupon code"
                   className="flex-1 text-[13px] border border-slate-200 rounded-xl px-3 py-2 outline-none uppercase tracking-widest focus:border-[#3B1892] transition-colors"
                 />
-                <button
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={handleApplyCoupon}
-                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-[12px] font-bold px-4 py-2 rounded-xl transition-colors duration-150"
                 >
                   Apply
-                </button>
+                </Button>
               </div>
               {couponStatus === "success" && (
                 <p className="text-emerald-600 text-[11px] mt-1">
@@ -310,18 +312,14 @@ export default function OrderSummary({
         </div>
 
         {/* Confirm & Pay button */}
-        <button
+        <Button
           onClick={onConfirm}
           disabled={isDisabled}
-          className={`w-full mt-4 py-3.5 rounded-xl text-[14px] font-bold transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#3B1892] ${
-            isDisabled
-              ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-              : "text-white hover:bg-violet-800"
-          }`}
-          style={isDisabled ? undefined : { backgroundColor: "#3B1892" }}
+          fullWidth
+          className="mt-4"
         >
           {renderButtonContent()}
-        </button>
+        </Button>
 
         {/* Security note */}
         <div className="mt-3 flex items-center justify-center gap-1.5 text-[11px] text-slate-400">
@@ -339,25 +337,28 @@ export default function OrderSummary({
 
         {/* Back button */}
         <div className="mt-2 flex items-center justify-center">
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => router.back()}
-            className="flex items-center gap-1 text-[12px] text-slate-400 hover:text-slate-600 transition-colors duration-150"
+            leftIcon={
+              <svg
+                className="w-3.5 h-3.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+            }
           >
-            <svg
-              className="w-3.5 h-3.5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
             Back to course
-          </button>
+          </Button>
         </div>
       </div>
     </div>

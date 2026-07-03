@@ -18,6 +18,7 @@ import CartSkeleton from "./CartSkeleton";
 import CartEmptyState from "./CartEmptyState";
 import CartItemList from "./CartItemList";
 import CartOrderSummary from "./CartOrderSummary";
+import Button from "@/components/ui/Button";
 import {
   getCartItemRemoveId,
   groupCartItemsByCourse,
@@ -273,22 +274,12 @@ export default function CartPageClient({ initialCart, __testFetchError }: CartPa
               refreshing the page.
             </p>
             {retryCount < 1 && (
-              <button
-                onClick={handleTryAgain}
-                className="px-6 py-3 rounded-xl text-sm font-bold text-white transition-colors duration-150 hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#3B1892]"
-                style={{ backgroundColor: "#3B1892" }}
-              >
-                Refresh page
-              </button>
+              <Button onClick={handleTryAgain}>Refresh page</Button>
             )}
             {retryCount >= 1 && (
-              <button
-                onClick={() => window.location.reload()}
-                className="px-6 py-3 rounded-xl text-sm font-bold text-white transition-colors duration-150 hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#3B1892]"
-                style={{ backgroundColor: "#3B1892" }}
-              >
+              <Button onClick={() => window.location.reload()}>
                 Refresh page
-              </button>
+              </Button>
             )}
             <Link
               href="/courses"

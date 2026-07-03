@@ -4,6 +4,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { getNotes, saveNote } from "@/lib/api/player";
+import Button from "@/components/ui/Button";
 import type { Note } from "@/types/player";
 
 interface Props {
@@ -94,15 +95,14 @@ export default function NotesSidebar({ lessonId, getCurrentTime, onSeekTo }: Pro
               {formatTimestamp(Math.floor(getCurrentTime()))}
             </span>
           </span>
-          <button
+          <Button
             type="submit"
+            variant="primary"
+            size="sm"
             disabled={!content.trim() || isSaving}
-            className="bg-[#3B1892] disabled:bg-slate-200 disabled:text-slate-400
-                       text-white text-[12.5px] font-bold px-4 py-1.5 rounded-xl
-                       hover:bg-violet-700 transition-colors"
           >
             {isSaving ? "Saving…" : "Save Note"}
-          </button>
+          </Button>
         </div>
       </form>
 

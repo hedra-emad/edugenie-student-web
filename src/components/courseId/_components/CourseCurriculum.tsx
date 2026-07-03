@@ -5,6 +5,7 @@ import { useState } from "react";
 import Link from "next/link";
 import type { Lesson, Section } from "../../../app/courses/[courseId]/types/course";
 import PracticeQuizModal from "../../ai/PracticeQuizModal";
+import Button from "@/components/ui/Button";
 import { useCourseAccess } from "./CourseAccessProvider";
 
 function getSectionId(section: Section) {
@@ -214,21 +215,25 @@ export default function CourseCurriculum({
                   )}
                   {owned && section.lessons.length > 0 && (
                     <div className="px-4 py-3">
-                      <button
+                      <Button
                         type="button"
+                        variant="secondary"
+                        size="sm"
+                        fullWidth
                         onClick={() =>
                           setQuizSection({
                             sectionId,
                             label: `${courseTitle ? `${courseTitle} › ` : ""}${section.title}`,
                           })
                         }
-                        className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-[#3B1892]/30 bg-violet-50 px-3 py-2 text-[12px] font-bold text-[#3B1892] transition-colors hover:bg-violet-100"
+                        leftIcon={
+                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z" />
+                          </svg>
+                        }
                       >
-                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z" />
-                        </svg>
                         Quiz me on this section
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </div>

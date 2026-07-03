@@ -9,6 +9,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { listRoadmaps, type Roadmap, type RoadmapItem } from "@/lib/api/roadmap";
 import { addToCartAction } from "@/app/actions/cart.actions";
+import Button, { buttonClasses } from "@/components/ui/Button";
 
 const PROXY = process.env.NEXT_PUBLIC_API_BASE || "/api/proxy";
 
@@ -112,7 +113,7 @@ export default function MyRoadmaps() {
         </p>
         <Link
           href="/roadmap"
-          className="mt-4 inline-flex rounded-xl bg-[#3B1892] px-4 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-[#2A1069]"
+          className={buttonClasses({ variant: "primary", className: "mt-4" })}
         >
           Build my roadmap
         </Link>
@@ -249,16 +250,15 @@ function RoadmapCard({
             Continue learning
           </Link>
         ) : (
-          <button
+          <Button
             type="button"
+            variant="primary"
+            fullWidth
+            loading={busy}
             onClick={onBuyRemaining}
-            disabled={busy}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#3B1892] py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-[#2A1069] disabled:opacity-50"
           >
-            {busy
-              ? "Adding…"
-              : `Buy remaining ${remainingItems.length} · EGP${remainingPrice}`}
-          </button>
+            {`Buy remaining ${remainingItems.length} · EGP${remainingPrice}`}
+          </Button>
         )}
       </div>
     </div>

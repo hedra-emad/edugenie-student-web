@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Search, SlidersHorizontal, X, ChevronDown } from "lucide-react";
 import { CourseFilters, CourseLevel, SortOption } from "@/types/course";
 import { CategoryOption } from "@/lib/api/courses";
+import Button from "@/components/ui/Button";
 
 const LEVELS: { value: CourseLevel | ""; label: string }[] = [
   { value: "", label: "All Levels" },
@@ -146,39 +147,33 @@ export default function CoursesFilterBar({
           </FilterSelect>
         </div>
 
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
           onClick={() => setMobileOpen((p) => !p)}
-          className="
-            flex items-center gap-2 px-3.5 py-2.5 rounded-xl
-            border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-600
-            hover:border-[#3B1892] hover:text-violet-600
-            transition-all duration-150 relative flex-shrink-0
-          "
+          className="flex-shrink-0"
+          leftIcon={<SlidersHorizontal size={15} />}
         >
-          <SlidersHorizontal size={15} />
           <span className="hidden sm:inline">Filters</span>
           {activeFilterCount > 0 && (
             <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-violet-600 text-white text-[10px] font-bold flex items-center justify-center">
               {activeFilterCount}
             </span>
           )}
-        </button>
+        </Button>
 
         {activeFilterCount > 0 && (
-          <button
+          <Button
             type="button"
+            variant="destructiveSoft"
+            size="sm"
             onClick={onReset}
-            className="
-              flex items-center gap-1.5 px-3 py-2.5 rounded-xl
-              text-sm font-semibold text-red-500
-              border border-red-100 bg-red-50
-              hover:bg-red-100 transition-all duration-150 flex-shrink-0
-            "
+            className="flex-shrink-0"
+            leftIcon={<X size={14} />}
           >
-            <X size={14} />
             <span className="hidden sm:inline">Reset</span>
-          </button>
+          </Button>
         )}
       </div>
 

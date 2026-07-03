@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Button from '@/components/ui/Button';
 import { useNotifications } from '@/contexts/NotificationContext';
 import type { AppNotification } from '@/types/notification';
 
@@ -113,15 +114,17 @@ function ToastCard({ notification, onDismiss }: ToastCardProps) {
             </span>
           )}
         </div>
-        <button
+        <Button
+          variant="ghostOnColor"
+          size="icon"
           onClick={onDismiss}
           aria-label="Dismiss notification"
-          className="text-white/70 hover:text-white transition-colors flex-shrink-0"
+          className="flex-shrink-0"
         >
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
           </svg>
-        </button>
+        </Button>
       </div>
 
       {/* Progress bar, same as .toast-progress in the Angular app */}

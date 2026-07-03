@@ -7,6 +7,7 @@ import { CategoryOption } from '@/lib/api/courses';
 import CoursesFilterBar from '@/components/courses/CoursesFilterBar';
 import CoursesGrid from '@/components/courses/CoursesGrid';
 import CoursesPagination from '@/components/courses/CoursesPagination';
+import Button from '@/components/ui/Button';
 
 interface Props {
   categories: CategoryOption[];
@@ -136,14 +137,15 @@ export default function CoursesPageClient({ categories }: Props) {
                 Please check your connection and try again.
               </p>
             </div>
-            <button
+            <Button
               type="button"
+              variant="destructive"
+              size="sm"
               onClick={() => setFilters({})}
-              className="ml-auto px-4 py-2 rounded-xl bg-red-600 text-white
-                         text-xs font-bold hover:bg-red-700 transition-colors"
+              className="ml-auto"
             >
               Retry
-            </button>
+            </Button>
           </div>
         )}
 

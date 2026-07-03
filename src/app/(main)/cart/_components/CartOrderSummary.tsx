@@ -2,6 +2,7 @@
 // src/app/(main)/cart/_components/CartOrderSummary.tsx
 
 import type { CartItem } from "@/types/checkout";
+import Button from "@/components/ui/Button";
 
 interface CartOrderSummaryProps {
   items: CartItem[];
@@ -115,18 +116,14 @@ export default function CartOrderSummary({
           </span>
         </div>
 
-        <button
+        <Button
           onClick={onCheckout}
           disabled={isEmpty}
-          className={`w-full mt-4 py-3.5 rounded-xl text-[14px] font-bold transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#3B1892] min-h-[44px] ${
-            isEmpty
-              ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-              : "text-white hover:bg-violet-800"
-          }`}
-          style={isEmpty ? undefined : { backgroundColor: "#3B1892" }}
+          fullWidth
+          className="mt-4"
         >
           {`Proceed to Checkout — EGP${total.toFixed(2)}`}
-        </button>
+        </Button>
       </div>
     </div>
   );

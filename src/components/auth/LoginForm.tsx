@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { MailOutlined, LockOutlined, VisibilityOffOutlined, VisibilityOutlined } from '@mui/icons-material';
 import { loginSchema, LoginFormData } from '@/lib/validations';
 import { CustomInput } from '../ui/CustomInput';
+import Button from '@/components/ui/Button';
 
 export const LoginForm = () => {
     const [showPassword, setShowPassword] = useState(false);
@@ -52,13 +53,15 @@ export const LoginForm = () => {
                 <a href="#" className="text-xs font-bold text-blue-600 hover:underline">Forgot Password?</a>
             </div>
 
-            <button
+            <Button
                 type="submit"
-                disabled={isSubmitting}
-                className="w-full bg-[#2e2a91] hover:bg-[#1e1b4b] text-white py-4 rounded-2xl font-bold text-sm transition-all shadow-lg shadow-indigo-100 active:scale-95 disabled:bg-gray-400"
+                variant="primary"
+                size="lg"
+                fullWidth
+                loading={isSubmitting}
             >
-                {isSubmitting ? "Signing in..." : "Sign In"}
-            </button>
+                Sign In
+            </Button>
         </form>
     );
 };

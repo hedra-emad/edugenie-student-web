@@ -1,4 +1,5 @@
 import { Award } from "lucide-react";
+import Button from "@/components/ui/Button";
 
 interface Certificate {
   id: string;
@@ -56,12 +57,9 @@ export default function CertificatesWidget({ certificates = [] }: Props) {
             ))}
           </ul>
 
-          <button
-            type="button"
-            className="mt-3 text-xs font-medium text-[#3B1892] hover:underline"
-          >
+          <Button type="button" variant="link" size="sm" className="mt-3 text-xs">
             View All
-          </button>
+          </Button>
         </>
       )}
     </section>

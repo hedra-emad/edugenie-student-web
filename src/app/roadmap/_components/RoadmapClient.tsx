@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { RouteIcon } from "@/components/ai/chatUi";
+import Button from "@/components/ui/Button";
 import {
   buildRoadmap,
   getRoadmapQuota,
@@ -170,13 +171,9 @@ export default function RoadmapClient({ firstName = "" }: { firstName?: string }
                 </svg>
               </div>
               <p className="text-[13.5px] font-medium text-slate-600">{error}</p>
-              <button
-                type="button"
-                onClick={() => setPhase("intake")}
-                className="mt-4 rounded-xl bg-[#3B1892] px-4 py-2 text-[13px] font-semibold text-white hover:bg-[#2A1069]"
-              >
+              <Button size="sm" onClick={() => setPhase("intake")} className="mt-4">
                 Back
-              </button>
+              </Button>
             </Centered>
           ) : phase === "result" && roadmap ? (
             <RoadmapResult roadmap={roadmap} />
@@ -213,37 +210,37 @@ export default function RoadmapClient({ firstName = "" }: { firstName?: string }
                   ${roadmap.totalPrice}
                 </p>
               </div>
-              <button
-                type="button"
+              <Button
                 onClick={addAllToCart}
                 disabled={adding || roadmap.items.length === 0}
-                className="flex-1 rounded-xl bg-[#3B1892] py-3 text-[14px] font-bold text-white transition-all hover:bg-[#2A1069] disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex-1"
               >
                 {adding
                   ? "Adding…"
                   : `Add all ${roadmap.items.length} to cart`}
-              </button>
+              </Button>
             </div>
-            <button
-              type="button"
+            <Button
+              variant="outline"
+              size="sm"
+              fullWidth
               onClick={buildAnother}
               disabled={left <= 0}
-              className="mt-2 w-full rounded-xl border border-slate-200 py-2.5 text-[12.5px] font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-50"
+              className="mt-2"
             >
               {left > 0 ? `Build another (${left} left)` : "No builds left"}
-            </button>
+            </Button>
           </div>
         ) : phase === "intake" ? (
           <div className="flex-shrink-0 border-t border-slate-100 px-4 py-3 sm:px-4">
-            <button
-              type="button"
+            <Button
+              fullWidth
               onClick={build}
               disabled={!canBuild}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#3B1892] px-4 py-3 text-[14px] font-semibold text-white transition-all hover:bg-[#2A1069] disabled:cursor-not-allowed disabled:opacity-40"
+              leftIcon={<RouteIcon className="h-4 w-4" />}
             >
-              <RouteIcon className="h-4 w-4" />
               Build my roadmap
-            </button>
+            </Button>
             <p className="mt-2 text-center text-[11.5px] text-slate-400">
               {left <= 0
                 ? "You've used all 3 roadmap builds."

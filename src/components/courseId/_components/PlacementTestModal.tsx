@@ -7,6 +7,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Button from "@/components/ui/Button";
 import {
   generatePlacement,
   submitPlacement,
@@ -106,13 +107,15 @@ export default function PlacementTestModal({ courseId, onClose }: Props) {
               Find out which sections you can skip — buy only what you need.
             </p>
           </div>
-          <button
+          <Button
+            variant="ghostOnColor"
+            size="icon"
             onClick={onClose}
             aria-label="Close"
-            className="text-violet-100 hover:text-white transition-colors text-xl leading-none"
+            className="text-xl leading-none"
           >
             ✕
-          </button>
+          </Button>
         </div>
 
         {/* Body */}
@@ -132,12 +135,14 @@ export default function PlacementTestModal({ courseId, onClose }: Props) {
           {phase === "error" && (
             <div className="py-12 text-center">
               <p className="text-red-500 font-semibold text-[14px]">{error}</p>
-              <button
+              <Button
+                variant="neutral"
+                size="sm"
                 onClick={onClose}
-                className="mt-5 px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[13px] font-semibold"
+                className="mt-5"
               >
                 Close
-              </button>
+              </Button>
             </div>
           )}
 
@@ -209,42 +214,31 @@ export default function PlacementTestModal({ courseId, onClose }: Props) {
             <span className="text-[12px] text-slate-400">
               {answeredCount}/{totalQuestions} answered
             </span>
-            <button
+            <Button
+              variant="primary"
+              size="sm"
               onClick={handleSubmit}
               disabled={!allAnswered}
-              className={`px-6 py-2.5 rounded-xl text-[13.5px] font-bold transition-all ${
-                allAnswered
-                  ? "bg-violet-700 hover:bg-violet-600 text-white shadow-sm"
-                  : "bg-slate-100 text-slate-400 cursor-not-allowed"
-              }`}
             >
               See my recommendation
-            </button>
+            </Button>
           </div>
         )}
 
         {phase === "result" && result && (
           <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-end gap-3">
-            <button
-              onClick={onClose}
-              className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[13px] font-semibold"
-            >
+            <Button variant="neutral" size="sm" onClick={onClose}>
               {result.mode === "none" ? "Close" : "Not now"}
-            </button>
+            </Button>
             {result.mode !== "none" && (
-              <button
+              <Button
                 onClick={handleAddToCart}
-                disabled={adding}
-                className="px-6 py-2.5 rounded-xl bg-violet-700 hover:bg-violet-600 text-white text-[13.5px] font-bold shadow-sm disabled:opacity-60 flex items-center gap-2"
+                loading={adding}
               >
-                {adding ? (
-                  <Spinner />
-                ) : result.mode === "full" ? (
-                  `Add full course — EGP${result.coursePrice}`
-                ) : (
-                  `Add ${result.sections.length} section${result.sections.length > 1 ? "s" : ""} — EGP${result.totalPrice}`
-                )}
-              </button>
+                {result.mode === "full"
+                  ? `Add full course — EGP${result.coursePrice}`
+                  : `Add ${result.sections.length} section${result.sections.length > 1 ? "s" : ""} — EGP${result.totalPrice}`}
+              </Button>
             )}
           </div>
         )}
