@@ -15,7 +15,9 @@ const LEVEL_LABELS: Record<UserProfile["level"], string> = {
 interface Props {
   profile: UserProfile;
   isUploading: boolean;
+  isDeletingAvatar: boolean;
   onAvatarSelect: (file: File) => void;
+  onAvatarDelete: () => void;
   onFieldSave: (field: keyof ProfileUpdatePayload, value: string) => void;
 }
 
@@ -171,7 +173,9 @@ function InlineNameEditor({ firstName, lastName, onSave }: NameEditorProps) {
 export default function ProfileHeader({
   profile,
   isUploading,
+  isDeletingAvatar,
   onAvatarSelect,
+  onAvatarDelete,
   onFieldSave,
 }: Props) {
   const initials = `${profile.firstName[0] ?? ""}${profile.lastName[0] ?? ""}`.toUpperCase();
@@ -191,7 +195,9 @@ export default function ProfileHeader({
             avatarUrl={avatarUrl}
             initials={initials}
             isUploading={isUploading}
+            isDeleting={isDeletingAvatar}
             onFileSelect={onAvatarSelect}
+            onDelete={onAvatarDelete}
           />
 
           {/* Info */}

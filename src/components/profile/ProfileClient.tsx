@@ -1,12 +1,21 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { useProfile, useUpdateProfile, useUploadAvatar } from "@/hooks/useProfile";
+import Button from "@/components/ui/Button";
+import ActionToast, { type ToastAction } from "@/components/ui/ActionToast";
+import {
+  useProfile,
+  useUpdateProfile,
+  useUploadAvatar,
+  useDeleteAvatar,
+} from "@/hooks/useProfile";
 import { useEnrollments } from "@/hooks/useEnrollments";
 import type { UserProfile } from "@/types/profile.types";
 import type { ProfileUpdatePayload } from "@/types/profile.types";
 import ProfileHeader from "./ProfileHeader";
+import AvatarCropperModal from "./AvatarCropperModal";
 import ProfileStatsStrip from "./ProfileStatsStrip";
 import LevelSelector from "./LevelSelector";
 import TagsEditor from "./TagsEditor";
@@ -37,16 +46,70 @@ interface Props {
 }
 
 export default function ProfileClient({ initialProfile, token }: Props) {
+  const router = useRouter();
   const { data: profile } = useProfile(token, initialProfile);
   const updateMutation = useUpdateProfile(token);
   const avatarMutation = useUploadAvatar(token);
+  const deleteAvatarMutation = useDeleteAvatar(token);
   const { data: enrollments = [] } = useEnrollments();
   const [activeTab, setActiveTab] = useState<MainTab>("learning");
+  const [cropFile, setCropFile] = useState<File | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [toast, setToast] = useState<{
+    kind: "success" | "error";
+    message: string;
+    action?: ToastAction;
+  } | null>(null);
 
   if (!profile) return null;
 
   function handleFieldSave(field: keyof ProfileUpdatePayload, value: string) {
     updateMutation.mutate({ [field]: value } as ProfileUpdatePayload);
+  }
+
+  // Picking a file opens the cropper; only the cropped result is uploaded.
+  function handleAvatarSelect(file: File) {
+    setCropFile(file);
+  }
+
+  function uploadCroppedAvatar(file: File) {
+    setCropFile(null);
+    avatarMutation.mutate(file, {
+      onSuccess: () => {
+        // Re-run server components (HeaderServer refetches the profile) so the
+        // nav avatar updates immediately — no logout/login needed.
+        router.refresh();
+        setToast({ kind: "success", message: "Profile picture updated." });
+      },
+      onError: () => {
+        setToast({
+          kind: "error",
+          message: "Couldn’t update your picture. Please try again.",
+          action: { label: "Retry", onClick: () => uploadCroppedAvatar(file) },
+        });
+      },
+    });
+  }
+
+  function performAvatarDelete() {
+    deleteAvatarMutation.mutate(undefined, {
+      onSuccess: () => {
+        router.refresh();
+        setToast({ kind: "success", message: "Profile picture removed." });
+      },
+      onError: () => {
+        setToast({
+          kind: "error",
+          message: "Couldn’t remove your picture. Please try again.",
+          action: { label: "Retry", onClick: performAvatarDelete },
+        });
+      },
+    });
+  }
+
+  function confirmAvatarDelete() {
+    setConfirmDelete(false);
+    performAvatarDelete();
   }
 
   return (
@@ -55,7 +118,9 @@ export default function ProfileClient({ initialProfile, token }: Props) {
       <ProfileHeader
         profile={profile}
         isUploading={avatarMutation.isPending}
-        onAvatarSelect={(file) => avatarMutation.mutate(file)}
+        isDeletingAvatar={deleteAvatarMutation.isPending}
+        onAvatarSelect={handleAvatarSelect}
+        onAvatarDelete={() => setConfirmDelete(true)}
         onFieldSave={handleFieldSave}
       />
 
@@ -194,6 +259,69 @@ export default function ProfileClient({ initialProfile, token }: Props) {
           </aside>
         </div>
       </motion.div>
+
+      {/* Crop before upload */}
+      {cropFile && (
+        <AvatarCropperModal
+          file={cropFile}
+          onCancel={() => setCropFile(null)}
+          onCropped={uploadCroppedAvatar}
+        />
+      )}
+
+      {/* Remove-avatar confirmation */}
+      {confirmDelete && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="remove-avatar-title"
+          onClick={() => setConfirmDelete(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3
+              id="remove-avatar-title"
+              className="text-base font-bold text-slate-900"
+            >
+              Remove profile picture?
+            </h3>
+            <p className="mt-1 text-sm text-slate-500">
+              This deletes your current photo from your account. You can upload a
+              new one anytime.
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setConfirmDelete(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                loading={deleteAvatarMutation.isPending}
+                onClick={confirmAvatarDelete}
+              >
+                Remove
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Immediate action feedback */}
+      {toast && (
+        <ActionToast
+          kind={toast.kind}
+          message={toast.message}
+          action={toast.action}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }
