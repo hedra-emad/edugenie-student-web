@@ -8,7 +8,7 @@ import Button from "@/components/ui/Button";
 import type { CartItem } from "@/types/checkout";
 import Image from "next/image";
 
-// ─── types ────────────────────────────────────────────────────────────────────
+// ─── types 
 
 export type ButtonStep = "idle" | "loading" | "redirect";
 
@@ -20,7 +20,7 @@ interface OrderSummaryProps {
   onConfirm: () => void;
 }
 
-// ─── component ────────────────────────────────────────────────────────────────
+// ─── component 
 
 export default function OrderSummary({
   items,
@@ -33,7 +33,7 @@ export default function OrderSummary({
   const isEmpty = items.length === 0;
   const isDisabled = isEmpty || buttonStep !== "idle";
 
-  // ── coupon state (UI-only — TODO: wire to real API) ──────────────────────────
+  // ── coupon state (UI-only — TODO: wire to real API) 
   const [couponOpen, setCouponOpen] = useState(false);
   const [couponCode, setCouponCode] = useState("");
   const [couponStatus, setCouponStatus] = useState<
@@ -52,7 +52,7 @@ export default function OrderSummary({
     }
   }
 
-  // ── group section items by course ────────────────────────────────────────────
+  // ── group section items by course 
 
   const fullCourseItems = items.filter((i) => i.type === "full_course");
   const sectionItems = items.filter((i) => i.type === "section");
@@ -66,7 +66,7 @@ export default function OrderSummary({
     {} as Record<string, CartItem[]>,
   );
 
-  // ── button label ─────────────────────────────────────────────────────────────
+  // ── button label 
 
   function renderButtonContent() {
     if (buttonStep === "loading") {
@@ -148,7 +148,7 @@ export default function OrderSummary({
                       — {section.sectionTitle ?? section.courseTitle}
                     </span>
                     <span className="text-[12px] font-semibold text-slate-700 flex-shrink-0 ml-3">
-                      EGP{section.price}
+                      EGP {section.price}
                     </span>
                   </div>
                 ))}
@@ -164,7 +164,7 @@ export default function OrderSummary({
         <div className="flex justify-between items-center mb-2">
           <span className="text-[13px] text-slate-500">Subtotal</span>
           <span className="text-[13px] font-semibold text-slate-700">
-            EGP{subtotal.toFixed(2)}
+            EGP {subtotal.toFixed(2)}
           </span>
         </div>
 
@@ -205,7 +205,7 @@ export default function OrderSummary({
               </div>
               {couponStatus === "success" && (
                 <p className="text-emerald-600 text-[11px] mt-1">
-                  Coupon applied!
+                  Coupon applied
                 </p>
               )}
               {couponStatus === "error" && (
