@@ -219,7 +219,7 @@ export default function CoursesFilterBar({
 
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
-              EGP
+              
             </span>
             <input
               type="number"
@@ -241,9 +241,9 @@ export default function CoursesFilterBar({
           </div>
 
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
-              EGP
-            </span>
+            {/* <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
+              
+            </span> */}
             <input
               type="number"
               min={0}
