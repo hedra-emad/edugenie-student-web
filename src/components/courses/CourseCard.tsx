@@ -4,13 +4,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Clock, Users, BookOpen, Heart } from "lucide-react";
 
 import { Course, CourseLevel } from "@/types/course";
 import { addToCartAction } from "@/app/actions/cart.actions";
 import { getCart } from "@/lib/api/checkout";
+import { fetchCoursePricing } from "@/lib/api/enrollments";
 import { useSession } from "@/providers/SessionProvider";
 import { useCartContext } from "@/contexts/CartContext";
 import Toast from "@/components/ui/Toast";
@@ -102,6 +103,19 @@ export default function CourseCard({ course }: Props) {
   const queryClient = useQueryClient();
   const { isAuthenticated } = useSession();
   const { setCartCount } = useCartContext();
+
+  // Per-user pricing: if the student already bought some sections, the full
+  // course now costs only the remaining balance. Guests get the catalog price.
+  const { data: pricing } = useQuery({
+    queryKey: ["course-pricing", course.id],
+    queryFn: () => fetchCoursePricing(course.id),
+    enabled: isAuthenticated,
+    staleTime: 60_000,
+  });
+  const ownsFull = pricing?.owned === "full";
+  const ownsSomeSections =
+    pricing?.owned === "section" && pricing.remainingPrice < pricing.fullPrice;
+  const displayPrice = ownsSomeSections ? pricing!.remainingPrice : course.price;
   const [imgError, setImgError] = useState(false);
   const [wished, setWished] = useState(false);
   const [cartError, setCartError] = useState<string | null>(null);
@@ -332,22 +346,54 @@ export default function CourseCard({ course }: Props) {
         "
         >
           <div className="flex items-center justify-between gap-2 pt-3">
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-[17px] font-black text-slate-900 leading-none tracking-tight">
-                EGP{course.price.toFixed(2)}
-              </span>
+            <div className="flex flex-col gap-0.5 min-w-0">
+              {ownsFull ? (
+                <span className="text-[13px] font-black text-emerald-600 leading-none">
+                  Owned
+                </span>
+              ) : (
+                <div className="flex items-baseline gap-1.5 flex-wrap">
+                  <span className="text-[17px] font-black text-slate-900 leading-none tracking-tight">
+                    EGP{displayPrice.toFixed(2)}
+                  </span>
+                  {ownsSomeSections && (
+                    <span className="text-[11px] font-semibold text-slate-400 line-through leading-none">
+                      EGP{pricing!.fullPrice.toFixed(2)}
+                    </span>
+                  )}
+                </div>
+              )}
+              {ownsSomeSections && (
+                <span className="text-[10px] font-semibold text-emerald-600 leading-none">
+                  You own {pricing!.ownedSectionCount}/{pricing!.totalSections} sections — pay the rest
+                </span>
+              )}
             </div>
 
-            <Button
-              type="button"
-              onClick={handleAddToCart}
-              loading={isPending}
-              aria-label="Add to cart"
-              leftIcon={<CartIcon />}
-              className="flex-shrink-0"
-            >
-              <span className="whitespace-nowrap">Add to Cart</span>
-            </Button>
+            {ownsFull ? (
+              <Button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  router.push(`/learn/${course.id}`);
+                }}
+                variant="secondary"
+                className="flex-shrink-0"
+              >
+                <span className="whitespace-nowrap">Go to course</span>
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                onClick={handleAddToCart}
+                loading={isPending}
+                aria-label="Add to cart"
+                leftIcon={<CartIcon />}
+                className="flex-shrink-0"
+              >
+                <span className="whitespace-nowrap">Add to Cart</span>
+              </Button>
+            )}
           </div>
 
           {cartError && (
