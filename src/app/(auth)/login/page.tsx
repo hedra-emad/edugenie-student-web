@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, Suspense } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import AuthLayout from "@/components/auth/AuthLayout";
@@ -14,7 +14,13 @@ import AuthButton from "@/components/auth/AuthButton";
 import AuthDivider from "@/components/auth/AuthDivider";
 import SocialLogin from "@/components/auth/SocialLogin";
 import { redirectToGoogleAuth } from "@/lib/api/auth/googleAuth";
-import { login, verifyExchangeToken, handoffCode, logout } from "@/lib/api/auth";
+import {
+  login,
+  verifyExchangeToken,
+  handoffCode,
+  logout,
+  resendVerification,
+} from "@/lib/api/auth";
 import { useQueryClient } from "@tanstack/react-query";
 
 const ANGULAR_URL =
@@ -24,6 +30,7 @@ const ANGULAR_URL =
   const router = useRouter();
   const searchParams = useSearchParams();
   const oauthError = searchParams.get("error");
+  const justRegistered = searchParams.get("registered") === "true";
   const [activeTab, setActiveTab] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -31,7 +38,20 @@ const ANGULAR_URL =
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [touched, setTouched] = useState({ email: false, password: false });
+  // After registration, show a success message in place of the form for 5s.
+  const [showSplash, setShowSplash] = useState(justRegistered);
+  // Set when a login attempt is rejected because the email isn't verified yet.
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
+  const [resendState, setResendState] = useState<
+    "idle" | "sending" | "sent" | "error"
+  >("idle");
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!justRegistered) return;
+    const t = setTimeout(() => setShowSplash(false), 5000);
+    return () => clearTimeout(t);
+  }, [justRegistered]);
 
   // Validation helpers
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -61,6 +81,8 @@ const ANGULAR_URL =
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
+    setUnverifiedEmail(null);
+    setResendState("idle");
     setTouched({ email: true, password: true });
     if (!isLoginFormValid) {
       setIsLoading(false);
@@ -104,8 +126,12 @@ const ANGULAR_URL =
     } catch (err: unknown) {
       console.error("Login error:", err);
       const status = (err as { status?: number })?.status;
+      const code = (err as { error?: { code?: string } })?.error?.code;
 
-      if (status === 401) {
+      if (status === 403 && code === "EMAIL_NOT_VERIFIED") {
+        // Not an error state — surface the "verify your email" prompt + resend.
+        setUnverifiedEmail(email);
+      } else if (status === 401) {
         setErrorMessage("Invalid email or password");
       } else if (status === 429) {
         setErrorMessage(
@@ -121,13 +147,105 @@ const ANGULAR_URL =
     }
   };
 
+  const handleResend = async () => {
+    if (!unverifiedEmail || resendState === "sending") return;
+    setResendState("sending");
+    try {
+      await resendVerification({ email: unverifiedEmail });
+      setResendState("sent");
+    } catch {
+      setResendState("error");
+    }
+  };
+
   return (
     <AuthLayout>
       <AuthLogo />
       <AuthCard>
+        {showSplash ? (
+          <div className="flex flex-col items-center justify-center px-2 py-10 text-center animate-in fade-in zoom-in-95 duration-300">
+            <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 ring-8 ring-emerald-50/60">
+              <svg
+                className="h-9 w-9 text-emerald-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+            <h2 className="text-xl font-bold text-gray-900">Account created!</h2>
+            <p className="mt-2 max-w-xs text-sm leading-relaxed text-text-secondary">
+              We&apos;ve sent a verification link to your email. Verify it, then
+              sign in to start learning.
+            </p>
+            <p className="mt-4 text-xs font-medium text-text-secondary/70">
+              The sign-in form will appear in a moment…
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowSplash(false)}
+              className="mt-5 text-sm font-semibold text-primary hover:underline"
+            >
+              Sign in now
+            </button>
+          </div>
+        ) : (
+          <>
         <div className="auth-card-header">
           <AuthTabs activeTab={activeTab} onTabChange={handleTabChange} />
         </div>
+        {unverifiedEmail && (
+          <div className="auth-warning flex flex-col gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800 shadow-sm mb-3 animate-in slide-in-from-top-2 fade-in duration-300">
+            <div className="flex items-start gap-2">
+              <svg
+                className="w-4 h-4 mt-[2px] shrink-0 text-amber-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                />
+              </svg>
+              <span className="leading-relaxed">
+                Please verify your email before signing in. We sent a link to{" "}
+                <span className="font-semibold break-all">{unverifiedEmail}</span>.
+              </span>
+            </div>
+            <div className="flex items-center gap-3 pl-6">
+              {resendState === "sent" ? (
+                <span className="text-xs font-semibold text-emerald-600">
+                  New verification email sent ✓
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={resendState === "sending"}
+                  className="text-xs font-bold text-primary hover:underline disabled:opacity-60"
+                >
+                  {resendState === "sending"
+                    ? "Sending…"
+                    : "Resend verification email"}
+                </button>
+              )}
+              {resendState === "error" && (
+                <span className="text-xs text-error">
+                  Couldn&apos;t send. Try again.
+                </span>
+              )}
+            </div>
+          </div>
+        )}
         {oauthError === "invalid_token" && (
           <div className="auth-error flex items-start gap-2 rounded-lg border border-error bg-error/10 px-3 py-2 text-sm text-error shadow-sm mb-3 animate-in slide-in-from-top-2 fade-in duration-300">
             <svg
@@ -238,6 +356,8 @@ const ANGULAR_URL =
             <SocialLogin onGoogle={() => redirectToGoogleAuth()} />
           </div>
         </div>
+          </>
+        )}
       </AuthCard>
     </AuthLayout>
   );
