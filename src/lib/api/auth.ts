@@ -181,8 +181,39 @@ async function postPublic(path: string, body: Record<string, unknown>) {
   return json;
 }
 
-export function verifyEmail(payload: { token: string }) {
-  return postPublic('verify-email', payload);
+export interface VerifyEmailResult {
+  success: boolean;
+  data: {
+    message: string;
+    user: { role?: string; [key: string]: unknown };
+    exchangeToken: string;
+  };
+}
+
+/**
+ * Confirms the email token and, on success, the backend also signs the user in
+ * (sets cookies for staff, returns an exchangeToken for students). Uses
+ * credentials:'include' so the Set-Cookie for instructors is stored.
+ */
+export async function verifyEmail(payload: {
+  token: string;
+}): Promise<VerifyEmailResult> {
+  const res = await fetch(`${AUTH_API_URL}/verify-email`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const errObj: Error & { status?: number } = new Error(
+      (json as { message?: string }).message ??
+        'This verification link is invalid or has expired.',
+    );
+    errObj.status = res.status;
+    throw errObj;
+  }
+  return json as VerifyEmailResult;
 }
 
 export function resendVerification(payload: { email: string }) {
