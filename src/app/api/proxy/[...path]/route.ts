@@ -7,10 +7,15 @@ const BASE_URL =
   'https://edugenie-api.vercel.app';
 const SERVER_API_URL = resolveApiBase(BASE_URL);
 
-// The browser-facing refresh cookie only needs to reach the proxy's own auth
-// routes (/api/proxy/auth/*), so scope it there — it never rides along on
-// regular API traffic.
-const REFRESH_COOKIE_BROWSER_PATH = '/api/proxy/auth';
+// The proxy refreshes the session INLINE: on a 401 for any API call it spends
+// the refresh cookie and retries. For that the browser must send the refresh
+// cookie on every proxy request, so it is scoped to the whole proxy (`/api/proxy`)
+// — NOT just `/api/proxy/auth` (which would omit it from normal calls like
+// `/api/proxy/enrollments`, silently defeating the refresh and logging users out).
+// It stays HttpOnly + SameSite=Lax and is only ever forwarded to the backend for
+// the auth/refresh + auth/logout routes (see buildHeaders), so the wider path
+// adds no exposure.
+const REFRESH_COOKIE_BROWSER_PATH = '/api/proxy';
 
 // Auth endpoints whose own 401 must NOT trigger a silent refresh+retry
 // (failed login is failed login; refresh recursion would loop).

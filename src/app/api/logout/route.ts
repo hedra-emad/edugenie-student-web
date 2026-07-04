@@ -22,6 +22,9 @@ export async function POST() {
     headers: { 'Content-Type': 'application/json' },
   });
   res.headers.append('Set-Cookie', expire('jwt', '/'));
+  // Refresh cookie now lives at /api/proxy; also clear the legacy /api/proxy/auth
+  // path so a cookie set before the path change is reliably removed on logout.
+  res.headers.append('Set-Cookie', expire('refreshToken', '/api/proxy'));
   res.headers.append('Set-Cookie', expire('refreshToken', '/api/proxy/auth'));
   return res;
 }
