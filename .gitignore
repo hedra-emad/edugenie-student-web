@@ -45,4 +45,5 @@ next-env.d.ts
 .kiro
 .vscode 
 .cursor
-
+#AI
+CLAUDE.md

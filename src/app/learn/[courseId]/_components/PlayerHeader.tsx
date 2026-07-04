@@ -4,6 +4,7 @@
 import Link from "next/link";
 
 interface Props {
+  courseId: string;
   courseTitle: string;
   currentLessonTitle: string;
   completedLessons: number;
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export default function PlayerHeader({
+  courseId,
   courseTitle,
   currentLessonTitle,
   completedLessons,
@@ -80,12 +82,27 @@ export default function PlayerHeader({
         </div>
       </header>
 
-      {/* Bar 2 — Course + lesson title */}
+      {/* Bar 2 — Breadcrumb (My Courses > Course > Lesson) */}
       <div className="flex-shrink-0 bg-white border-b border-slate-200 px-6 py-2">
-        <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest truncate">
-          {courseTitle}
-        </p>
-        <p className="text-sm font-bold text-slate-800 truncate mt-0.5">
+        <nav
+          aria-label="Breadcrumb"
+          className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-widest"
+        >
+          <Link href="/profile" className="shrink-0 hover:text-primary transition-colors">
+            My Courses
+          </Link>
+          <span className="shrink-0" aria-hidden="true">›</span>
+          <Link
+            href={`/courses/${courseId}`}
+            className="min-w-0 truncate hover:text-primary transition-colors"
+          >
+            {courseTitle}
+          </Link>
+        </nav>
+        <p
+          className="text-sm font-bold text-slate-800 truncate mt-0.5"
+          aria-current="page"
+        >
           {currentLessonTitle}
         </p>
       </div>

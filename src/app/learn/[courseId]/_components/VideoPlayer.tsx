@@ -9,6 +9,7 @@ import {
   forwardRef,
   useImperativeHandle,
 } from "react";
+import Link from "next/link";
 import type { PlayerLesson, ProgressResponse } from "@/types/player";
 import Button from "@/components/ui/Button";
 import { useVideoProgress } from "@/hooks/useVideoProgress";
@@ -92,6 +93,15 @@ const ExitFullscreenIcon = () => (
 interface Props {
   lesson: PlayerLesson;
   courseId: string;
+  /**
+   * Whether the active lesson is locked (not purchased directly, or not
+   * unlocked via a roadmap enrollment — same `section.isUnlocked`/`lesson.state`
+   * check the sidebar uses for its lock icon). While true, no real player is
+   * mounted and `lesson.videoUrl` is never read.
+   */
+  locked?: boolean;
+  /** Course-level thumbnail, reused for the locked-state preview background. */
+  courseThumbnail?: string;
   onProgressResponse?: (res: ProgressResponse) => void;
   onLessonComplete?: () => void;
 }
@@ -104,7 +114,7 @@ export interface VideoPlayerHandle {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPlayer(
-  { lesson, courseId, onProgressResponse, onLessonComplete },
+  { lesson, courseId, locked = false, courseThumbnail, onProgressResponse, onLessonComplete },
   ref,
 ) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -277,6 +287,47 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPlayer(
       ? Math.min((maxWatchedTimeRef.current / duration) * 100, 100)
       : 0;
 
+  // ── Locked state ──────────────────────────────────────────────────────────
+  // No <video> is mounted and `lesson.videoUrl` is never touched here — the
+  // full asset URL simply never reaches the client for a locked lesson. This
+  // is the same `locked` check regardless of *why* it's locked (not purchased
+  // individually vs. not unlocked via roadmap enrollment), since both cases
+  // collapse into `section.isUnlocked` upstream in PlayerLayout.
+  if (locked) {
+    return (
+      <div className="relative bg-slate-900 w-full select-none">
+        <div className="relative w-full aspect-video overflow-hidden bg-slate-900">
+          {courseThumbnail && (
+            <img
+              src={courseThumbnail}
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 h-full w-full scale-110 object-cover opacity-30 blur-md"
+            />
+          )}
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-slate-900/70 px-6 text-center">
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10">
+              <svg className="w-6 h-6 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <rect x="5" y="11" width="14" height="10" rx="2" />
+                <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+              </svg>
+            </span>
+            <p className="text-sm font-bold text-white">{lesson.title}</p>
+            <p className="max-w-xs text-xs text-white/60">
+              This section isn’t included in your enrollment.
+            </p>
+            <Link
+              href={`/courses/${courseId}`}
+              className="mt-1 rounded-lg border border-white/30 px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-white/10"
+            >
+              Buy this section
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="relative bg-slate-900 w-full select-none">
@@ -285,8 +336,21 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPlayer(
         <video
           ref={videoRef}
           key={lesson.id}
+          // SECURITY TODO: `lesson.videoUrl` is a static, permanent asset URL
+          // returned as-is by the backend — anyone who copies it (devtools,
+          // a "save video" browser extension, etc.) can fetch the full paid
+          // video indefinitely. This needs to become a short-lived signed URL
+          // minted per playback session, e.g.:
+          //   GET /lessons/:lessonId/video-token → { url: string; expiresAt: string }
+          // with VideoPlayer re-requesting a fresh token as the previous one
+          // nears expiry. Not implemented here — needs backend
+          // streaming/signing support; the `controlsList`/`disablePictureInPicture`
+          // below are NOT a real security boundary, just a deterrent against
+          // casual/accidental downloads via the browser's own UI.
           src={lesson.videoUrl}
           className="w-full h-full object-contain"
+          controlsList="nodownload"
+          disablePictureInPicture
           onLoadedMetadata={handleLoadedMetadata}
           onTimeUpdate={handleTimeUpdate}
           onSeeked={handleSeeked}
