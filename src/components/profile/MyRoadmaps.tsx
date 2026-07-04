@@ -221,8 +221,14 @@ function RoadmapCard({
                       )}
                     </span>
                     {owned ? (
+                      // Navigate to the course's detail/overview page, not
+                      // straight into the player — access is (re-)checked and
+                      // enforced there. Section-type items have no detail
+                      // page of their own, so `it.courseId` (their parent
+                      // course) is used for both item types; confirm this
+                      // fallback is the intended target for section rows.
                       <Link
-                        href={`/learn/${it.courseId}`}
+                        href={`/courses/${it.courseId}`}
                         className="flex-shrink-0 text-[12px] font-semibold text-[#3B1892] hover:underline"
                       >
                         Continue

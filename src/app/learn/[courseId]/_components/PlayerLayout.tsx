@@ -130,6 +130,19 @@ export default function PlayerLayout({
     (a, s) => a + (s.isOwned ? s.lessons.length : 0),
     0,
   );
+
+  // Same entitlement check the sidebar already uses to render the lock icon /
+  // "Not purchased" state (SectionAccordion/LessonItem: a lesson is locked
+  // when its section isn't unlocked, or the lesson itself came back "locked"
+  // from the backend's `applyStudentAccess`). `section.isUnlocked` already
+  // covers BOTH direct-purchase and roadmap-enrollment access grants, so this
+  // one check blocks playback consistently for either reason — no new/second
+  // entitlement source introduced here.
+  const activeSection = course.sections.find((s) =>
+    s.lessons.some((l) => l.id === activeLesson.id),
+  );
+  const isActiveLessonLocked =
+    !activeSection?.isUnlocked || activeLesson.state === "locked";
   const completedCount = completedLessons.size;
 
   // Build nextLesson info for TabBar (needs duration)
@@ -144,6 +157,7 @@ export default function PlayerLayout({
   return (
     <div className="flex flex-col bg-slate-50">
       <PlayerHeader
+        courseId={course.id}
         courseTitle={course.title}
         currentLessonTitle={activeLesson.title}
         completedLessons={completedCount}
@@ -162,6 +176,8 @@ export default function PlayerLayout({
                 ref={videoPlayerRef}
                 lesson={activeLesson}
                 courseId={course.id}
+                locked={isActiveLessonLocked}
+                courseThumbnail={course.thumbnail}
                 onProgressResponse={handleProgressResponse}
                 onLessonComplete={() => {
                   setCompletedLessons((prev) => {
