@@ -13,9 +13,9 @@ export async function generateMetadata({
   params: Promise<{ courseId: string }>;
 }) {
   const { courseId } = await params;
-  const course = await getCourseForPlayer(courseId);
+  const result = await getCourseForPlayer(courseId);
   return {
-    title: course ? `${course.title} — EduGenie` : "Learn — EduGenie",
+    title: result.kind === "ok" ? `${result.course.title} — EduGenie` : "Learn — EduGenie",
   };
 }
 
@@ -34,12 +34,19 @@ export default async function LearnPage({
   const token = cookieStore.get("jwt")?.value ?? undefined;
 
   // Fetch course structure and resume position in parallel
-  const [course, resume] = await Promise.all([
+  const [result, resume] = await Promise.all([
     getCourseForPlayer(courseId, token),
     getResumePosition(courseId, token),
   ]);
-  // Hard redirect if the course doesn't exist or is inaccessible
-  if (!course) redirect("/courses");
+
+  // Server-side gate — never render the player shell for a course the
+  // student can't access; redirect before any lesson data reaches the client.
+  if (result.kind === "unauthenticated") redirect("/login");
+  if (result.kind === "not_found") redirect("/profile");
+  if (result.kind === "forbidden") redirect(`/courses/${courseId}`);
+  if (result.kind === "error") redirect("/profile");
+
+  const course = result.course;
 
   const allLessons = course.sections.flatMap((s) => s.lessons);
 

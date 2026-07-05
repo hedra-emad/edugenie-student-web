@@ -31,7 +31,7 @@ function formatSectionDuration(sections: PlayerSection["lessons"]): string {
 
 function LockIcon() {
   return (
-    <svg className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <svg className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 inline mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <rect x="5" y="11" width="14" height="10" rx="2" />
       <path d="M8 11V7a4 4 0 0 1 8 0v4" />
     </svg>
@@ -41,7 +41,7 @@ function LockIcon() {
 function ChevronIcon({ open }: { open: boolean }) {
   return (
     <svg
-      className={`w-4 h-4 text-slate-400 flex-shrink-0 transition-transform duration-200 ${open ? "rotate-90" : ""}`}
+      className={`w-4 h-4 text-slate-400 flex-shrink-0 mt-0.5 transition-transform duration-200 ${open ? "rotate-90" : ""}`}
       fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
     >
       <path d="M9 18l6-6-6-6" />
@@ -72,25 +72,25 @@ export default function SectionAccordion({
   const completedInSection = section.lessons.filter(isDone).length;
 
   return (
-    <div className="border-b border-slate-200 last:border-0">
+    <div className="border border-slate-200 rounded-lg overflow-hidden">
       {/* Section header */}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className={`w-full flex items-center gap-3 px-4 py-3 text-left bg-slate-50
+        className={`w-full flex items-start gap-3 px-4 py-3 text-left bg-slate-50
                    border-b border-slate-200 transition-colors focus:outline-none
                    focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#3B1892]
                    ${locked ? "opacity-70" : ""}`}
         aria-expanded={open}
       >
-        <div className="flex-1 min-w-0 text-left">
-          <div className="flex items-center gap-1.5">
+        <div className="flex-1 min-w-0 text-left flex flex-col gap-2">
+          <div className="flex items-start gap-1.5">
             <p className="text-[13px] font-bold text-slate-800 leading-snug">
               {section.title}
             </p>
             {locked && <LockIcon />}
           </div>
-          <p className="text-[11px] text-slate-400 mt-0.5">
+          <p className="text-[11px] text-slate-400">
             {section.lessons.length} lessons
             {section.lessons.length > 0 &&
               ` · ${formatSectionDuration(section.lessons)}`}
@@ -101,15 +101,15 @@ export default function SectionAccordion({
           </p>
           {/* Status chip */}
           {notPurchased ? (
-            <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
+            <span className="self-start inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
               Not purchased
             </span>
           ) : progressLocked ? (
-            <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+            <span className="self-start inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
               Locked · pass previous quiz
             </span>
           ) : section.hasQuiz ? (
-            <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-[#3B1892]">
+            <span className="self-start inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-[#3B1892]">
               Quiz gate
             </span>
           ) : null}
@@ -193,7 +193,7 @@ export default function SectionAccordion({
           )}
 
           {/* Lessons */}
-          <div className="mt-1">
+          <div className="mt-3">
             {section.lessons.map((lesson, lIdx) => (
               <div key={lesson.id} className={locked ? "opacity-60" : ""}>
                 <LessonItem

@@ -86,7 +86,7 @@ export default function LessonSidebar({
       </div>
 
       {/* Scrollable lesson list */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
         {course.sections.map((section, index) => (
           <SectionAccordion
             key={section.id}
