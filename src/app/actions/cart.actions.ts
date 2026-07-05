@@ -83,3 +83,37 @@ export async function addToCartAction(
 
   return { success: true };
 }
+
+/**
+ * Server Action — POST /cart/course/:courseId
+ * One-click smart add: the backend adds only the sections the student doesn't
+ * already own (or the full course if they own nothing) and prices them so the
+ * student pays only the remaining balance. "Already owned" is not a real error.
+ */
+export async function addCourseToCartSmart(
+  courseId: string,
+): Promise<CartActionResult> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("jwt")?.value ?? null;
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const res = await fetch(`${API_URL}/cart/course/${courseId}`, {
+    method: "POST",
+    headers,
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    const message =
+      (err as { message?: string }).message ?? `Request failed: ${res.status}`;
+    if (/already|duplicate/i.test(message)) return { success: true };
+    return { success: false, error: message };
+  }
+
+  return { success: true };
+}

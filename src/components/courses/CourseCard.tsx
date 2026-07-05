@@ -9,7 +9,7 @@ import { motion } from "framer-motion";
 import { Clock, Users, BookOpen, Heart } from "lucide-react";
 
 import { Course, CourseLevel } from "@/types/course";
-import { addToCartAction } from "@/app/actions/cart.actions";
+import { addCourseToCartSmart } from "@/app/actions/cart.actions";
 import { getCart } from "@/lib/api/checkout";
 import { fetchCoursePricing } from "@/lib/api/enrollments";
 import { useSession } from "@/providers/SessionProvider";
@@ -132,19 +132,18 @@ export default function CourseCard({ course }: Props) {
     }
 
     startTransition(async () => {
-      const result = await addToCartAction({
-        courseId: course.id,
-        type: "full_course",
-      });
+      // Smart add: the backend adds only the sections the student doesn't own
+      // (or the full course if they own nothing), so they pay only the rest.
+      const result = await addCourseToCartSmart(course.id);
 
       if (result.success) {
-        const cart = await queryClient.fetchQuery({
-          queryKey: ["cart"],
-          queryFn: () => getCart(),
-        });
+        // Refresh the shared count from the server and invalidate the header's
+        // cart query so the badge updates immediately.
+        const cart = await getCart();
         if (cart) {
           setCartCount(cart.items.length);
         }
+        await queryClient.invalidateQueries({ queryKey: ["cart"] });
         setShowToast(true);
       } else {
         setCartError(result.error ?? "Could not add to cart");
