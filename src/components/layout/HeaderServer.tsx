@@ -68,6 +68,22 @@ async function fetchUserProfileWithRetry(token: string, maxRetries: number = 3) 
   return null;
 }
 
+/** Server-side cart item count, so the header badge is right on first paint. */
+async function fetchCartCount(token: string): Promise<number> {
+  try {
+    const res = await fetch(`${API_BASE}/api/cart`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    if (!res.ok) return 0;
+    const json = await res.json();
+    const items = json?.data?.items ?? json?.items ?? [];
+    return Array.isArray(items) ? items.length : 0;
+  } catch {
+    return 0;
+  }
+}
+
 export default async function HeaderServer() {
   const cookieStore = await cookies();
   const token = cookieStore.get("jwt")?.value;
@@ -106,7 +122,15 @@ export default async function HeaderServer() {
     }
   }
 
+  const initialCartCount =
+    token && isStudent ? await fetchCartCount(token) : 0;
+
   return (
-    <Header isStudent={isStudent} displayName={displayName} avatarUrl={avatarUrl} />
+    <Header
+      isStudent={isStudent}
+      displayName={displayName}
+      avatarUrl={avatarUrl}
+      initialCartCount={initialCartCount}
+    />
   );
 }

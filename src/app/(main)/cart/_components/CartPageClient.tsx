@@ -6,7 +6,7 @@
 //               7.5, 8.1, 8.2, 9.1, 9.2, 9.3
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -49,12 +49,15 @@ export default function CartPageClient({ initialCart, __testFetchError }: CartPa
   const [items, setItems] = useState<CartItem[]>(
     initialCart ? initialCart.items : [],
   );
-  const [subtotal, setSubtotal] = useState<number>(
-    initialCart ? initialCart.subtotal : 0,
+
+  // Subtotal/total are DERIVED from the current items so they update in real
+  // time on every add/remove — never a stale server-precomputed value. The cart
+  // has no coupon/discount (coupons apply at checkout), so total === subtotal.
+  const subtotal = useMemo(
+    () => items.reduce((sum, item) => sum + (item.price ?? 0), 0),
+    [items],
   );
-  const [total, setTotal] = useState<number>(
-    initialCart ? initialCart.total : 0,
-  );
+  const total = subtotal;
   const [fetchError, setFetchError] = useState<"auth" | "network" | null>(
     __testFetchError ?? (initialCart === null ? "network" : null),
   );
@@ -109,6 +112,8 @@ export default function CartPageClient({ initialCart, __testFetchError }: CartPa
     setItems((prev) =>
       prev.filter((item) => getCartItemRemoveId(item) !== removeId),
     );
+    // Optimistically drop the header badge immediately (restored on failure).
+    setCartCount(Math.max(0, items.length - 1));
 
     setRemovingIds((prev) => {
       const next = new Set(prev);
@@ -139,6 +144,7 @@ export default function CartPageClient({ initialCart, __testFetchError }: CartPa
             next.delete(removeId);
             return next;
           });
+          setCartCount(items.length); // restore badge — removal didn't stick
           addErrorId(removeId, "Request timed out");
           return;
         }
@@ -173,6 +179,7 @@ export default function CartPageClient({ initialCart, __testFetchError }: CartPa
           next.delete(removeId);
           return next;
         });
+        setCartCount(items.length); // restore badge — removal didn't stick
         addErrorId(removeId, "Failed to remove item. Please try again.");
       }
     } finally {
@@ -191,8 +198,7 @@ export default function CartPageClient({ initialCart, __testFetchError }: CartPa
 
     if (cart) {
       setItems(cart.items);
-      setSubtotal(cart.subtotal);
-      setTotal(cart.total);
+      // subtotal/total are derived from items — no separate setters needed.
       setFetchError(null);
       setRetryCount(1);
       setCartCount(cart.items.length);
