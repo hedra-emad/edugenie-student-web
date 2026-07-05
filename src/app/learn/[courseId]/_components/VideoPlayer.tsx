@@ -45,7 +45,7 @@ function formatTime(s: number): string {
 
 // ─── Speed options ────────────────────────────────────────────────────────────
 
-const SPEEDS = [0.75, 1, 1.25, 1.5, 2] as const;
+const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
 
 // ─── SVG icons (inline, no library) ──────────────────────────────────────────
 
@@ -88,6 +88,13 @@ const ExitFullscreenIcon = () => (
   </svg>
 );
 
+const PipIcon = () => (
+  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+    <rect x="3" y="5" width="18" height="14" rx="2" />
+    <rect x="12" y="11.5" width="7" height="5" rx="1" fill="currentColor" stroke="none" />
+  </svg>
+);
+
 // ─── Props / Handle ───────────────────────────────────────────────────────────
 
 interface Props {
@@ -118,6 +125,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPlayer(
   ref,
 ) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // ── State ────────────────────────────────────────────────────────────────
   const [isPlaying, setIsPlaying] = useState(false);
@@ -129,9 +137,15 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPlayer(
   const [isLoading, setIsLoading] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
+  const [pipSupported, setPipSupported] = useState(false);
+  const [isPip, setIsPip] = useState(false);
+  const [controlsVisible, setControlsVisible] = useState(true);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const activityTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isPlayingRef = useRef(isPlaying);
+  const showSpeedMenuRef = useRef(showSpeedMenu);
 
   // Max watched time — enforces seek restriction
   const maxWatchedTimeRef = useRef(lesson.watchedDuration);
@@ -178,11 +192,16 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPlayer(
     },
   });
 
-  // ── Keyboard hook ─────────────────────────────────────────────────────────
-  usePlayerKeyboard(videoRef as React.RefObject<HTMLVideoElement>, {
-    getMaxWatchedTime: () => maxWatchedTimeRef.current,
-    onSeekBlocked: () => showToast("Complete the video to unlock"),
-  });
+  // ── Keyboard hook — scoped to the player container, not the whole window,
+  // so shortcuts only fire once the student has focused the player ─────────
+  usePlayerKeyboard(
+    videoRef as React.RefObject<HTMLVideoElement>,
+    containerRef,
+    {
+      getMaxWatchedTime: () => maxWatchedTimeRef.current,
+      onSeekBlocked: () => showToast("Complete the video to unlock"),
+    },
+  );
 
   // ── Fullscreen change detection ───────────────────────────────────────────
   useEffect(() => {
@@ -191,6 +210,57 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPlayer(
     document.addEventListener("fullscreenchange", handleFSChange);
     return () => document.removeEventListener("fullscreenchange", handleFSChange);
   }, []);
+
+  // ── Picture-in-picture support detection + state sync ─────────────────────
+  useEffect(() => {
+    setPipSupported(
+      typeof document !== "undefined" &&
+        "pictureInPictureEnabled" in document &&
+        document.pictureInPictureEnabled,
+    );
+    const handleEnterPip = () => setIsPip(true);
+    const handleLeavePip = () => setIsPip(false);
+    const video = videoRef.current;
+    video?.addEventListener("enterpictureinpicture", handleEnterPip);
+    video?.addEventListener("leavepictureinpicture", handleLeavePip);
+    return () => {
+      video?.removeEventListener("enterpictureinpicture", handleEnterPip);
+      video?.removeEventListener("leavepictureinpicture", handleLeavePip);
+    };
+  }, []);
+
+  // ── Keep latest isPlaying/showSpeedMenu in refs for the hide-timer closure ─
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
+  useEffect(() => {
+    showSpeedMenuRef.current = showSpeedMenu;
+  }, [showSpeedMenu]);
+
+  // ── Auto-hide controls after inactivity during playback ───────────────────
+  const bumpActivity = useCallback(() => {
+    setControlsVisible(true);
+    if (activityTimer.current) clearTimeout(activityTimer.current);
+    activityTimer.current = setTimeout(() => {
+      if (isPlayingRef.current && !showSpeedMenuRef.current) {
+        setControlsVisible(false);
+      }
+    }, 3000);
+  }, []);
+
+  // Start/refresh the hide countdown when playback starts; always show
+  // controls (and cancel the countdown) while paused/loading.
+  useEffect(() => {
+    if (isPlaying) {
+      bumpActivity();
+    } else {
+      setControlsVisible(true);
+      if (activityTimer.current) clearTimeout(activityTimer.current);
+    }
+    return () => {
+      if (activityTimer.current) clearTimeout(activityTimer.current);
+    };
+  }, [isPlaying, bumpActivity]);
 
   // ── Video event handlers ──────────────────────────────────────────────────
 
@@ -237,6 +307,21 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPlayer(
     video.paused ? video.play() : video.pause();
   };
 
+  // Skip forward/back (e.g. double-tap zones) — mirrors the ArrowRight/Left
+  // keyboard behavior, capped at maxWatchedTime for forward skips.
+  const skip = (deltaSeconds: number) => {
+    const video = videoRef.current;
+    if (!video) return;
+    const next = video.currentTime + deltaSeconds;
+    if (deltaSeconds > 0 && next > maxWatchedTimeRef.current) {
+      video.currentTime = maxWatchedTimeRef.current;
+      showToast("Complete the video to unlock");
+      return;
+    }
+    video.currentTime = Math.max(0, next);
+    bumpActivity();
+  };
+
   const handleSeekBarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const video = videoRef.current;
     if (!video) return;
@@ -266,12 +351,32 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPlayer(
   };
 
   const toggleFullscreen = () => {
-    const video = videoRef.current;
-    if (!video) return;
+    // Fullscreen the whole player container (video + custom controls), not
+    // just the bare <video> element — otherwise the browser's fullscreen
+    // element would only contain the video and every custom control (seek
+    // bar, speed menu, PiP/fullscreen buttons) would vanish while fullscreen.
+    const container = containerRef.current;
+    if (!container) return;
     if (!document.fullscreenElement) {
-      video.requestFullscreen();
+      container.requestFullscreen().catch(() => {
+        // fullscreen may be blocked by the browser — silently ignore
+      });
     } else {
       document.exitFullscreen();
+    }
+  };
+
+  const togglePiP = async () => {
+    const video = videoRef.current;
+    if (!video || !pipSupported) return;
+    try {
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+      } else {
+        await video.requestPictureInPicture();
+      }
+    } catch {
+      // PiP can be refused by the browser/OS — non-critical, ignore
     }
   };
 
@@ -330,9 +435,15 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPlayer(
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="relative bg-slate-900 w-full select-none">
+    <div
+      ref={containerRef}
+      className="relative bg-slate-900 w-full select-none outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#3B1892]"
+      tabIndex={0}
+      onMouseMove={bumpActivity}
+      onTouchStart={bumpActivity}
+    >
       {/* Video element */}
-      <div className="relative w-full aspect-video bg-slate-900">
+      <div className="relative w-full aspect-video bg-slate-900 overflow-hidden">
         <video
           ref={videoRef}
           key={lesson.id}
@@ -344,13 +455,12 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPlayer(
           //   GET /lessons/:lessonId/video-token → { url: string; expiresAt: string }
           // with VideoPlayer re-requesting a fresh token as the previous one
           // nears expiry. Not implemented here — needs backend
-          // streaming/signing support; the `controlsList`/`disablePictureInPicture`
-          // below are NOT a real security boundary, just a deterrent against
-          // casual/accidental downloads via the browser's own UI.
+          // streaming/signing support; `controlsList` below is NOT a real
+          // security boundary, just a deterrent against casual/accidental
+          // downloads via the browser's own UI.
           src={lesson.videoUrl}
           className="w-full h-full object-contain"
           controlsList="nodownload"
-          disablePictureInPicture
           onLoadedMetadata={handleLoadedMetadata}
           onTimeUpdate={handleTimeUpdate}
           onSeeked={handleSeeked}
@@ -358,8 +468,34 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPlayer(
           onPause={handlePause}
           onWaiting={handleWaiting}
           onCanPlay={handleCanPlay}
-          onClick={togglePlay}
           preload="metadata"
+        />
+
+        {/* Tap zones — click anywhere toggles play; double-tap/double-click
+            the left or right third skips -10s/+10s (mobile-style gesture,
+            equivalent to the ArrowLeft/ArrowRight keyboard shortcuts). */}
+        <button
+          type="button"
+          tabIndex={-1}
+          aria-hidden="true"
+          onClick={togglePlay}
+          onDoubleClick={() => skip(-10)}
+          className="absolute inset-y-0 left-0 w-1/3 cursor-pointer bg-transparent border-0 focus:outline-none"
+        />
+        <button
+          type="button"
+          tabIndex={-1}
+          aria-hidden="true"
+          onClick={togglePlay}
+          className="absolute inset-y-0 left-1/3 w-1/3 cursor-pointer bg-transparent border-0 focus:outline-none"
+        />
+        <button
+          type="button"
+          tabIndex={-1}
+          aria-hidden="true"
+          onClick={togglePlay}
+          onDoubleClick={() => skip(10)}
+          className="absolute inset-y-0 right-0 w-1/3 cursor-pointer bg-transparent border-0 focus:outline-none"
         />
 
         {/* Spinner overlay */}
@@ -376,10 +512,14 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPlayer(
         <div className="absolute top-3 right-3 bg-black/50 text-white/80 text-[11px] font-semibold px-2.5 py-1 rounded-full pointer-events-none">
           {watchedPct}% watched
         </div>
-      </div>
 
-      {/* ── Controls bar ── */}
-      <div className="bg-slate-900 px-4 pt-2 pb-3 flex flex-col gap-2">
+        {/* ── Controls overlay — auto-hides after a few seconds of playback
+            inactivity, reappears on mouse move/tap (bumpActivity above) ── */}
+        <div
+          className={`absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-900/95 via-slate-900/80 to-transparent
+                      px-4 pt-8 pb-3 flex flex-col gap-2 transition-opacity duration-300
+                      ${controlsVisible ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        >
 
         {/* Seek bar */}
         <div className="relative h-5 flex items-center group">
@@ -503,6 +643,19 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPlayer(
               )}
             </div>
 
+            {/* Picture-in-picture (only rendered when the browser supports it) */}
+            {pipSupported && (
+              <Button
+                type="button"
+                variant="ghostOnColor"
+                size="icon"
+                onClick={togglePiP}
+                aria-label={isPip ? "Exit picture-in-picture" : "Picture-in-picture"}
+              >
+                <PipIcon />
+              </Button>
+            )}
+
             {/* Fullscreen */}
             <Button
               type="button"
@@ -514,6 +667,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPlayer(
               {isFullscreen ? <ExitFullscreenIcon /> : <FullscreenIcon />}
             </Button>
           </div>
+        </div>
         </div>
       </div>
 

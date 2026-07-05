@@ -78,7 +78,7 @@ export default function TabBar({
             key={tab.id}
             type="button"
             onClick={() => setActiveTab(tab.id)}
-            className={`px-5 py-3 text-[13px] font-semibold transition-colors focus:outline-none
+            className={`px-5 py-3 text-[13px] font-semibold transition-colors focus:outline-none rounded-none
                         ${activeTab === tab.id
                           ? "border-b-2 border-[#3B1892] text-[#3B1892]"
                           : "text-slate-500 hover:text-slate-700"}`}
@@ -104,7 +104,7 @@ export default function TabBar({
             {nextLesson && (
               <>
                 <div className="border-t border-slate-100 my-4" />
-                <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 flex items-center justify-between gap-4">
+                <div className="bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 flex items-center justify-between gap-4">
                   <div className="min-w-0">
                     <p className="text-[11px] font-bold text-slate-400 uppercase">
                       Up Next

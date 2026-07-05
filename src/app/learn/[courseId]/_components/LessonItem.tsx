@@ -73,7 +73,7 @@ export default function LessonItem({
 
   // ── State-driven styles ──────────────────────────────────────────────────
   const containerClass = [
-    "group flex items-start gap-3 py-3 min-h-[52px] transition-colors duration-150",
+    "group flex items-start gap-3 py-3 min-h-[52px] transition-colors duration-150 rounded-lg",
     isActive
       ? "bg-violet-50 border-l-4 border-[#3B1892] pl-3 pr-4"
       : "border-l-4 border-transparent px-4",

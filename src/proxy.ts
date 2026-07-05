@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { decodeJwt } from "@/lib/decode-jwt";
 
-const STUDENT_ONLY_PATHS = ["/cart", "/checkout"];
+const STUDENT_ONLY_PATHS = ["/cart", "/checkout", "/learn"];
 const PUBLIC_AUTH_PATHS = ["/login", "/register"];
 
 export function proxy(request: NextRequest) {
@@ -43,5 +43,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/cart/:path*", "/checkout/:path*", "/login", "/register"],
+  matcher: ["/cart/:path*", "/checkout/:path*", "/learn/:path*", "/login", "/register"],
 };
