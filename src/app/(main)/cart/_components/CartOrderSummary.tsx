@@ -62,7 +62,7 @@ export default function CartOrderSummary({
                     </span>
                   </div>
                   <span className="text-[13px] font-semibold text-slate-900 flex-shrink-0">
-                    EGP{item.price.toFixed(2)}
+                    ${item.price.toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -82,7 +82,7 @@ export default function CartOrderSummary({
                       — {section.sectionTitle ?? "Section"}
                     </span>
                     <span className="text-[12px] font-semibold text-slate-700 flex-shrink-0 ml-3">
-                      EGP{section.price.toFixed(2)}
+                      ${section.price.toFixed(2)}
                     </span>
                   </div>
                 ))}
@@ -97,7 +97,7 @@ export default function CartOrderSummary({
           <div className="flex justify-between items-center mb-2">
             <span className="text-[13px] text-slate-500">Subtotal</span>
             <span className="text-[13px] font-semibold text-slate-700">
-              EGP{subtotal.toFixed(2)}
+              ${subtotal.toFixed(2)}
             </span>
           </div>
         )}
@@ -112,7 +112,7 @@ export default function CartOrderSummary({
             className="text-[19px] font-extrabold"
             style={{ color: "#3B1892" }}
           >
-            EGP{total.toFixed(2)}
+            ${total.toFixed(2)}
           </span>
         </div>
 
@@ -122,7 +122,7 @@ export default function CartOrderSummary({
           fullWidth
           className="mt-4"
         >
-          {`Proceed to Checkout — EGP${total.toFixed(2)}`}
+          {`Proceed to Checkout — $${total.toFixed(2)}`}
         </Button>
       </div>
     </div>

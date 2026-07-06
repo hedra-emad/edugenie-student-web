@@ -78,38 +78,6 @@ export async function initiateCheckout(): Promise<CheckoutResponse | null> {
   }
 }
 
-// موقت
-// export async function initiateCheckout(): Promise<CheckoutResponse | null> {
-//   try {
-//     const token = document.cookie
-//       .split("; ")
-//       .find((row) => row.startsWith("access_token="))
-//       ?.split("=")[1];
-
-//     console.log("token found:", token ? token.slice(0, 20) : "NONE");
-
-//     const res = await fetch("https://edugenie-api.vercel.app/orders/checkout", {
-//       method: "POST",
-//       headers: {
-//         "Content-Type": "application/json",
-//         ...(token ? { Authorization: `Bearer ${token}` } : {}),
-//       },
-//       body: JSON.stringify({}),
-//     });
-
-//     console.log("checkout status:", res.status);
-//     const json = await res.json();
-//     console.log("checkout response:", JSON.stringify(json));
-
-//     if (!res.ok) return null;
-//     return normalizeCheckoutResponse(json);
-//   } catch (e) {
-//     console.log("checkout error:", e);
-//     return null;
-//   }
-// }
-
-
 // ---------------------------------------------
 export async function getOrder(
   orderId: string,
@@ -220,7 +188,7 @@ function normalizeCheckoutResponse(json: unknown): CheckoutResponse | null {
     clientSecret,
     orderId: String(data.orderId ?? raw.orderId ?? ""),
     amount: typeof data.amount === "number" ? data.amount : 0,
-    currency: typeof data.currency === "string" ? data.currency : "EGP",
+    currency: typeof data.currency === "string" ? data.currency : "$",
   };
 }
 
