@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "@/providers/SessionProvider";
 import { useCartContext } from "@/contexts/CartContext";
 import Button, { buttonClasses } from "@/components/ui/Button";
+import CoachWidget from "@/components/coach/CoachWidget";
 
 const navLinks = [
   { label: "Home", href: "/" },
@@ -211,6 +212,9 @@ export default function Header({
 
         {/* ── Right ── */}
         <div className="flex items-center gap-3">
+
+          {/* Coach — students only */}
+          {isStudent && isAuthenticated && <CoachWidget />}
 
           {/* Cart — students only */}
           {isStudent && (
