@@ -7,6 +7,8 @@
 // above the chat.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAiChat } from '@/lib/ai/useAiChat';
 import {
   MessageBubble,
@@ -22,11 +24,23 @@ import {
   getActiveRemediation,
   type RemediationPlan,
 } from '@/lib/api/remediation';
-
-const SNAPSHOT_URL = '/api/proxy/ai/coach/snapshot';
+import {
+  getCoachSnapshot,
+  getCoachMissions,
+  setCoachGoal,
+  type CoachSnapshot,
+  type CoachStreak,
+  type CoachGoal,
+  type CoachInProgress,
+  type CoachMissions,
+  type CoachMission,
+} from '@/lib/api/coach';
 
 // Sentinel: this starter scrolls to the recovery card instead of sending.
 const RECOVER_STARTER = '__recover__';
+
+// Weekly-goal presets offered when the student hasn't set a goal yet.
+const GOAL_PRESETS = [1, 3, 5, 7];
 
 interface Starter {
   label: string;
@@ -63,34 +77,14 @@ const STARTERS: Starter[] = [
   },
 ];
 
-interface Snapshot {
-  totalCourses: number;
-  completedCount: number;
-  inProgressCount: number;
-  stalledCount: number;
-  notStartedCount: number;
-  weakSpotCount: number;
-  recentAvgScore: number | null;
-  inProgress: {
-    courseId: string;
-    title: string;
-    progressPercent: number;
-    stalled: boolean;
-  }[];
-  weakSpots: {
-    courseId: string;
-    sectionId: string;
-    courseTitle: string;
-    sectionTitle: string;
-    score: number;
-    passed: boolean;
-  }[];
-}
-
 export default function CoachClient() {
+  const router = useRouter();
   const [input, setInput] = useState('');
-  const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
+  const [snapshot, setSnapshot] = useState<CoachSnapshot | null>(null);
+  const [missions, setMissions] = useState<CoachMissions | null>(null);
   const [recovery, setRecovery] = useState<RemediationPlan[]>([]);
+  const [savingGoal, setSavingGoal] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
   const [quizSection, setQuizSection] = useState<{
     sectionId: string;
     label: string;
@@ -108,12 +102,9 @@ export default function CoachClient() {
 
   // Deterministic snapshot + active recovery plans.
   const fetchAux = useCallback(async () => {
-    try {
-      const res = await fetch(SNAPSHOT_URL, { credentials: 'include' });
-      if (res.ok) setSnapshot((await res.json()) as Snapshot);
-    } catch {
-      /* non-fatal — the chat still works without the strip */
-    }
+    const [s, m] = await Promise.all([getCoachSnapshot(), getCoachMissions()]);
+    if (s) setSnapshot(s);
+    if (m) setMissions(m);
     setRecovery(await getActiveRemediation());
   }, []);
   useEffect(() => {
@@ -143,6 +134,69 @@ export default function CoachClient() {
     if (ready) send(prompt);
   };
 
+  const handleSetGoal = async (n: number) => {
+    if (savingGoal) return;
+    setSavingGoal(true);
+    try {
+      setSnapshot(await setCoachGoal(n));
+    } catch {
+      /* keep the current view; the picker stays available */
+    } finally {
+      setSavingGoal(false);
+    }
+  };
+
+  // Deterministic follow-up actions offered after an assistant reply (the
+  // gateway has no tool-calling, so we wire chips to the real modals/links).
+  const followUps: { label: string; run: () => void }[] = [];
+  if (snapshot) {
+    const w = snapshot.weakSpots[0];
+    if (w) {
+      followUps.push({
+        label: `Quiz me on ${w.sectionTitle}`,
+        run: () =>
+          setQuizSection({
+            sectionId: w.sectionId,
+            label: `${w.courseTitle} › ${w.sectionTitle}`,
+          }),
+      });
+    }
+    const resume =
+      snapshot.inProgress.find((c) => c.stalled) ?? snapshot.inProgress[0];
+    if (resume) {
+      followUps.push({
+        label: `Resume ${resume.title}`,
+        run: () => router.push(`/learn/${resume.courseId}`),
+      });
+    }
+    if (snapshot.goal) {
+      followUps.push({
+        label: 'How am I tracking my goal?',
+        run: () => send('How am I tracking against my weekly goal?'),
+      });
+    }
+  }
+  if (recovery.length) {
+    followUps.push({
+      label: 'See my recovery plan',
+      run: () =>
+        document
+          .getElementById(`recovery-${recovery[0].sectionId}`)
+          ?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+    });
+  }
+  followUps.push({
+    label: 'What should I focus on next?',
+    run: () => send('What is the single most important thing I should work on next?'),
+  });
+  const lastMessage = messages[messages.length - 1];
+  const showFollowUps =
+    !notStarted &&
+    !isStreaming &&
+    lastMessage?.role === 'assistant' &&
+    !lastMessage.pending &&
+    !lastMessage.error;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!canSend) return;
@@ -168,11 +222,43 @@ export default function CoachClient() {
             AI Learning Coach
           </h1>
           <p className="mt-1 max-w-xl text-[13.5px] leading-relaxed text-slate-500">
-            I read your real progress and quiz results, then tell you exactly
-            what to focus on next — and where to shore up weak spots.
+            Your coach sets you a few missions each day, tracks them from your
+            real progress, and rewards you with XP. Clear the board, keep the
+            streak.
           </p>
         </div>
       </div>
+
+      {/* Streak + weekly goal */}
+      {snapshot && snapshot.totalCourses > 0 && (
+        <GoalStreakBar
+          streak={snapshot.streak}
+          goal={snapshot.goal}
+          saving={savingGoal}
+          onSetGoal={handleSetGoal}
+        />
+      )}
+
+      {/* Today's missions (the hero) */}
+      {missions && (
+        <MissionBoard
+          data={missions}
+          onQuiz={(sectionId, label) => setQuizSection({ sectionId, label })}
+          onResume={(courseId) => router.push(`/learn/${courseId}`)}
+          onBrowse={() =>
+            router.push(
+              snapshot?.inProgress[0]
+                ? `/learn/${snapshot.inProgress[0].courseId}`
+                : '/courses',
+            )
+          }
+        />
+      )}
+
+      {/* Continue where you left off */}
+      {snapshot && snapshot.inProgress.length > 0 && (
+        <ContinueCards items={snapshot.inProgress} />
+      )}
 
       {/* Stats strip */}
       {snapshot && snapshot.totalCourses > 0 && (
@@ -249,8 +335,24 @@ export default function CoachClient() {
         </div>
       )}
 
-      {/* Chat card */}
-      <div className="flex h-[70vh] min-h-[540px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      {/* Ask the coach — secondary, collapsed by default */}
+      <button
+        type="button"
+        onClick={() => setChatOpen((v) => !v)}
+        className="mt-2 flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm transition-colors hover:border-[#3B1892]/40"
+      >
+        <span className="flex items-center gap-2 text-[13.5px] font-semibold text-slate-700">
+          <SparkleIcon className="h-4 w-4 text-[#3B1892]" />
+          Ask the coach a question
+        </span>
+        <span className="text-[12px] font-medium text-slate-400">
+          {chatOpen ? 'Hide' : 'Open'}
+        </span>
+      </button>
+
+      {/* Chat card (secondary) */}
+      {chatOpen && (
+      <div className="mt-3 flex h-[70vh] min-h-[540px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         {/* Connection strip */}
         <div className="flex flex-shrink-0 items-center justify-between border-b border-slate-100 px-4 py-2.5">
           <p className="flex items-center gap-1.5 text-[11.5px] font-medium text-slate-400">
@@ -305,6 +407,15 @@ export default function CoachClient() {
               {messages.map((m) => (
                 <MessageBubble key={m.id} message={m} />
               ))}
+              {showFollowUps && (
+                <div className="flex flex-wrap gap-2 pt-1 pl-10">
+                  {followUps.slice(0, 4).map((f) => (
+                    <Chip key={f.label} onClick={f.run}>
+                      {f.label}
+                    </Chip>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -338,13 +449,17 @@ export default function CoachClient() {
           </Button>
         </form>
       </div>
+      )}
 
       {/* Targeted practice quiz */}
       {quizSection && (
         <PracticeQuizModal
           sectionId={quizSection.sectionId}
           label={quizSection.label}
-          onClose={() => setQuizSection(null)}
+          onClose={() => {
+            setQuizSection(null);
+            void fetchAux(); // a passed quiz may complete a mission
+          }}
         />
       )}
     </div>
@@ -439,6 +554,310 @@ function StarterIcon({ icon }: { icon: Starter['icon'] }) {
         </svg>
       );
   }
+}
+
+// ── Daily missions board (the hero) ──────────────────────────────────────────
+function MissionBoard({
+  data,
+  onQuiz,
+  onResume,
+  onBrowse,
+}: {
+  data: CoachMissions;
+  onQuiz: (sectionId: string, label: string) => void;
+  onResume: (courseId: string) => void;
+  onBrowse: () => void;
+}) {
+  const xpIntoLevel = data.xpTotal % 100;
+  return (
+    <div className="mb-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      {/* XP / level header */}
+      <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-violet-50 to-white px-5 py-3.5">
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-8 items-center rounded-full bg-[#3B1892] px-3 text-[12px] font-bold text-white">
+            Lvl {data.level}
+          </span>
+          <div>
+            <p className="text-[13.5px] font-bold text-slate-800">
+              {data.xpTotal} XP
+            </p>
+            <div className="mt-1 h-1 w-28 overflow-hidden rounded-full bg-slate-200">
+              <div
+                className="h-full rounded-full bg-[#3B1892]"
+                style={{ width: `${xpIntoLevel}%` }}
+              />
+            </div>
+          </div>
+        </div>
+        <span className="text-[12px] font-semibold text-slate-500">
+          {data.doneCount}/{data.total} today
+        </span>
+      </div>
+
+      {/* Missions */}
+      <div className="divide-y divide-slate-100">
+        {data.missions.map((m) => (
+          <MissionRow
+            key={m.key}
+            mission={m}
+            onAction={() => {
+              if (m.type === 'weak_spot' && m.sectionId) {
+                onQuiz(m.sectionId, m.label);
+              } else if (m.type === 'resume_course' && m.courseId) {
+                onResume(m.courseId);
+              } else {
+                onBrowse();
+              }
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Footer */}
+      <div className="border-t border-slate-100 px-5 py-3">
+        {data.allDone ? (
+          <p className="text-center text-[13px] font-semibold text-emerald-600">
+            All missions cleared 🎉 +10 XP bonus — come back tomorrow!
+          </p>
+        ) : (
+          <p className="text-center text-[12.5px] text-slate-500">
+            {data.note || 'Clear your missions to earn XP and level up.'}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MissionRow({
+  mission,
+  onAction,
+}: {
+  mission: CoachMission;
+  onAction: () => void;
+}) {
+  const cta =
+    mission.type === 'weak_spot'
+      ? 'Quiz me'
+      : mission.type === 'resume_course'
+        ? 'Resume'
+        : 'Go';
+  return (
+    <div className="flex items-center gap-3 px-5 py-3.5">
+      <span
+        className={`flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full ${
+          mission.done ? 'bg-emerald-500 text-white' : 'border-2 border-slate-300'
+        }`}
+      >
+        {mission.done && (
+          <svg
+            className="h-3 w-3"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={3.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+        )}
+      </span>
+      <p
+        className={`min-w-0 flex-1 text-[13.5px] font-medium ${
+          mission.done ? 'text-slate-400 line-through' : 'text-slate-700'
+        }`}
+      >
+        {mission.label}
+      </p>
+      <span className="flex-shrink-0 rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-bold text-[#3B1892]">
+        +{mission.xp} XP
+      </span>
+      {!mission.done && (
+        <Button size="sm" variant="outline" onClick={onAction} className="flex-shrink-0">
+          {cta}
+        </Button>
+      )}
+    </div>
+  );
+}
+
+// ── Gamification: streak flame + weekly-goal ring / goal picker ──────────────
+function GoalStreakBar({
+  streak,
+  goal,
+  saving,
+  onSetGoal,
+}: {
+  streak: CoachStreak;
+  goal: CoachGoal | null;
+  saving: boolean;
+  onSetGoal: (n: number) => void;
+}) {
+  return (
+    <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+      {/* Streak */}
+      <div className="flex items-center gap-3">
+        <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-orange-400 to-rose-500 text-white shadow-sm">
+          <FlameIcon className="h-6 w-6" />
+        </div>
+        <div>
+          <p className="text-[18px] font-extrabold leading-none text-slate-900">
+            {streak.current} day{streak.current === 1 ? '' : 's'}
+          </p>
+          <p className="mt-1 text-[11.5px] font-medium text-slate-400">
+            {streak.current > 0
+              ? streak.activeToday
+                ? 'Streak active today 🔥'
+                : 'Study today to keep it alive'
+              : 'Start a streak — study today'}
+            {streak.longest > 0 && ` · best ${streak.longest}`}
+          </p>
+        </div>
+      </div>
+
+      {/* Weekly goal */}
+      {goal ? (
+        <div className="flex items-center gap-3">
+          <Ring pct={goal.pct} />
+          <div>
+            <p className="text-[13.5px] font-bold text-slate-800">
+              {goal.completedThisWeek}/{goal.target} lessons
+            </p>
+            <p className="mt-0.5 text-[11.5px] font-medium text-slate-400">
+              {goal.remaining > 0
+                ? `${goal.remaining} to hit this week's goal`
+                : 'Weekly goal reached! 🎉'}
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col items-start gap-1.5 sm:items-end">
+          <p className="text-[11.5px] font-semibold text-slate-500">
+            Set a weekly goal
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {GOAL_PRESETS.map((n) => (
+              <Chip key={n} disabled={saving} onClick={() => onSetGoal(n)}>
+                {n}/wk
+              </Chip>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Ring({ pct }: { pct: number }) {
+  const r = 16;
+  const c = 2 * Math.PI * r;
+  const filled = (Math.min(100, Math.max(0, pct)) / 100) * c;
+  return (
+    <svg className="h-12 w-12 -rotate-90" viewBox="0 0 40 40">
+      <circle cx="20" cy="20" r={r} fill="none" stroke="#ede9fe" strokeWidth="4" />
+      <circle
+        cx="20"
+        cy="20"
+        r={r}
+        fill="none"
+        stroke="#3B1892"
+        strokeWidth="4"
+        strokeLinecap="round"
+        strokeDasharray={`${filled} ${c}`}
+      />
+      <text
+        x="20"
+        y="21"
+        textAnchor="middle"
+        dominantBaseline="middle"
+        className="rotate-90"
+        transform="rotate(90 20 20)"
+        fontSize="10"
+        fontWeight="700"
+        fill="#3B1892"
+      >
+        {pct}%
+      </text>
+    </svg>
+  );
+}
+
+// ── Continue where you left off ──────────────────────────────────────────────
+function ContinueCards({ items }: { items: CoachInProgress[] }) {
+  return (
+    <div className="mb-5">
+      <p className="mb-2 text-[12.5px] font-semibold text-slate-500">
+        Continue where you left off
+      </p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {items.slice(0, 4).map((c) => (
+          <Link
+            key={c.courseId}
+            href={`/learn/${c.courseId}`}
+            className={`group rounded-2xl border bg-white p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${
+              c.stalled ? 'border-amber-200' : 'border-slate-200'
+            }`}
+          >
+            <div className="flex items-start justify-between gap-2">
+              <p className="min-w-0 flex-1 truncate text-[13.5px] font-semibold text-slate-800 group-hover:text-[#3B1892]">
+                {c.title}
+              </p>
+              <span className="flex-shrink-0 text-[12px] font-bold text-[#3B1892]">
+                {c.progressPercent}%
+              </span>
+            </div>
+            {c.stalled && (
+              <p className="mt-1 text-[11px] font-medium text-amber-600">
+                Stalled — jump back in
+              </p>
+            )}
+            <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+              <div
+                className="h-full rounded-full bg-[#3B1892] transition-all"
+                style={{ width: `${c.progressPercent}%` }}
+              />
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Small tap-to-act chip (mirrors the roadmap wizard chip styling).
+function Chip({
+  children,
+  onClick,
+  disabled,
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[12px] font-semibold text-slate-600 transition-colors hover:border-[#3B1892] hover:bg-violet-50 hover:text-[#3B1892] disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      {children}
+    </button>
+  );
+}
+
+function FlameIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      stroke="none"
+    >
+      <path d="M12 2s4 4 4 8a4 4 0 0 1-8 0c0-1 .3-1.8.6-2.4C7 8 6 9.6 6 12a6 6 0 0 0 12 0c0-4.4-6-10-6-10z" />
+    </svg>
+  );
 }
 
 function Stat({
