@@ -17,6 +17,12 @@ const nextConfig: NextConfig = {
         pathname: "/**",
       },
       {
+        // Google account avatars (OAuth sign-in profile photos)
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
+        pathname: "/**",
+      },
+      {
         protocol: "https",
         hostname: "edugenie-api.vercel.app",
         pathname: "/**",

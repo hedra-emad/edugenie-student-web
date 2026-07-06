@@ -107,6 +107,76 @@ export async function initiateStripeCheckout(
   return { url: data.url as string };
 }
 
+/**
+ * Start a Stripe Checkout for the WHOLE cart (selected sections and/or full
+ * courses, across any number of instructors) in one session. Returns the hosted
+ * Stripe URL to redirect to. Throws the backend message on failure (empty cart,
+ * an instructor not onboarded, own course, etc.).
+ */
+export async function initiateStripeCartCheckout(): Promise<{ url: string }> {
+  const res = await fetch(`${baseUrl()}/payments/checkout-cart`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ origin: "student" }),
+  });
+  if (!res.ok) {
+    let message = "Could not start checkout";
+    try {
+      const err = await res.json();
+      message = Array.isArray(err?.message) ? err.message[0] : err?.message || message;
+    } catch {
+      /* ignore */
+    }
+    throw new Error(message);
+  }
+  const data = await res.json();
+  if (!data?.url) throw new Error("Stripe did not return a checkout URL");
+  return { url: data.url as string };
+}
+
+/**
+ * Confirm + fulfill a Stripe checkout on the return redirect, so the enrollment
+ * is granted even if the webhook never reached the backend (common locally).
+ * Idempotent server-side. Returns whether the session was paid + fulfilled.
+ */
+export async function confirmStripeCheckout(
+  sessionId: string,
+): Promise<{ fulfilled: boolean }> {
+  try {
+    const res = await fetch(`${baseUrl()}/payments/confirm`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionId }),
+    });
+    if (!res.ok) return { fulfilled: false };
+    const data = await res.json();
+    return { fulfilled: Boolean(data?.fulfilled) };
+  } catch {
+    return { fulfilled: false };
+  }
+}
+
+/**
+ * Recover paid-but-unfulfilled orders (webhook missed). Powers the "Already paid?
+ * Sync my purchase" button. Returns how many orders were fulfilled.
+ */
+export async function confirmPendingCheckout(): Promise<{ fulfilled: number }> {
+  try {
+    const res = await fetch(`${baseUrl()}/payments/confirm-pending`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+    });
+    if (!res.ok) return { fulfilled: 0 };
+    const data = await res.json();
+    return { fulfilled: Number(data?.fulfilled) || 0 };
+  } catch {
+    return { fulfilled: 0 };
+  }
+}
+
 // موقت
 // export async function initiateCheckout(): Promise<CheckoutResponse | null> {
 //   try {
