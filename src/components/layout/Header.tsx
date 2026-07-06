@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "@/providers/SessionProvider";
 import { useCartContext } from "@/contexts/CartContext";
 import Button, { buttonClasses } from "@/components/ui/Button";
+import Avatar from "@/components/ui/Avatar";
 
 const navLinks = [
   { label: "Home", href: "/" },
@@ -57,36 +58,6 @@ function CartIcon({ count }: { count: number | null }) {
   );
 }
 
-/** Round profile picture with an initials fallback. */
-function Avatar({
-  displayName,
-  avatarUrl,
-  className = "h-8 w-8",
-}: {
-  displayName: string | null;
-  avatarUrl: string | null;
-  className?: string;
-}) {
-  const initial = (displayName ?? "U").charAt(0).toUpperCase();
-  if (avatarUrl) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={avatarUrl}
-        alt={displayName ?? "Profile"}
-        className={`${className} rounded-full object-cover ring-2 ring-indigo-200`}
-      />
-    );
-  }
-  return (
-    <div
-      className={`${className} flex items-center justify-center rounded-full bg-indigo-100 text-sm font-bold text-indigo-700 ring-2 ring-indigo-200`}
-    >
-      {initial}
-    </div>
-  );
-}
-
 /** Avatar + name — links to /profile */
 function UserAvatar({
   displayName,
@@ -101,7 +72,7 @@ function UserAvatar({
       aria-label="Go to profile"
       className="flex items-center gap-2 rounded-lg px-1 py-1 hover:bg-gray-100 transition-colors duration-150"
     >
-      <Avatar displayName={displayName} avatarUrl={avatarUrl} />
+      <Avatar name={displayName} src={avatarUrl} />
       <span className="hidden sm:block text-sm font-medium text-gray-700">
         {displayName ?? "My account"}
       </span>
@@ -348,7 +319,7 @@ export default function Header({
                 onClick={() => setMenuOpen(false)}
                 className="flex items-center gap-2"
               >
-                <Avatar displayName={displayName} avatarUrl={avatarUrl} />
+                <Avatar name={displayName} src={avatarUrl} />
                 <span className="text-sm font-medium text-gray-700">{displayName ?? "My account"}</span>
               </Link>
               <Button

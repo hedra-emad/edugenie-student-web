@@ -1,5 +1,5 @@
 // _components/CourseInstructor.tsx
-import Image from "next/image";
+import Avatar from "@/components/ui/Avatar";
 import type { Instructor } from "../../../app/courses/[courseId]/types/course";
 
 export default function CourseInstructor({ instructor }: { instructor: Instructor }) {
@@ -11,20 +11,12 @@ export default function CourseInstructor({ instructor }: { instructor: Instructo
 
       <div className="flex items-start gap-4">
         {/* Avatar */}
-        <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 flex-shrink-0">
-          {instructor.avatar ? (
-            <Image
-              src={instructor.avatar}
-              alt={fullName}
-              fill
-              className="object-cover"
-            />
-          ) : (
-            <span className="absolute inset-0 flex items-center justify-center text-xl font-extrabold text-slate-600">
-              {instructor.firstName[0]}
-            </span>
-          )}
-        </div>
+        <Avatar
+          src={instructor.avatar}
+          name={instructor.firstName}
+          className="w-16 h-16 flex-shrink-0 border border-slate-200"
+          textSizeClassName="text-xl"
+        />
 
         {/* Info */}
         <div className="flex-1 min-w-0">
