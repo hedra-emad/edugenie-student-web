@@ -82,7 +82,7 @@ export default function PlayerLayout({
           next.add(activeLesson.id);
           return next;
         });
-      }
+      };
 
       // Section quiz gate — only redirect once the section is exactly 100%
       // complete (every lesson done). The backend's `quizRequired` flag can be
