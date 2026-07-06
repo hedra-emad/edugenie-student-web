@@ -27,6 +27,8 @@ export default function PlayerLayout({
 }: Props) {
   const router = useRouter();
   const videoPlayerRef = useRef<VideoPlayerHandle>(null);
+  // Sections we've already auto-redirected to their quiz (once each).
+  const quizRedirectedRef = useRef<Set<string>>(new Set());
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [rightTab, setRightTab] = useState<"content" | "ai" | "transcript">("content");
   const [quizSection, setQuizSection] = useState<{
@@ -72,9 +74,14 @@ export default function PlayerLayout({
 
   const handleProgressResponse = useCallback(
     (res: ProgressResponse) => {
-      // Quiz redirect — immediate, no confirmation
+      // Quiz redirect — fires only after the whole section's lessons are done
+      // (backend gate) and only ONCE per section, so replaying a finished
+      // lesson doesn't keep bouncing the student into the quiz.
       if (res.quizRequired && res.quizSectionId) {
-        router.push(`/learn/${course.id}/quiz/${res.quizSectionId}`);
+        if (!quizRedirectedRef.current.has(res.quizSectionId)) {
+          quizRedirectedRef.current.add(res.quizSectionId);
+          router.push(`/learn/${course.id}/quiz/${res.quizSectionId}`);
+        }
         return;
       }
       // Mark as completed

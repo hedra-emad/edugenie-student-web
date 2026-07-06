@@ -5,8 +5,13 @@ import StripeSuccessClient from "./_components/StripeSuccessClient";
 export default async function StripeSuccessPage({
   searchParams,
 }: {
-  searchParams: Promise<{ purchase?: string }>;
+  searchParams: Promise<{ purchase?: string; session_id?: string }>;
 }) {
-  const { purchase } = await searchParams;
-  return <StripeSuccessClient status={purchase === "cancel" ? "cancel" : "success"} />;
+  const { purchase, session_id } = await searchParams;
+  return (
+    <StripeSuccessClient
+      status={purchase === "cancel" ? "cancel" : "success"}
+      sessionId={session_id}
+    />
+  );
 }

@@ -9,6 +9,7 @@ interface CartOrderSummaryProps {
   subtotal: number;
   total: number;
   onCheckout: () => void;
+  loading?: boolean;
 }
 
 export default function CartOrderSummary({
@@ -16,6 +17,7 @@ export default function CartOrderSummary({
   subtotal,
   total,
   onCheckout,
+  loading = false,
 }: CartOrderSummaryProps) {
   const isEmpty = items.length === 0;
   const itemCount = items.length;
@@ -119,6 +121,7 @@ export default function CartOrderSummary({
         <Button
           onClick={onCheckout}
           disabled={isEmpty}
+          loading={loading}
           fullWidth
           className="mt-4"
         >

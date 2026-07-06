@@ -15,23 +15,6 @@ import Button from "@/components/ui/Button";
 import { useVideoProgress } from "@/hooks/useVideoProgress";
 import { usePlayerKeyboard } from "@/hooks/usePlayerKeyboard";
 
-// ─── Toast ────────────────────────────────────────────────────────────────────
-
-function Toast({ message, visible }: { message: string; visible: boolean }) {
-  return (
-    <div
-      aria-live="assertive"
-      className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50
-        bg-slate-900 text-white text-sm px-4 py-2.5 rounded-xl
-        pointer-events-none select-none whitespace-nowrap
-        transition-all duration-300
-        ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"}`}
-    >
-      {message}
-    </div>
-  );
-}
-
 // ─── Format helpers ───────────────────────────────────────────────────────────
 
 function formatTime(s: number): string {
@@ -140,31 +123,21 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPlayer(
   const [pipSupported, setPipSupported] = useState(false);
   const [isPip, setIsPip] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
-  const [toastVisible, setToastVisible] = useState(false);
-  const [toastMessage, setToastMessage] = useState("");
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activityTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isPlayingRef = useRef(isPlaying);
   const showSpeedMenuRef = useRef(showSpeedMenu);
 
-  // Max watched time — enforces seek restriction
+  // Furthest-watched position — used only to resume playback, not to cap seeking.
   const maxWatchedTimeRef = useRef(lesson.watchedDuration);
-
-  // ── Toast helper ─────────────────────────────────────────────────────────
-  const showToast = useCallback((msg: string) => {
-    setToastMessage(msg);
-    setToastVisible(true);
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToastVisible(false), 2500);
-  }, []);
 
   // ── Expose handle to parent ───────────────────────────────────────────────
   useImperativeHandle(ref, () => ({
     seekTo: (seconds: number) => {
       const video = videoRef.current;
       if (!video) return;
-      const clamped = Math.min(seconds, maxWatchedTimeRef.current);
-      video.currentTime = clamped;
+      // Free seek — clamp only to the video's own duration.
+      const max = video.duration || seconds;
+      video.currentTime = Math.max(0, Math.min(seconds, max));
     },
     getCurrentTime: () => videoRef.current?.currentTime ?? 0,
   }));
@@ -198,8 +171,8 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPlayer(
     videoRef as React.RefObject<HTMLVideoElement>,
     containerRef,
     {
-      getMaxWatchedTime: () => maxWatchedTimeRef.current,
-      onSeekBlocked: () => showToast("Complete the video to unlock"),
+      // Free seek — never cap ArrowRight.
+      getMaxWatchedTime: () => Infinity,
     },
   );
 
@@ -279,18 +252,9 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPlayer(
     const video = videoRef.current;
     if (!video) return;
     setCurrentTime(video.currentTime);
-    // Update maxWatchedTime
+    // Track furthest-watched (still used for resume), but it no longer caps seeking.
     if (video.currentTime > maxWatchedTimeRef.current) {
       maxWatchedTimeRef.current = video.currentTime;
-    }
-  };
-
-  const handleSeeked = () => {
-    const video = videoRef.current;
-    if (!video) return;
-    if (video.currentTime > maxWatchedTimeRef.current) {
-      video.currentTime = maxWatchedTimeRef.current;
-      showToast("Complete the video to unlock");
     }
   };
 
@@ -313,24 +277,15 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPlayer(
     const video = videoRef.current;
     if (!video) return;
     const next = video.currentTime + deltaSeconds;
-    if (deltaSeconds > 0 && next > maxWatchedTimeRef.current) {
-      video.currentTime = maxWatchedTimeRef.current;
-      showToast("Complete the video to unlock");
-      return;
-    }
-    video.currentTime = Math.max(0, next);
+    video.currentTime = Math.max(0, Math.min(next, video.duration || next));
     bumpActivity();
   };
 
   const handleSeekBarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const video = videoRef.current;
     if (!video) return;
-    const target = parseFloat(e.target.value);
-    const clamped = Math.min(target, maxWatchedTimeRef.current);
-    video.currentTime = clamped;
-    if (target > maxWatchedTimeRef.current) {
-      showToast("Complete the video to unlock");
-    }
+    // Free seek anywhere along the timeline.
+    video.currentTime = parseFloat(e.target.value);
   };
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -386,11 +341,8 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPlayer(
     duration > 0 ? Math.round((currentTime / duration) * 100) : 0;
 
   const seekBarMax = duration > 0 ? duration : 100;
-  // Seekable range fills up to maxWatchedTime
-  const seekableWidth =
-    duration > 0
-      ? Math.min((maxWatchedTimeRef.current / duration) * 100, 100)
-      : 0;
+  // Free seek — the entire timeline is seekable.
+  const seekableWidth = 100;
 
   // ── Locked state ──────────────────────────────────────────────────────────
   // No <video> is mounted and `lesson.videoUrl` is never touched here — the
@@ -463,7 +415,6 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPlayer(
           controlsList="nodownload"
           onLoadedMetadata={handleLoadedMetadata}
           onTimeUpdate={handleTimeUpdate}
-          onSeeked={handleSeeked}
           onPlay={handlePlay}
           onPause={handlePause}
           onWaiting={handleWaiting}
@@ -671,8 +622,6 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPlayer(
         </div>
       </div>
 
-      {/* Toast */}
-      <Toast message={toastMessage} visible={toastVisible} />
     </div>
   );
 });

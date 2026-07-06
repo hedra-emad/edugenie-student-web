@@ -4,16 +4,20 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
+import { confirmStripeCheckout } from "@/lib/api/checkout";
 
 /**
- * Landing page after a Stripe student checkout. The `checkout.session.completed`
- * webhook grants the enrollment server-side; here we just confirm and send the
- * student to My Learning (giving the webhook a moment to land).
+ * Landing page after a Stripe student checkout. Fulfillment is normally granted
+ * by the `checkout.session.completed` webhook, but that can miss locally, so we
+ * ALSO confirm the session here (idempotent server-side) before sending the
+ * student to My Learning — guaranteeing the enrollment + cart cleanup happen.
  */
 export default function StripeSuccessClient({
   status,
+  sessionId,
 }: {
   status: "success" | "cancel";
+  sessionId?: string;
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -21,15 +25,27 @@ export default function StripeSuccessClient({
 
   useEffect(() => {
     if (status !== "success") return;
-    // Refresh anything that depends on ownership once the webhook has fulfilled.
-    queryClient.invalidateQueries({ queryKey: ["enrollments"] });
+    let cancelled = false;
+
+    (async () => {
+      // Confirm+fulfill from the return redirect (webhook-independent).
+      if (sessionId) {
+        await confirmStripeCheckout(sessionId);
+      }
+      if (cancelled) return;
+      // Refresh anything that depends on ownership / cart now it's fulfilled.
+      queryClient.invalidateQueries({ queryKey: ["enrollments"] });
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
+    })();
+
     const tick = setInterval(() => setCountdown((c) => c - 1), 1000);
     const go = setTimeout(() => router.push("/profile"), 5000);
     return () => {
+      cancelled = true;
       clearInterval(tick);
       clearTimeout(go);
     };
-  }, [status, router, queryClient]);
+  }, [status, sessionId, router, queryClient]);
 
   if (status === "cancel") {
     return (
