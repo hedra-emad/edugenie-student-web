@@ -6,12 +6,18 @@
 //               7.5, 8.1, 8.2, 9.1, 9.2, 9.3
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 
 import type { Cart, CartItem } from "@/types/checkout";
-import { getCart, removeFromCart } from "@/lib/api/checkout";
+import {
+  getCart,
+  removeFromCart,
+  initiateCheckout,
+  initiateStripeCartCheckout,
+  confirmPendingCheckout,
+} from "@/lib/api/checkout";
 import { useCartContext } from "@/contexts/CartContext";
 
 import CartSkeleton from "./CartSkeleton";
@@ -49,12 +55,15 @@ export default function CartPageClient({ initialCart, __testFetchError }: CartPa
   const [items, setItems] = useState<CartItem[]>(
     initialCart ? initialCart.items : [],
   );
-  const [subtotal, setSubtotal] = useState<number>(
-    initialCart ? initialCart.subtotal : 0,
+
+  // Subtotal/total are DERIVED from the current items so they update in real
+  // time on every add/remove — never a stale server-precomputed value. The cart
+  // has no coupon/discount (coupons apply at checkout), so total === subtotal.
+  const subtotal = useMemo(
+    () => items.reduce((sum, item) => sum + (item.price ?? 0), 0),
+    [items],
   );
-  const [total, setTotal] = useState<number>(
-    initialCart ? initialCart.total : 0,
-  );
+  const total = subtotal;
   const [fetchError, setFetchError] = useState<"auth" | "network" | null>(
     __testFetchError ?? (initialCart === null ? "network" : null),
   );
@@ -63,6 +72,9 @@ export default function CartPageClient({ initialCart, __testFetchError }: CartPa
   const [errorIds, setErrorIds] = useState<Map<string, string>>(new Map());
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [checkoutPending, setCheckoutPending] = useState<boolean>(false);
+  const [syncing, setSyncing] = useState<boolean>(false);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
 
   // ── on mount: sync cart count badge ───────────────────────────────────────
   // Req 7.5: pass null when no cart was fetched, otherwise pass item count
@@ -109,6 +121,8 @@ export default function CartPageClient({ initialCart, __testFetchError }: CartPa
     setItems((prev) =>
       prev.filter((item) => getCartItemRemoveId(item) !== removeId),
     );
+    // Optimistically drop the header badge immediately (restored on failure).
+    setCartCount(Math.max(0, items.length - 1));
 
     setRemovingIds((prev) => {
       const next = new Set(prev);
@@ -139,6 +153,7 @@ export default function CartPageClient({ initialCart, __testFetchError }: CartPa
             next.delete(removeId);
             return next;
           });
+          setCartCount(items.length); // restore badge — removal didn't stick
           addErrorId(removeId, "Request timed out");
           return;
         }
@@ -173,6 +188,7 @@ export default function CartPageClient({ initialCart, __testFetchError }: CartPa
           next.delete(removeId);
           return next;
         });
+        setCartCount(items.length); // restore badge — removal didn't stick
         addErrorId(removeId, "Failed to remove item. Please try again.");
       }
     } finally {
@@ -191,8 +207,7 @@ export default function CartPageClient({ initialCart, __testFetchError }: CartPa
 
     if (cart) {
       setItems(cart.items);
-      setSubtotal(cart.subtotal);
-      setTotal(cart.total);
+      // subtotal/total are derived from items — no separate setters needed.
       setFetchError(null);
       setRetryCount(1);
       setCartCount(cart.items.length);
@@ -206,17 +221,61 @@ export default function CartPageClient({ initialCart, __testFetchError }: CartPa
 
   // ── checkout handler (Req 5.3, 5.4) ───────────────────────────────────────
 
-  function handleCheckout(): void {
-    if (items.length === 0 || !items[0].courseId) {
-      setCheckoutError("Cannot proceed: no course selected");
-      setErrorIds((prev) => {
-        const next = new Map(prev);
-        next.set("checkout", "Cannot proceed: no course selected");
-        return next;
-      });
+  async function handleCheckout(): Promise<void> {
+    if (items.length === 0) {
+      setCheckoutError("Your cart is empty");
       return;
     }
-    router.push(`/checkout/${items[0].courseId}`);
+    if (checkoutPending) return;
+    setCheckoutError(null);
+    setCheckoutPending(true);
+    try {
+      if (total <= 0) {
+        // Free cart — fulfill directly (no Stripe), then go to the profile.
+        const res = await initiateCheckout();
+        if (!res) {
+          setCheckoutError("Could not complete checkout. Please try again.");
+          return;
+        }
+        await queryClient.invalidateQueries({ queryKey: ["cart"] });
+        setCartCount(0);
+        router.push("/profile?tab=courses");
+        return;
+      }
+      // Paid cart — one Stripe session for every item (sections + full courses,
+      // across instructors). Redirect to Stripe's hosted checkout.
+      const { url } = await initiateStripeCartCheckout();
+      window.location.assign(url);
+    } catch (e) {
+      setCheckoutError((e as Error).message || "Could not start checkout");
+    } finally {
+      setCheckoutPending(false);
+    }
+  }
+
+  // ── recover a paid-but-unfulfilled order (webhook missed) ─────────────────
+
+  async function handleSyncPurchase(): Promise<void> {
+    if (syncing) return;
+    setSyncing(true);
+    setSyncMessage(null);
+    try {
+      const { fulfilled } = await confirmPendingCheckout();
+      await queryClient.invalidateQueries({ queryKey: ["enrollments"] });
+      await queryClient.invalidateQueries({ queryKey: ["cart"] });
+      const cart = await getCart();
+      if (cart) {
+        setItems(cart.items);
+        setCartCount(cart.items.length);
+      }
+      setSyncMessage(
+        fulfilled > 0
+          ? "Purchase synced — your courses are now unlocked."
+          : "No paid orders were waiting. If you were charged, contact support.",
+      );
+    } finally {
+      setSyncing(false);
+    }
   }
 
   // ── build item-only errorIds (exclude "checkout" key) ─────────────────────
@@ -328,7 +387,28 @@ export default function CartPageClient({ initialCart, __testFetchError }: CartPa
           subtotal={subtotal}
           total={total}
           onCheckout={handleCheckout}
+          loading={checkoutPending}
         />
+      </div>
+
+      {/* Recovery: paid on Stripe but the items are still here (webhook missed). */}
+      <div className="mt-6 flex flex-col items-center gap-1 border-t border-slate-100 pt-5 text-center">
+        <p className="text-[12px] text-slate-400">
+          Already paid but your items are still in the cart?
+        </p>
+        <Button
+          variant="link"
+          size="sm"
+          loading={syncing}
+          onClick={handleSyncPurchase}
+        >
+          Sync my purchase
+        </Button>
+        {syncMessage && (
+          <p className="text-[12px] text-slate-500" role="status">
+            {syncMessage}
+          </p>
+        )}
       </div>
     </div>
   );

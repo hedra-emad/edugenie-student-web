@@ -9,11 +9,11 @@ import type {
   Section,
 } from "../../../app/courses/[courseId]/types/course";
 import { addToCartAction } from "@/app/actions/cart.actions";
+import { initiateStripeCheckout } from "@/lib/api/checkout";
 import { useSession } from "@/providers/SessionProvider";
 import PlacementTestModal from "./PlacementTestModal";
 import PreviewVideoModal from "./PreviewVideoModal";
 import Button from "@/components/ui/Button";
-import DotsLoader from "@/components/ui/DotsLoader";
 import { useCourseAccess } from "./CourseAccessProvider";
 function getSafeImageSrc(src: string | null | undefined): string | null {
   if (!src) return null;
@@ -185,6 +185,7 @@ export default function EnrollCard({ course }: { course: Course }) {
   const { isAuthenticated } = useSession();
   const access = useCourseAccess();
   const [pending, startTransition] = useTransition();
+  const [stripePending, setStripePending] = useState(false);
   const [cartError, setCartError] = useState<string | null>(null);
   const [showPlacement, setShowPlacement] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
@@ -262,19 +263,6 @@ export default function EnrollCard({ course }: { course: Course }) {
     return "";
   })();
 
-  // ── Button styles ──
-  const btnClass = (() => {
-    const base =
-      "w-full py-3.5 rounded-xl text-[14px] font-bold transition-all duration-200 font-sans focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500";
-    if (btnState === "disabled")
-      return `${base} bg-slate-100 text-slate-400 cursor-not-allowed`;
-    if (btnState === "enrolled")
-      return `${base} bg-slate-900 hover:bg-slate-800 text-white shadow-sm`;
-    if (btnState === "full")
-      return `${base} bg-violet-700 hover:bg-violet-600 text-white shadow-sm`;
-    return `${base} bg-violet-700 hover:bg-violet-600 text-white shadow-sm`;
-  })();
-
   function handleCTA() {
     if (btnState === "disabled" || pending) return;
 
@@ -323,6 +311,26 @@ export default function EnrollCard({ course }: { course: Course }) {
       }
     });
   }
+  // Buy the full course immediately with a card via Stripe (destination charge),
+  // skipping the cart. Redirects to Stripe's hosted checkout.
+  async function handleStripeBuy() {
+    if (stripePending) return;
+    if (!isAuthenticated) {
+      router.push("/login");
+      return;
+    }
+    setStripePending(true);
+    setCartError(null);
+    try {
+      const { url } = await initiateStripeCheckout(courseId);
+      window.location.assign(url);
+    } catch (e) {
+      setCartError((e as Error).message || "Could not start checkout");
+      setStripePending(false);
+      setTimeout(() => setCartError(null), 4000);
+    }
+  }
+
   // button toggle all sections
   const toggleAllSections = () => {
     if (selectedIds.size === availableSections.length) {
@@ -476,13 +484,30 @@ export default function EnrollCard({ course }: { course: Course }) {
             )}
 
             {/* Smart CTA (Go to Course when fully owned, else Buy …) */}
-            <button
+            <Button
+              variant="primary"
+              size="lg"
+              fullWidth
+              loading={pending}
+              disabled={btnState === "disabled"}
               onClick={handleCTA}
-              disabled={btnState === "disabled" || pending}
-              className={btnClass}
             >
-              {pending ? <DotsLoader /> : btnLabel}
-            </button>
+              {btnLabel}
+            </Button>
+
+            {/* Buy the full course now with a card (Stripe) — skips the cart. */}
+            {ownsNothing && btnState !== "enrolled" && (
+              <Button
+                variant="outline"
+                size="lg"
+                fullWidth
+                loading={stripePending}
+                onClick={handleStripeBuy}
+                className="mt-2"
+              >
+                {`Buy now with card — $${fullCoursePrice}`}
+              </Button>
+            )}
 
             {cartError && (
               <p className="text-red-500 text-xs mt-1.5 text-center" role="alert">

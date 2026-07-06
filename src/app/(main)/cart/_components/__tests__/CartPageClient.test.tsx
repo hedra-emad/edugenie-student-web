@@ -68,9 +68,14 @@ vi.mock("next/navigation", () => ({
 // Mock checkout API
 const mockGetCart = vi.fn();
 const mockRemoveFromCart = vi.fn();
+const mockInitiateCheckout = vi.fn();
+const mockInitiateStripeCartCheckout = vi.fn();
 vi.mock("@/lib/api/checkout", () => ({
   getCart: (...args: unknown[]) => mockGetCart(...args),
   removeFromCart: (...args: unknown[]) => mockRemoveFromCart(...args),
+  initiateCheckout: (...args: unknown[]) => mockInitiateCheckout(...args),
+  initiateStripeCartCheckout: (...args: unknown[]) =>
+    mockInitiateStripeCartCheckout(...args),
 }));
 
 // Mock coupon API
@@ -230,40 +235,38 @@ describe("CartPageClient — network error UI (Req 9.2)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Test 3 — Missing courseId on checkout click shows inline error without
-//          navigating. Requirement 5.4
+// Test 3 — A failed paid-cart Stripe checkout shows the backend error inline
+//          and does not navigate. (Whole-cart Stripe checkout error path.)
 // ---------------------------------------------------------------------------
 
-describe("CartPageClient — checkout with missing courseId (Req 5.4)", () => {
+describe("CartPageClient — paid checkout failure shows inline error", () => {
   beforeEach(() => {
     mockRouterPush.mockReset();
+    mockInitiateStripeCartCheckout.mockReset();
   });
 
-  it('shows "Cannot proceed" inline error and does not navigate', () => {
-    const itemWithoutCourseId: CartItem = {
-      ...sampleItem,
-      courseId: "", // empty courseId
-    };
+  it("surfaces the backend message and does not navigate", async () => {
+    mockInitiateStripeCartCheckout.mockRejectedValueOnce(
+      new Error("The instructor has not set up Stripe payouts yet."),
+    );
 
-    const cartWithNoCourseId: Cart = {
-      items: [itemWithoutCourseId],
+    const paidCart: Cart = {
+      items: [sampleItem],
       subtotal: 49,
       total: 49,
     };
 
-    renderWithProvider(<CartPageClient initialCart={cartWithNoCourseId} />);
+    renderWithProvider(<CartPageClient initialCart={paidCart} />);
 
-    // Find and click "Proceed to Checkout" button
     const checkoutBtn = screen.getByRole("button", {
       name: /proceed to checkout/i,
     });
     fireEvent.click(checkoutBtn);
 
-    // Inline error must be visible
-    expect(screen.getByRole("alert")).toBeInTheDocument();
-    expect(screen.getByText(/cannot proceed/i)).toBeInTheDocument();
-
-    // router.push must NOT have been called
+    // Backend error surfaces inline; no client-side navigation.
+    expect(
+      await screen.findByText(/instructor has not set up stripe payouts/i),
+    ).toBeInTheDocument();
     expect(mockRouterPush).not.toHaveBeenCalled();
   });
 });

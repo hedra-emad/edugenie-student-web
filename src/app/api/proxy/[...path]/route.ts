@@ -204,16 +204,24 @@ async function forwardRequest(
     return sseRes;
   }
 
-  const body = await backendRes.text();
+  // Binary-safe passthrough. Reading the body with .text() decodes bytes as
+  // UTF-8 and irreversibly corrupts binary payloads (e.g. PDF downloads), so
+  // forward the raw bytes. JSON/text pass through unchanged as bytes too.
+  const buffer = Buffer.from(await backendRes.arrayBuffer());
 
-  const res = new NextResponse(body, {
-    status: backendRes.status,
+  const passthroughHeaders: Record<string, string> = {
     // Pass through the backend's real content type so non-JSON errors
     // (e.g. an HTML gateway 502) aren't mislabeled as JSON.
-    headers: {
-      'Content-Type':
-        backendRes.headers.get('content-type') ?? 'application/json',
-    },
+    'Content-Type':
+      backendRes.headers.get('content-type') ?? 'application/json',
+  };
+  // Preserve download/inline intent + filename for file responses.
+  const disposition = backendRes.headers.get('content-disposition');
+  if (disposition) passthroughHeaders['Content-Disposition'] = disposition;
+
+  const res = new NextResponse(buffer, {
+    status: backendRes.status,
+    headers: passthroughHeaders,
   });
 
   // Mid-flight refresh cookies first, then the final response's own cookies

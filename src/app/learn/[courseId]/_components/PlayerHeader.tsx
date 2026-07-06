@@ -9,6 +9,13 @@ interface Props {
   currentLessonTitle: string;
   completedLessons: number;
   totalLessons: number;
+  /**
+   * Id of the earned certificate for this course, if one exists. Certificates
+   * are issued for FULL-COURSE completions only, so a section-only student who
+   * finishes their scope has none — the button must reflect the real credential,
+   * not just 100% of the owned scope.
+   */
+  certificateId?: string;
   onToggleSidebar?: () => void;
   sidebarOpen?: boolean;
 }
@@ -19,6 +26,7 @@ export default function PlayerHeader({
   currentLessonTitle,
   completedLessons,
   totalLessons,
+  certificateId,
   onToggleSidebar,
   sidebarOpen,
 }: Props) {
@@ -40,6 +48,16 @@ export default function PlayerHeader({
 
           {/* Right — progress text + mobile toggle */}
           <div className="flex items-center gap-3 shrink-0">
+            {certificateId && (
+              <Link
+                href={`/certificate/${certificateId}`}
+                className="hidden sm:inline-flex items-center gap-1.5 text-[12.5px] font-semibold
+                           text-white bg-[#3B1892] hover:opacity-90 px-3 py-1.5 rounded-xl
+                           transition-opacity whitespace-nowrap"
+              >
+                🎓 Certificate
+              </Link>
+            )}
             <span className="text-[12px] font-semibold text-slate-500 whitespace-nowrap">
               {completedLessons} of {totalLessons} lessons complete
             </span>
