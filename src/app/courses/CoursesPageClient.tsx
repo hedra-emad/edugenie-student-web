@@ -2,11 +2,15 @@
 
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { useCourses } from '@/hooks/useCourses';
 import { CategoryOption } from '@/lib/api/courses';
+import { searchLessons } from '@/lib/api/search';
+import { useSession } from '@/providers/SessionProvider';
 import CoursesFilterBar from '@/components/courses/CoursesFilterBar';
 import CoursesGrid from '@/components/courses/CoursesGrid';
 import CoursesPagination from '@/components/courses/CoursesPagination';
+import LessonResults from '@/components/courses/LessonResults';
 import Button from '@/components/ui/Button';
 
 interface Props {
@@ -25,6 +29,16 @@ export default function CoursesPageClient({ categories }: Props) {
     resetFilters,
     activeFilterCount,
   } = useCourses();
+
+  // Semantic lesson search inside the student's own courses (auth-only strip).
+  const { isAuthenticated } = useSession();
+  const q = (filters.search ?? '').trim();
+  const { data: lessonHits } = useQuery({
+    queryKey: ['lesson-search', q],
+    queryFn: () => searchLessons(q),
+    enabled: isAuthenticated && q.length > 1,
+    staleTime: 60_000,
+  });
 
   return (
     <main className="bg-[#f0f2f5]">
@@ -147,6 +161,11 @@ export default function CoursesPageClient({ categories }: Props) {
               Retry
             </Button>
           </div>
+        )}
+
+        {/* Semantic lesson hits from the student's own courses */}
+        {lessonHits && lessonHits.length > 0 && (
+          <LessonResults hits={lessonHits} />
         )}
 
         {/* Grid */}
