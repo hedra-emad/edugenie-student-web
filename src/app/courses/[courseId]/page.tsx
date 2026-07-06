@@ -57,6 +57,10 @@ function normalizeCourse(raw: Record<string, unknown>): Course {
       typeof raw.description === "string" ? raw.description : "",
     price: typeof raw.price === "number" ? raw.price : 0,
     thumbnail: typeof raw.thumbnail === "string" ? raw.thumbnail : "",
+    previewVideoUrl:
+      typeof raw.previewVideoUrl === "string" && raw.previewVideoUrl.trim()
+        ? raw.previewVideoUrl
+        : null,
     level:
       raw.level === "beginner" ||
       raw.level === "intermediate" ||
