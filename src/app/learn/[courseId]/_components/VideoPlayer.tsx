@@ -148,7 +148,6 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPlayer(
     setIsLoading(true);
     setCurrentTime(0);
     setDuration(0);
-    maxWatchedTimeRef.current = lesson.watchedDuration;
     setShowSpeedMenu(false);
   }, [lesson.id, lesson.watchedDuration]);
 
@@ -170,10 +169,9 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPlayer(
   usePlayerKeyboard(
     videoRef as React.RefObject<HTMLVideoElement>,
     containerRef,
-    {
-      // Free seek — never cap ArrowRight.
-      getMaxWatchedTime: () => Infinity,
-    },
+    // {
+    //   getMaxWatchedTime: () => Infinity,
+    // },
   );
 
   // ── Fullscreen change detection ───────────────────────────────────────────
@@ -252,10 +250,6 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPlayer(
     const video = videoRef.current;
     if (!video) return;
     setCurrentTime(video.currentTime);
-    // Track furthest-watched (still used for resume), but it no longer caps seeking.
-    if (video.currentTime > maxWatchedTimeRef.current) {
-      maxWatchedTimeRef.current = video.currentTime;
-    }
   };
 
   const handlePlay = () => setIsPlaying(true);
@@ -272,7 +266,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPlayer(
   };
 
   // Skip forward/back (e.g. double-tap zones) — mirrors the ArrowRight/Left
-  // keyboard behavior, capped at maxWatchedTime for forward skips.
+  // keyboard behavior. Seeking is unrestricted.
   const skip = (deltaSeconds: number) => {
     const video = videoRef.current;
     if (!video) return;
@@ -474,11 +468,6 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPlayer(
 
         {/* Seek bar */}
         <div className="relative h-5 flex items-center group">
-          {/* Seekable range (lighter track) */}
-          <div
-            className="absolute left-0 h-2 group-hover:h-3 transition-all bg-slate-600 rounded-full pointer-events-none"
-            style={{ width: `${seekableWidth}%` }}
-          />
           {/* Input (full width) */}
           <input
             type="range"

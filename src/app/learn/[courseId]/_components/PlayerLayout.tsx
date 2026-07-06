@@ -83,33 +83,43 @@ export default function PlayerLayout({
     return initial;
   });
 
-  const handleProgressResponse = useCallback(
-    (res: ProgressResponse) => {
-      // Quiz redirect — fires only after the whole section's lessons are done
-      // (backend gate) and only ONCE per section, so replaying a finished
-      // lesson doesn't keep bouncing the student into the quiz.
-      if (res.quizRequired && res.quizSectionId) {
-        if (!quizRedirectedRef.current.has(res.quizSectionId)) {
-          quizRedirectedRef.current.add(res.quizSectionId);
-          router.push(`/learn/${course.id}/quiz/${res.quizSectionId}`);
-        }
-        return;
+const handleProgressResponse = useCallback(
+  (res: ProgressResponse) => {
+    // Mark lesson as completed
+    if (res.lessonState === "completed") {
+      setCompletedLessons((prev) => {
+        const next = new Set(prev);
+        next.add(activeLesson.id);
+        return next;
+      });
+
+      // Refetch certificates after completing a lesson
+      queryClient.invalidateQueries({
+        queryKey: ["certificates"],
+      });
+    }
+
+    // Redirect to section quiz only once
+    if (res.quizRequired && res.quizSectionId) {
+      if (!quizRedirectedRef.current.has(res.quizSectionId)) {
+        quizRedirectedRef.current.add(res.quizSectionId);
+
+        router.push(
+          `/learn/${course.id}/quiz/${res.quizSectionId}`
+        );
       }
-      // Mark as completed
-      if (res.lessonState === "completed") {
-        setCompletedLessons((prev) => {
-          const next = new Set(prev);
-          next.add(activeLesson.id);
-          return next;
-        });
-        // Finishing a lesson may be the event that issues the certificate
-        // (full-course, all lessons + quizzes done) — refetch so the header
-        // button appears only once the credential actually exists.
-        queryClient.invalidateQueries({ queryKey: ["certificates"] });
-      }
-    },
-    [activeLesson.id, course.id, router, queryClient],
-  );
+
+      return;
+    }
+  },
+  [
+    activeLesson.id,
+    course.id,
+    router,
+    queryClient,
+  ]
+
+);
 
   // ── Lesson navigation ─────────────────────────────────────────────────────
   const handleLessonClick = useCallback(

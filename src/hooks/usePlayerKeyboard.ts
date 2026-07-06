@@ -3,21 +3,16 @@
 
 import { useEffect } from "react";
 
-interface Options {
-  /** The furthest position the student has watched — enforces seek restriction. */
-  getMaxWatchedTime: () => number;
-  /** Called when seek restriction is triggered (show toast). */
-  onSeekBlocked?: () => void;
-}
-
 /**
  * Attaches keyboard shortcuts for the course player.
  *
  * Space      → toggle play / pause
- * ArrowRight → seek +10 s  (capped at maxWatchedTime)
+ * ArrowRight → seek +10 s
  * ArrowLeft  → seek -10 s
  * M          → toggle mute
  * F          → toggle fullscreen
+ *
+ * Seeking is unrestricted — the student can jump to any point at any time.
  *
  * Scoped to the player: the listener is attached to `containerRef` (a
  * focusable element, `tabIndex={0}`) rather than `window`, so these
@@ -30,10 +25,7 @@ interface Options {
 export function usePlayerKeyboard(
   videoRef: React.RefObject<HTMLVideoElement | null>,
   containerRef: React.RefObject<HTMLElement | null>,
-  options: Options,
 ): void {
-  const { getMaxWatchedTime, onSeekBlocked } = options;
-
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -66,14 +58,7 @@ export function usePlayerKeyboard(
 
         case "ArrowRight": {
           e.preventDefault();
-          const max = getMaxWatchedTime();
-          const next = video.currentTime + 10;
-          if (next > max) {
-            video.currentTime = max;
-            onSeekBlocked?.();
-          } else {
-            video.currentTime = next;
-          }
+          video.currentTime = video.currentTime + 10;
           break;
         }
 
@@ -107,5 +92,5 @@ export function usePlayerKeyboard(
 
     container.addEventListener("keydown", handleKeyDown);
     return () => container.removeEventListener("keydown", handleKeyDown);
-  }, [videoRef, containerRef, getMaxWatchedTime, onSeekBlocked]);
+  }, [videoRef, containerRef]);
 }
