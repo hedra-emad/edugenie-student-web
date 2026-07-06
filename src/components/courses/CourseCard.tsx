@@ -353,11 +353,11 @@ export default function CourseCard({ course }: Props) {
               ) : (
                 <div className="flex items-baseline gap-1.5 flex-wrap">
                   <span className="text-[17px] font-black text-slate-900 leading-none tracking-tight">
-                    EGP{displayPrice.toFixed(2)}
+                    ${displayPrice.toFixed(2)}
                   </span>
                   {ownsSomeSections && (
                     <span className="text-[11px] font-semibold text-slate-400 line-through leading-none">
-                      EGP{pricing!.fullPrice.toFixed(2)}
+                      ${pricing!.fullPrice.toFixed(2)}
                     </span>
                   )}
                 </div>

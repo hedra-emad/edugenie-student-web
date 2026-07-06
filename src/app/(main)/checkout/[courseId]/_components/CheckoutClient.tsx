@@ -2,25 +2,13 @@
 // src/app/(main)/checkout/[courseId]/_components/CheckoutClient.tsx
 
 import { useState } from "react";
-import { initiateCheckout } from "@/lib/api/checkout";
+import { initiateStripeCheckout } from "@/lib/api/checkout";
 import type { Cart, CartItem } from "@/types/checkout";
 import CartSummary from "./CartSummary";
 import OrderSummary, { type ButtonStep } from "./OrderSummary";
 
 interface CheckoutClientProps {
   initialCart: Cart;
-}
-
-// Non-secret Paymob public key (egy_pk_...). Used to build the hosted
-// Unified Checkout URL we redirect the customer to.
-const PAYMOB_PUBLIC_KEY = process.env.NEXT_PUBLIC_PAYMOB_PUBLIC_KEY ?? "";
-
-function buildPaymobCheckoutUrl(clientSecret: string): string {
-  return (
-    `https://accept.paymob.com/unifiedcheckout/` +
-    `?publicKey=${encodeURIComponent(PAYMOB_PUBLIC_KEY)}` +
-    `&clientSecret=${encodeURIComponent(clientSecret)}`
-  );
 }
 
 export default function CheckoutClient({ initialCart }: CheckoutClientProps) {
@@ -36,32 +24,30 @@ export default function CheckoutClient({ initialCart }: CheckoutClientProps) {
     setError(null);
     setButtonStep("loading");
 
-    const result = await initiateCheckout();
-
-    if (!result || !result.clientSecret) {
+    // Stripe destination charges pay one full course into one instructor's
+    // connected account. Use the full-course item in the cart.
+    const course = items.find((i) => i.type === "full_course") ?? items[0];
+    if (!course?.courseId) {
       setButtonStep("idle");
-      setError(
-        result === null
-          ? "Unable to reach the payment service. Please check your connection and try again."
-          : "Payment could not be initiated. Please try again.",
-      );
+      setError("Your cart is empty.");
+      return;
+    }
+    if (course.type !== "full_course") {
+      setButtonStep("idle");
+      setError("Card checkout currently supports full-course purchases only.");
       return;
     }
 
-    if (!PAYMOB_PUBLIC_KEY) {
+    try {
+      const { url } = await initiateStripeCheckout(course.courseId);
+      // Full-page redirect to Stripe's hosted checkout; it returns the browser
+      // to /checkout/stripe-success (success_url set on the backend).
+      setButtonStep("redirect");
+      window.location.assign(url);
+    } catch (e) {
       setButtonStep("idle");
-      setError(
-        "Payment is not configured. Please contact support (missing payment key).",
-      );
-      return;
+      setError((e as Error).message || "Payment could not be initiated.");
     }
-
-    // Full-page redirect to Paymob's hosted (dashboard-branded) checkout. This
-    // avoids the nested-iframe scrollbar and the Chrome "public→localhost"
-    // block, and Paymob returns the browser to /checkout/success afterwards
-    // (via the intention's redirection_url set on the backend).
-    setButtonStep("redirect");
-    window.location.assign(buildPaymobCheckoutUrl(result.clientSecret));
   }
 
   // ── render ───────────────────────────────────────────────────────────────────

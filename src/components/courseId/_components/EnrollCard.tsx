@@ -9,6 +9,7 @@ import type {
   Section,
 } from "../../../app/courses/[courseId]/types/course";
 import { addToCartAction } from "@/app/actions/cart.actions";
+import { initiateStripeCheckout } from "@/lib/api/checkout";
 import { useSession } from "@/providers/SessionProvider";
 import PlacementTestModal from "./PlacementTestModal";
 import Button from "@/components/ui/Button";
@@ -169,7 +170,7 @@ function SectionRow({
           className={`text-[13px] font-bold flex-shrink-0
           ${isChecked ? "text-violet-700" : "text-slate-700"}`}
         >
-          EGP{price}
+          ${price}
         </span>
       )}
     </div>
@@ -184,6 +185,7 @@ export default function EnrollCard({ course }: { course: Course }) {
   const { isAuthenticated } = useSession();
   const access = useCourseAccess();
   const [pending, startTransition] = useTransition();
+  const [stripePending, setStripePending] = useState(false);
   const [cartError, setCartError] = useState<string | null>(null);
   const [showPlacement, setShowPlacement] = useState(false);
   const safeThumbnail = getSafeImageSrc(course.thumbnail);
@@ -247,8 +249,8 @@ export default function EnrollCard({ course }: { course: Course }) {
   const btnLabel = (() => {
     if (btnState === "enrolled") return "Go to Course";
     if (btnState === "disabled") return "Select at least one section";
-    if (btnState === "full") return `Buy Full Course — EGP${fullCoursePrice}`;
-    return `Buy Selected — EGP${selectedTotal}`;
+    if (btnState === "full") return `Buy Full Course — $${fullCoursePrice}`;
+    return `Buy Selected — $${selectedTotal}`;
   })();
 
   const helperText = (() => {
@@ -320,6 +322,26 @@ export default function EnrollCard({ course }: { course: Course }) {
       }
     });
   }
+  // Buy the full course immediately with a card via Stripe (destination charge),
+  // skipping the cart. Redirects to Stripe's hosted checkout.
+  async function handleStripeBuy() {
+    if (stripePending) return;
+    if (!isAuthenticated) {
+      router.push("/login");
+      return;
+    }
+    setStripePending(true);
+    setCartError(null);
+    try {
+      const { url } = await initiateStripeCheckout(courseId);
+      window.location.assign(url);
+    } catch (e) {
+      setCartError((e as Error).message || "Could not start checkout");
+      setStripePending(false);
+      setTimeout(() => setCartError(null), 4000);
+    }
+  }
+
   // button toggle all sections
   const toggleAllSections = () => {
     if (selectedIds.size === availableSections.length) {
@@ -459,10 +481,10 @@ export default function EnrollCard({ course }: { course: Course }) {
                 </span>
                 <span className="text-[20px] font-extrabold text-slate-900 leading-none">
                   {btnState === "disabled"
-                    ? "EGP0"
+                    ? "$0"
                     : btnState === "full"
-                      ? `EGP${fullCoursePrice}`
-                      : `EGP${selectedTotal}`}
+                      ? `$${fullCoursePrice}`
+                      : `$${selectedTotal}`}
                 </span>
               </div>
             )}
@@ -475,6 +497,17 @@ export default function EnrollCard({ course }: { course: Course }) {
             >
               {pending ? <DotsLoader /> : btnLabel}
             </button>
+
+            {/* Buy the full course now with a card (Stripe) — skips the cart. */}
+            {ownsNothing && btnState !== "enrolled" && (
+              <button
+                onClick={handleStripeBuy}
+                disabled={stripePending}
+                className="w-full mt-2 py-3.5 rounded-xl text-[14px] font-bold transition-all duration-200 font-sans bg-slate-900 hover:bg-slate-800 text-white shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 disabled:opacity-60"
+              >
+                {stripePending ? <DotsLoader /> : `Buy now with card — $${fullCoursePrice}`}
+              </button>
+            )}
 
             {cartError && (
               <p className="text-red-500 text-xs mt-1.5 text-center" role="alert">
