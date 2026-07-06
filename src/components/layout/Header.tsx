@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { logout } from "@/lib/api/auth";
 import { getCart } from "@/lib/api/checkout";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/providers/SessionProvider";
+import { useCartContext } from "@/contexts/CartContext";
 import Button, { buttonClasses } from "@/components/ui/Button";
 import Avatar from "@/components/ui/Avatar";
 
@@ -83,22 +84,43 @@ interface HeaderProps {
   isStudent: boolean;
   displayName: string | null;
   avatarUrl?: string | null;
+  /** Server-rendered cart count — seeds the badge so it's right on first paint. */
+  initialCartCount?: number | null;
 }
 
-export default function Header({ isStudent, displayName, avatarUrl = null }: HeaderProps) {
+export default function Header({
+  isStudent,
+  displayName,
+  avatarUrl = null,
+  initialCartCount = null,
+}: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const router = useRouter();
   const { isAuthenticated } = useSession();
+  // Shared, realtime cart count. Add (CourseCard) and remove (cart page) write
+  // here synchronously, so the badge updates instantly across pages.
+  const { cartCount, setCartCount } = useCartContext();
+
+  // Seed the shared count from the server-rendered value so the badge is correct
+  // on the first paint of every page (not just the cart page).
+  useEffect(() => {
+    if (initialCartCount != null) setCartCount(initialCartCount);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialCartCount]);
 
   const { data: cartData } = useQuery({
     queryKey: ["cart"],
     queryFn: () => getCart(),
     enabled: isStudent && isAuthenticated,
-    staleTime: 1000 * 60 * 2,
+    staleTime: 1000 * 30,
   });
 
-  const cartCount = cartData?.items?.length ?? 0;
-  const badgeCount = cartCount > 0 ? cartCount : null;
+  useEffect(() => {
+    if (cartData) setCartCount(cartData.items.length);
+  }, [cartData, setCartCount]);
+
+  const count = cartCount ?? initialCartCount;
+  const badgeCount = count && count > 0 ? count : null;
 
   async function handleLogout() {
     try {

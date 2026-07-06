@@ -1,14 +1,11 @@
+import Link from "next/link";
 import { Award } from "lucide-react";
 import Button from "@/components/ui/Button";
-
-interface Certificate {
-  id: string;
-  courseName: string;
-  earnedAt: string;
-}
+import type { Certificate } from "@/lib/api/certificates";
 
 interface Props {
   certificates?: Certificate[];
+  onViewAll?: () => void;
 }
 
 function formatDate(iso: string): string {
@@ -18,8 +15,12 @@ function formatDate(iso: string): string {
   });
 }
 
-export default function CertificatesWidget({ certificates = [] }: Props) {
+export default function CertificatesWidget({
+  certificates = [],
+  onViewAll,
+}: Props) {
   const isEmpty = certificates.length === 0;
+  const preview = certificates.slice(0, 3);
 
   return (
     <section
@@ -42,24 +43,41 @@ export default function CertificatesWidget({ certificates = [] }: Props) {
       ) : (
         <>
           <ul className="space-y-2">
-            {certificates.map((cert) => (
-              <li key={cert.id} className="flex items-start gap-2">
-                <Award
-                  size={16}
-                  className="text-[#3B1892] mt-0.5 shrink-0"
-                  aria-hidden="true"
-                />
-                <div className="min-w-0">
-                  <p className="text-sm text-slate-700 truncate">{cert.courseName}</p>
-                  <time className="text-xs text-slate-400">{formatDate(cert.earnedAt)}</time>
-                </div>
+            {preview.map((cert) => (
+              <li key={cert.id}>
+                <Link
+                  href={`/certificate/${cert.id}`}
+                  className="flex items-start gap-2 rounded-md -mx-1 px-1 py-1 hover:bg-slate-50"
+                >
+                  <Award
+                    size={16}
+                    className="text-[#3B1892] mt-0.5 shrink-0"
+                    aria-hidden="true"
+                  />
+                  <div className="min-w-0">
+                    <p className="text-sm text-slate-700 truncate">
+                      {cert.courseTitle}
+                    </p>
+                    <time className="text-xs text-slate-400">
+                      {formatDate(cert.issuedAt)}
+                    </time>
+                  </div>
+                </Link>
               </li>
             ))}
           </ul>
 
-          <Button type="button" variant="link" size="sm" className="mt-3 text-xs">
-            View All
-          </Button>
+          {onViewAll && (
+            <Button
+              type="button"
+              variant="link"
+              size="sm"
+              className="mt-3 text-xs"
+              onClick={onViewAll}
+            >
+              View All
+            </Button>
+          )}
         </>
       )}
     </section>

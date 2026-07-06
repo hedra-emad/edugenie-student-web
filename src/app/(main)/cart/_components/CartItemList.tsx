@@ -169,7 +169,7 @@ export default function CartItemList({
 
               <div className="flex flex-col items-end gap-2 flex-shrink-0">
                 <span className="text-[15px] font-extrabold text-slate-900">
-                 ${item.price.toFixed(2)}
+                  ${item.price.toFixed(2)}
                 </span>
 
                 {isConfirming ? (

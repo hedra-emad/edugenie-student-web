@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Button from "@/components/ui/Button";
@@ -21,11 +21,13 @@ import LevelSelector from "./LevelSelector";
 import TagsEditor from "./TagsEditor";
 import MyLearning from "./MyLearning";
 import MyRoadmaps from "./MyRoadmaps";
+import MyCertificates from "./MyCertificates";
 import CertificatesWidget from "./CertificatesWidget";
 import AccountInfoWidget from "./AccountInfoWidget";
 import ChangePasswordForm from "./ChangePasswordForm";
+import { useCertificates } from "@/hooks/useCertificates";
 
-type MainTab = "learning" | "roadmaps" | "security";
+type MainTab = "learning" | "roadmaps" | "certificates" | "security";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -52,7 +54,14 @@ export default function ProfileClient({ initialProfile, token }: Props) {
   const avatarMutation = useUploadAvatar(token);
   const deleteAvatarMutation = useDeleteAvatar(token);
   const { data: enrollments = [] } = useEnrollments();
+  const { data: certificates = [] } = useCertificates();
   const [activeTab, setActiveTab] = useState<MainTab>("learning");
+
+  // The certificate-earned email links to ?tab=certificates — honor it on mount.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("tab") === "certificates") setActiveTab("certificates");
+  }, []);
   const [cropFile, setCropFile] = useState<File | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [toast, setToast] = useState<{
@@ -163,6 +172,17 @@ export default function ProfileClient({ initialProfile, token }: Props) {
               </button>
               <button
                 type="button"
+                onClick={() => setActiveTab("certificates")}
+                className={`pb-3 text-sm font-medium transition-colors duration-150 ${
+                  activeTab === "certificates"
+                    ? "border-b-2 border-[#3B1892] text-[#3B1892] -mb-px"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                Certificates
+              </button>
+              <button
+                type="button"
                 onClick={() => setActiveTab("security")}
                 className={`pb-3 text-sm font-medium transition-colors duration-150 ${
                   activeTab === "security"
@@ -183,6 +203,12 @@ export default function ProfileClient({ initialProfile, token }: Props) {
             {activeTab === "roadmaps" && (
               <motion.div variants={itemVariants}>
                 <MyRoadmaps />
+              </motion.div>
+            )}
+
+            {activeTab === "certificates" && (
+              <motion.div variants={itemVariants}>
+                <MyCertificates />
               </motion.div>
             )}
 
@@ -249,7 +275,10 @@ export default function ProfileClient({ initialProfile, token }: Props) {
 
             {/* Certificates */}
             <motion.div variants={itemVariants}>
-              <CertificatesWidget />
+              <CertificatesWidget
+                certificates={certificates}
+                onViewAll={() => setActiveTab("certificates")}
+              />
             </motion.div>
 
             {/* Account Info */}

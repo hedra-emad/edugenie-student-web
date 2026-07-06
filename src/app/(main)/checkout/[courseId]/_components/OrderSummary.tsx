@@ -88,7 +88,7 @@ export default function OrderSummary({
               d="M5 13l4 4L19 7"
             />
           </svg>
-          Redirecting to Paymob...
+          Redirecting to Stripe...
         </span>
       );
     }
@@ -148,7 +148,7 @@ export default function OrderSummary({
                       — {section.sectionTitle ?? section.courseTitle}
                     </span>
                     <span className="text-[12px] font-semibold text-slate-700 flex-shrink-0 ml-3">
-                      $ {section.price}
+                      ${section.price}
                     </span>
                   </div>
                 ))}
@@ -164,7 +164,7 @@ export default function OrderSummary({
         <div className="flex justify-between items-center mb-2">
           <span className="text-[13px] text-slate-500">Subtotal</span>
           <span className="text-[13px] font-semibold text-slate-700">
-            $ {subtotal.toFixed(2)}
+            ${subtotal.toFixed(2)}
           </span>
         </div>
 
@@ -332,7 +332,7 @@ export default function OrderSummary({
           >
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
           </svg>
-          Secured by Paymob · 256-bit SSL
+          Secured by Stripe · 256-bit SSL
         </div>
 
         {/* Back button */}

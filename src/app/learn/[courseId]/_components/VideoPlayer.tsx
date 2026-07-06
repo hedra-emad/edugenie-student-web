@@ -127,14 +127,17 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPlayer(
   const isPlayingRef = useRef(isPlaying);
   const showSpeedMenuRef = useRef(showSpeedMenu);
 
+  // Furthest-watched position — used only to resume playback, not to cap seeking.
+  const maxWatchedTimeRef = useRef(lesson.watchedDuration);
+
   // ── Expose handle to parent ───────────────────────────────────────────────
   useImperativeHandle(ref, () => ({
     seekTo: (seconds: number) => {
       const video = videoRef.current;
       if (!video) return;
-      // Free seeking — jump straight to the requested position (e.g. a
-      // timestamped note), with no watched-progress cap.
-      video.currentTime = seconds;
+      // Free seek — clamp only to the video's own duration.
+      const max = video.duration || seconds;
+      video.currentTime = Math.max(0, Math.min(seconds, max));
     },
     getCurrentTime: () => videoRef.current?.currentTime ?? 0,
   }));
@@ -166,6 +169,10 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPlayer(
   usePlayerKeyboard(
     videoRef as React.RefObject<HTMLVideoElement>,
     containerRef,
+    {
+      // Free seek — never cap ArrowRight.
+      getMaxWatchedTime: () => Infinity,
+    },
   );
 
   // ── Fullscreen change detection ───────────────────────────────────────────
@@ -264,13 +271,15 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPlayer(
   const skip = (deltaSeconds: number) => {
     const video = videoRef.current;
     if (!video) return;
-    video.currentTime = Math.max(0, video.currentTime + deltaSeconds);
+    const next = video.currentTime + deltaSeconds;
+    video.currentTime = Math.max(0, Math.min(next, video.duration || next));
     bumpActivity();
   };
 
   const handleSeekBarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const video = videoRef.current;
     if (!video) return;
+    // Free seek anywhere along the timeline.
     video.currentTime = parseFloat(e.target.value);
   };
 
@@ -327,6 +336,8 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPlayer(
     duration > 0 ? Math.round((currentTime / duration) * 100) : 0;
 
   const seekBarMax = duration > 0 ? duration : 100;
+  // Free seek — the entire timeline is seekable.
+  const seekableWidth = 100;
 
   // ── Locked state ──────────────────────────────────────────────────────────
   // No <video> is mounted and `lesson.videoUrl` is never touched here — the
@@ -600,6 +611,7 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPlayer(
         </div>
         </div>
       </div>
+
     </div>
   );
 });

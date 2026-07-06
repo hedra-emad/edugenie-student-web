@@ -3,8 +3,10 @@
 
 import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import type { PlayerCourse, PlayerLesson, ProgressResponse } from "@/types/player";
+import { useCertificates } from "@/hooks/useCertificates";
 
 import Button from "@/components/ui/Button";
 import PlayerHeader from "./PlayerHeader";
@@ -26,7 +28,18 @@ export default function PlayerLayout({
   initialWatchedDuration,
 }: Props) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const videoPlayerRef = useRef<VideoPlayerHandle>(null);
+
+  // Certificates are issued (server-side) ONLY for full-course completions. The
+  // header's certificate button reflects a real earned certificate for THIS
+  // course — never just 100% of an owned section scope.
+  const { data: certificates } = useCertificates();
+  const certificateId = certificates?.find(
+    (c) => c.courseId === course.id,
+  )?.id;
+  // Sections we've already auto-redirected to their quiz (once each).
+  const quizRedirectedRef = useRef<Set<string>>(new Set());
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [rightTab, setRightTab] = useState<"content" | "ai" | "transcript">("content");
   const [quizSection, setQuizSection] = useState<{
@@ -77,11 +90,27 @@ export default function PlayerLayout({
       // the just-finished lesson wasn't yet counted as complete.
       const justCompletedActive = res.lessonState === "completed";
       if (justCompletedActive) {
+      // Quiz redirect — fires only after the whole section's lessons are done
+      // (backend gate) and only ONCE per section, so replaying a finished
+      // lesson doesn't keep bouncing the student into the quiz.
+      if (res.quizRequired && res.quizSectionId) {
+        if (!quizRedirectedRef.current.has(res.quizSectionId)) {
+          quizRedirectedRef.current.add(res.quizSectionId);
+          router.push(`/learn/${course.id}/quiz/${res.quizSectionId}`);
+        }
+        return;
+      }
+      // Mark as completed
+      if (res.lessonState === "completed") {
         setCompletedLessons((prev) => {
           const next = new Set(prev);
           next.add(activeLesson.id);
           return next;
         });
+        // Finishing a lesson may be the event that issues the certificate
+        // (full-course, all lessons + quizzes done) — refetch so the header
+        // button appears only once the credential actually exists.
+        queryClient.invalidateQueries({ queryKey: ["certificates"] });
       }
 
       // Section quiz gate — only redirect once the section is exactly 100%
@@ -90,25 +119,23 @@ export default function PlayerLayout({
       // early; gate it on the client's own per-lesson completion instead.
       // `completedLessons` here doesn't yet include the lesson that finished in
       // *this* response (state updates are async), so count it explicitly.
-      if (res.quizRequired && res.quizSectionId) {
-        const section = course.sections.find(
-          (s) => s.id === res.quizSectionId,
-        );
-        const sectionComplete =
-          !!section &&
-          section.lessons.length > 0 &&
-          section.lessons.every(
-            (l) =>
-              l.state === "completed" ||
-              completedLessons.has(l.id) ||
-              (justCompletedActive && l.id === activeLesson.id),
-          );
-        if (sectionComplete) {
-          router.push(`/learn/${course.id}/quiz/${res.quizSectionId}`);
-        }
-      }
-    },
-    [activeLesson.id, completedLessons, course.id, course.sections, router],
+     if (res.lessonState === "completed") {
+    setCompletedLessons(...);
+}
+
+if (res.quizRequired && res.quizSectionId) {
+    if (!quizRedirectedRef.current.has(res.quizSectionId)) {
+        quizRedirectedRef.current.add(res.quizSectionId);
+        router.push(...);
+    }
+    return;
+}
+  [
+  activeLesson.id,
+  course.id,
+  router,
+  queryClient,
+]
   );
 
   // ── Lesson navigation ─────────────────────────────────────────────────────
@@ -205,6 +232,7 @@ export default function PlayerLayout({
         currentLessonTitle={activeLesson.title}
         completedLessons={completedCount}
         totalLessons={totalLessons}
+        certificateId={certificateId}
         onToggleSidebar={() => setSidebarOpen((v) => !v)}
         sidebarOpen={sidebarOpen}
       />
