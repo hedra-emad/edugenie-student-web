@@ -3,8 +3,10 @@
 
 import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import type { PlayerCourse, PlayerLesson, ProgressResponse } from "@/types/player";
+import { useCertificates } from "@/hooks/useCertificates";
 
 import Button from "@/components/ui/Button";
 import PlayerHeader from "./PlayerHeader";
@@ -26,7 +28,16 @@ export default function PlayerLayout({
   initialWatchedDuration,
 }: Props) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const videoPlayerRef = useRef<VideoPlayerHandle>(null);
+
+  // Certificates are issued (server-side) ONLY for full-course completions. The
+  // header's certificate button reflects a real earned certificate for THIS
+  // course — never just 100% of an owned section scope.
+  const { data: certificates } = useCertificates();
+  const certificateId = certificates?.find(
+    (c) => c.courseId === course.id,
+  )?.id;
   // Sections we've already auto-redirected to their quiz (once each).
   const quizRedirectedRef = useRef<Set<string>>(new Set());
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -91,9 +102,13 @@ export default function PlayerLayout({
           next.add(activeLesson.id);
           return next;
         });
+        // Finishing a lesson may be the event that issues the certificate
+        // (full-course, all lessons + quizzes done) — refetch so the header
+        // button appears only once the credential actually exists.
+        queryClient.invalidateQueries({ queryKey: ["certificates"] });
       }
     },
-    [activeLesson.id, course.id, router],
+    [activeLesson.id, course.id, router, queryClient],
   );
 
   // ── Lesson navigation ─────────────────────────────────────────────────────
@@ -190,6 +205,7 @@ export default function PlayerLayout({
         currentLessonTitle={activeLesson.title}
         completedLessons={completedCount}
         totalLessons={totalLessons}
+        certificateId={certificateId}
         onToggleSidebar={() => setSidebarOpen((v) => !v)}
         sidebarOpen={sidebarOpen}
       />
