@@ -7,45 +7,14 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { listRoadmaps, type Roadmap, type RoadmapItem } from "@/lib/api/roadmap";
+import { listRoadmaps, type Roadmap } from "@/lib/api/roadmap";
+import {
+  fetchAccessMap,
+  isOwned,
+  type Access,
+} from "@/lib/api/roadmapAccess";
 import { addToCartAction } from "@/app/actions/cart.actions";
 import Button, { buttonClasses } from "@/components/ui/Button";
-
-const PROXY = process.env.NEXT_PUBLIC_API_BASE || "/api/proxy";
-
-interface Access {
-  accessType: string;
-  sections: Set<string>;
-}
-
-async function fetchAccess(courseId: string): Promise<Access> {
-  try {
-    const r = await fetch(`${PROXY}/enrollments/my-access/${courseId}`, {
-      credentials: "include",
-    });
-    if (!r.ok) return { accessType: "none", sections: new Set() };
-    const d = (await r.json()) as {
-      accessType?: string;
-      accessibleSections?: string[];
-    };
-    return {
-      accessType: d.accessType ?? "none",
-      sections: new Set(
-        Array.isArray(d.accessibleSections) ? d.accessibleSections : [],
-      ),
-    };
-  } catch {
-    return { accessType: "none", sections: new Set() };
-  }
-}
-
-function isOwned(item: RoadmapItem, access: Map<string, Access>): boolean {
-  const a = access.get(item.courseId);
-  if (!a) return false;
-  if (a.accessType === "full_course") return true;
-  if (item.type === "section" && item.sectionId) return a.sections.has(item.sectionId);
-  return false;
-}
 
 export default function MyRoadmaps() {
   const router = useRouter();
@@ -57,15 +26,15 @@ export default function MyRoadmaps() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const list = await listRoadmaps().catch(() => []);
+      const all = await listRoadmaps().catch(() => []);
       if (cancelled) return;
+      // Only kept roadmaps belong in the profile — the transient 'active' draft
+      // lives on the builder page (/roadmap), not here.
+      const list = all.filter((r) => r.status !== "active");
       setRoadmaps(list);
-      const ids = [...new Set(list.flatMap((r) => r.items.map((i) => i.courseId)))];
-      const entries = await Promise.all(
-        ids.map(async (id) => [id, await fetchAccess(id)] as const),
-      );
+      const map = await fetchAccessMap(list.flatMap((r) => r.items.map((i) => i.courseId)));
       if (cancelled) return;
-      setAccess(new Map(entries));
+      setAccess(map);
       setLoading(false);
     })();
     return () => {
@@ -174,9 +143,16 @@ function RoadmapCard({
               Complete plan owned
             </span>
           ) : (
-            <span className="flex-shrink-0 rounded-full bg-violet-100 px-3 py-1 text-[11.5px] font-semibold text-[#3B1892]">
-              {ownedCount} of {total} owned
-            </span>
+            <div className="flex flex-shrink-0 items-center gap-2">
+              {roadmap.status === "saved" && (
+                <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
+                  Saved
+                </span>
+              )}
+              <span className="rounded-full bg-violet-100 px-3 py-1 text-[11.5px] font-semibold text-[#3B1892]">
+                {ownedCount} of {total} owned
+              </span>
+            </div>
           )}
         </div>
         {/* Progress */}
