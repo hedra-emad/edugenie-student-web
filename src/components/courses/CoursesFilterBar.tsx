@@ -319,13 +319,13 @@ export default function CoursesFilterBar({
             )}
             {filters.minPrice !== "" && (
               <Chip
-                label={`Min EGP${filters.minPrice}`}
+                label={`Min $${filters.minPrice}`}
                 onRemove={() => onFilterChange({ minPrice: "" })}
               />
             )}
             {filters.maxPrice !== "" && (
               <Chip
-                label={`Max EGP${filters.maxPrice}`}
+                label={`Max $${filters.maxPrice}`}
                 onRemove={() => onFilterChange({ maxPrice: "" })}
               />
             )}

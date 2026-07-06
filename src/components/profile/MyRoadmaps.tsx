@@ -263,7 +263,7 @@ function RoadmapCard({
             loading={busy}
             onClick={onBuyRemaining}
           >
-            {`Buy remaining ${remainingItems.length} · EGP${remainingPrice}`}
+            {`Buy remaining ${remainingItems.length} · $${remainingPrice}`}
           </Button>
         )}
       </div>

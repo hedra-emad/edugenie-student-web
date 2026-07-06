@@ -92,7 +92,7 @@ export default function OrderSummary({
         </span>
       );
     }
-    return `Confirm & Pay — EGP${total.toFixed(2)}`;
+    return `Confirm & Pay — $${total.toFixed(2)}`;
   }
 
   // ── render ───────────────────────────────────────────────────────────────────
@@ -125,7 +125,7 @@ export default function OrderSummary({
                     </span>
                   </div>
                   <span className="text-[13px] font-semibold text-slate-900 flex-shrink-0">
-                    EGP{item.price}
+                    ${item.price}
                   </span>
                 </div>
               </div>
@@ -148,7 +148,7 @@ export default function OrderSummary({
                       — {section.sectionTitle ?? section.courseTitle}
                     </span>
                     <span className="text-[12px] font-semibold text-slate-700 flex-shrink-0 ml-3">
-                      EGP {section.price}
+                      $ {section.price}
                     </span>
                   </div>
                 ))}
@@ -164,7 +164,7 @@ export default function OrderSummary({
         <div className="flex justify-between items-center mb-2">
           <span className="text-[13px] text-slate-500">Subtotal</span>
           <span className="text-[13px] font-semibold text-slate-700">
-            EGP {subtotal.toFixed(2)}
+            $ {subtotal.toFixed(2)}
           </span>
         </div>
 
@@ -221,7 +221,7 @@ export default function OrderSummary({
         {couponStatus === "success" && discountAmount > 0 && (
           <div className="flex justify-between items-center mb-2 text-emerald-600">
             <span className="text-[12px] font-semibold">Discount</span>
-            <span className="text-[12px] font-bold">-EGP{discountAmount}</span>
+            <span className="text-[12px] font-bold">-${discountAmount}</span>
           </div>
         )}
 
@@ -237,7 +237,7 @@ export default function OrderSummary({
             className="text-[19px] font-extrabold"
             style={{ color: "#3B1892" }}
           >
-            EGP{total.toFixed(2)}
+            ${total.toFixed(2)}
           </span>
         </div>
 

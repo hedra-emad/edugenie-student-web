@@ -169,7 +169,7 @@ function SectionRow({
           className={`text-[13px] font-bold flex-shrink-0
           ${isChecked ? "text-violet-700" : "text-slate-700"}`}
         >
-          EGP{price}
+          ${price}
         </span>
       )}
     </div>
@@ -247,8 +247,8 @@ export default function EnrollCard({ course }: { course: Course }) {
   const btnLabel = (() => {
     if (btnState === "enrolled") return "Go to Course";
     if (btnState === "disabled") return "Select at least one section";
-    if (btnState === "full") return `Buy Full Course — EGP${fullCoursePrice}`;
-    return `Buy Selected — EGP${selectedTotal}`;
+    if (btnState === "full") return `Buy Full Course — $${fullCoursePrice}`;
+    return `Buy Selected — $${selectedTotal}`;
   })();
 
   const helperText = (() => {
@@ -459,10 +459,10 @@ export default function EnrollCard({ course }: { course: Course }) {
                 </span>
                 <span className="text-[20px] font-extrabold text-slate-900 leading-none">
                   {btnState === "disabled"
-                    ? "EGP0"
+                    ? "$0"
                     : btnState === "full"
-                      ? `EGP${fullCoursePrice}`
-                      : `EGP${selectedTotal}`}
+                      ? `$${fullCoursePrice}`
+                      : `$${selectedTotal}`}
                 </span>
               </div>
             )}

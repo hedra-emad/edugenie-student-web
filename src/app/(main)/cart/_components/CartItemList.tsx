@@ -169,7 +169,7 @@ export default function CartItemList({
 
               <div className="flex flex-col items-end gap-2 flex-shrink-0">
                 <span className="text-[15px] font-extrabold text-slate-900">
-                  EGP{item.price.toFixed(2)}
+                 ${item.price.toFixed(2)}
                 </span>
 
                 {isConfirming ? (
@@ -240,7 +240,7 @@ export default function CartItemList({
 
                       <div className="flex items-center gap-3 flex-shrink-0 ml-3">
                         <span className="text-[12.5px] font-semibold text-slate-800">
-                          EGP{section.price.toFixed(2)}
+                          ${section.price.toFixed(2)}
                         </span>
 
                         {isConfirming ? (
@@ -288,7 +288,7 @@ export default function CartItemList({
 
             <div className="flex justify-end mt-2 pt-2 border-t border-slate-100">
               <span className="text-[13px] font-extrabold text-slate-900">
-                EGP{groupTotal.toFixed(2)}
+                ${groupTotal.toFixed(2)}
               </span>
             </div>
           </div>
