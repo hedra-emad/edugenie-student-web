@@ -72,21 +72,43 @@ export default function PlayerLayout({
 
   const handleProgressResponse = useCallback(
     (res: ProgressResponse) => {
-      // Quiz redirect — immediate, no confirmation
-      if (res.quizRequired && res.quizSectionId) {
-        router.push(`/learn/${course.id}/quiz/${res.quizSectionId}`);
-        return;
-      }
-      // Mark as completed
-      if (res.lessonState === "completed") {
+      // Record the completion FIRST. The old code redirected to the quiz and
+      // returned *before* this ran, so at the moment the quiz decision was made
+      // the just-finished lesson wasn't yet counted as complete.
+      const justCompletedActive = res.lessonState === "completed";
+      if (justCompletedActive) {
         setCompletedLessons((prev) => {
           const next = new Set(prev);
           next.add(activeLesson.id);
           return next;
         });
       }
+
+      // Section quiz gate — only redirect once the section is exactly 100%
+      // complete (every lesson done). The backend's `quizRequired` flag can be
+      // true before the section is fully finished, which surfaced the quiz
+      // early; gate it on the client's own per-lesson completion instead.
+      // `completedLessons` here doesn't yet include the lesson that finished in
+      // *this* response (state updates are async), so count it explicitly.
+      if (res.quizRequired && res.quizSectionId) {
+        const section = course.sections.find(
+          (s) => s.id === res.quizSectionId,
+        );
+        const sectionComplete =
+          !!section &&
+          section.lessons.length > 0 &&
+          section.lessons.every(
+            (l) =>
+              l.state === "completed" ||
+              completedLessons.has(l.id) ||
+              (justCompletedActive && l.id === activeLesson.id),
+          );
+        if (sectionComplete) {
+          router.push(`/learn/${course.id}/quiz/${res.quizSectionId}`);
+        }
+      }
     },
-    [activeLesson.id, course.id, router],
+    [activeLesson.id, completedLessons, course.id, course.sections, router],
   );
 
   // ── Lesson navigation ─────────────────────────────────────────────────────

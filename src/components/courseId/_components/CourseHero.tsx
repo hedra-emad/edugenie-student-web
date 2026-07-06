@@ -1,6 +1,11 @@
 // _components/CourseHero.tsx
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import Avatar from "@/components/ui/Avatar";
+import PreviewVideoModal from "./PreviewVideoModal";
 import type { Course } from "../../../app/courses/[courseId]/types/course";
 
 function getSafeImageSrc(src: string | null | undefined): string | null {
@@ -64,11 +69,13 @@ function MetaChip({ label }: { label: string }) {
 }
 
 export default function CourseHero({ course }: { course: Course }) {
+  const [showPreview, setShowPreview] = useState(false);
   const instructor = course.instructorId;
   const fullName   = `${instructor.firstName} ${instructor.lastName}`;
   const levelStyle = LEVEL_STYLES[course.level] ?? LEVEL_STYLES.beginner;
   const levelLabel = LEVEL_LABELS[course.level] ?? course.level;
   const safeThumbnail = getSafeImageSrc(course.thumbnail);
+  const hasPreviewVideo = Boolean(course.previewVideoUrl?.trim());
 
   const hours   = Math.floor(course.totalHours);
   const minutes = Math.round((course.totalHours - hours) * 60);
@@ -145,20 +152,12 @@ export default function CourseHero({ course }: { course: Course }) {
 
             {/* Instructor */}
             <div className="flex items-center gap-3">
-              <div className="relative w-9 h-9 rounded-full overflow-hidden bg-slate-700 flex-shrink-0 border border-white/10">
-                {instructor.avatar ? (
-                  <Image
-                    src={instructor.avatar}
-                    alt={fullName}
-                    fill
-                    className="object-cover"
-                  />
-                ) : (
-                  <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white">
-                    {instructor.firstName[0]}
-                  </span>
-                )}
-              </div>
+              <Avatar
+                src={instructor.avatar}
+                name={instructor.firstName}
+                className="w-9 h-9 flex-shrink-0 border border-white/10"
+                textSizeClassName="text-xs"
+              />
               <p className="text-[13px] text-white/45">
                 Created by{" "}
                 <span className="text-violet-400 font-semibold">{fullName}</span>
@@ -178,18 +177,32 @@ export default function CourseHero({ course }: { course: Course }) {
                   priority
                 />
               )}
-              <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
-                  <svg className="w-5 h-5 text-slate-800 ml-0.5" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                </div>
-              </div>
+              {hasPreviewVideo && (
+                <button
+                  type="button"
+                  aria-label="Watch preview"
+                  onClick={() => setShowPreview(true)}
+                  className="absolute inset-0 bg-black/40 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                >
+                  <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
+                    <svg className="w-5 h-5 text-slate-800 ml-0.5" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                  </div>
+                </button>
+              )}
             </div>
           </div>
 
         </div>
       </div>
+
+      {showPreview && course.previewVideoUrl && (
+        <PreviewVideoModal
+          videoUrl={course.previewVideoUrl}
+          onClose={() => setShowPreview(false)}
+        />
+      )}
     </div>
   );
 }
