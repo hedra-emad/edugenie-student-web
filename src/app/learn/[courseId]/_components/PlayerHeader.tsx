@@ -40,6 +40,16 @@ export default function PlayerHeader({
 
           {/* Right — progress text + mobile toggle */}
           <div className="flex items-center gap-3 shrink-0">
+            {pct >= 100 && (
+              <Link
+                href="/profile?tab=certificates"
+                className="hidden sm:inline-flex items-center gap-1.5 text-[12.5px] font-semibold
+                           text-white bg-[#3B1892] hover:opacity-90 px-3 py-1.5 rounded-xl
+                           transition-opacity whitespace-nowrap"
+              >
+                🎓 Certificate
+              </Link>
+            )}
             <span className="text-[12px] font-semibold text-slate-500 whitespace-nowrap">
               {completedLessons} of {totalLessons} lessons complete
             </span>

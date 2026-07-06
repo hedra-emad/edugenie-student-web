@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Pin the workspace root to this app. Stray package-lock.json files in parent
+  // dirs (C:\Users\emadh, Desktop) otherwise make Turbopack infer the wrong root.
+  turbopack: { root: __dirname },
   images: {
     remotePatterns: [
       {
