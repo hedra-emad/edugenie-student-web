@@ -10,6 +10,7 @@ import { useSession } from "@/providers/SessionProvider";
 import { useCartContext } from "@/contexts/CartContext";
 import Button, { buttonClasses } from "@/components/ui/Button";
 import CoachWidget from "@/components/coach/CoachWidget";
+import Avatar from "@/components/ui/Avatar";
 
 const navLinks = [
   { label: "Home", href: "/" },
