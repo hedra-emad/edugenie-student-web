@@ -169,10 +169,9 @@ const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(function VideoPlayer(
   usePlayerKeyboard(
     videoRef as React.RefObject<HTMLVideoElement>,
     containerRef,
-    {
-      // Free seek — never cap ArrowRight.
-      getMaxWatchedTime: () => Infinity,
-    },
+    // {
+    //   getMaxWatchedTime: () => Infinity,
+    // },
   );
 
   // ── Fullscreen change detection ───────────────────────────────────────────
