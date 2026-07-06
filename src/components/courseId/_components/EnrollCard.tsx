@@ -12,6 +12,7 @@ import { addToCartAction } from "@/app/actions/cart.actions";
 import { initiateStripeCheckout } from "@/lib/api/checkout";
 import { useSession } from "@/providers/SessionProvider";
 import PlacementTestModal from "./PlacementTestModal";
+import PreviewVideoModal from "./PreviewVideoModal";
 import Button from "@/components/ui/Button";
 import { useCourseAccess } from "./CourseAccessProvider";
 function getSafeImageSrc(src: string | null | undefined): string | null {
@@ -187,7 +188,9 @@ export default function EnrollCard({ course }: { course: Course }) {
   const [stripePending, setStripePending] = useState(false);
   const [cartError, setCartError] = useState<string | null>(null);
   const [showPlacement, setShowPlacement] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const safeThumbnail = getSafeImageSrc(course.thumbnail);
+  const hasPreviewVideo = Boolean(course.previewVideoUrl?.trim());
 
   const sections = course.sections as SectionWithOwned[];
 
@@ -351,23 +354,28 @@ export default function EnrollCard({ course }: { course: Course }) {
             className="object-cover"
           />
         )}
-        <div className="absolute inset-0 bg-black/35 flex items-center justify-center">
-          <button
-            aria-label="Watch preview"
-            className="w-12 h-12 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-lg transition-transform hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
-          >
-            <svg
-              className="w-5 h-5 text-slate-900 ml-0.5"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-            >
-              <path d="M8 5v14l11-7z" />
-            </svg>
-          </button>
-        </div>
-        <span className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] font-semibold px-2 py-1 rounded-md">
-          Preview
-        </span>
+        {hasPreviewVideo && (
+          <>
+            <div className="absolute inset-0 bg-black/35 flex items-center justify-center">
+              <button
+                aria-label="Watch preview"
+                onClick={() => setShowPreview(true)}
+                className="w-12 h-12 rounded-full bg-white/90 hover:bg-white flex items-center justify-center shadow-lg transition-transform hover:scale-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              >
+                <svg
+                  className="w-5 h-5 text-slate-900 ml-0.5"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              </button>
+            </div>
+            <span className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] font-semibold px-2 py-1 rounded-md">
+              Preview
+            </span>
+          </>
+        )}
       </div>
 
       <div className="p-5">
@@ -555,6 +563,13 @@ export default function EnrollCard({ course }: { course: Course }) {
               <PlacementTestModal
                 courseId={courseId}
                 onClose={() => setShowPlacement(false)}
+              />
+            )}
+
+            {showPreview && course.previewVideoUrl && (
+              <PreviewVideoModal
+                videoUrl={course.previewVideoUrl}
+                onClose={() => setShowPreview(false)}
               />
             )}
           </>

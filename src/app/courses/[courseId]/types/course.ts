@@ -41,6 +41,7 @@ export interface Course {
   description: string;
   price: number;
   thumbnail: string;
+  previewVideoUrl: string | null;
   level: "beginner" | "intermediate" | "advanced";
   courseStatus: string;
   instructorId: Instructor;

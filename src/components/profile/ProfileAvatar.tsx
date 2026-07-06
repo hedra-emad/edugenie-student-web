@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useRef, useState } from "react";
 import { Camera, Loader2, Trash2 } from "lucide-react";
 
@@ -25,9 +24,20 @@ export default function ProfileAvatar({
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
+  const [imgFailed, setImgFailed] = useState(false);
+  const [lastAvatarUrl, setLastAvatarUrl] = useState(avatarUrl);
+
+  // Reset the failed-load flag whenever the avatar URL changes (new upload,
+  // or a fresh URL after a previous one broke) — adjusted during render
+  // rather than an effect, per React's state-adjustment-on-prop-change guidance.
+  if (avatarUrl !== lastAvatarUrl) {
+    setLastAvatarUrl(avatarUrl);
+    setImgFailed(false);
+  }
 
   const busy = isUploading || isDeleting;
   const hasAvatar = !!avatarUrl;
+  const showImage = hasAvatar && !imgFailed;
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -59,14 +69,13 @@ export default function ProfileAvatar({
           disabled={busy}
           className="group relative w-20 h-20 rounded-full overflow-hidden cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3B1892] focus-visible:ring-offset-2 disabled:cursor-not-allowed"
         >
-          {avatarUrl ? (
-            <Image
+          {showImage ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
               src={avatarUrl}
               alt="Your profile picture"
-              fill
-              sizes="80px"
-              className="object-cover"
-              priority
+              onError={() => setImgFailed(true)}
+              className="w-full h-full object-cover"
             />
           ) : (
             <div
