@@ -1,9 +1,10 @@
 "use client";
 // _components/AiTutorPanel.tsx
 // In-player AI tutor with a scope toggle:
-//   • "This lesson"  → Tier-1 lesson_chat (grounded in the active lesson)
-//   • "This course"  → Tier-2 course_chat (spans every unlocked section)
-// Both stream over the NestJS `/ai` WebSocket via the shared useAiChat hook.
+//   • "This section" → Tier-1 lesson_chat (grounded in the WHOLE section the
+//                       active lesson belongs to; cites timestamped moments)
+//   • "This course"  → Tier-2 course_chat (whole course; FULL-COURSE owners only)
+// Both stream over the NestJS `/ai` SSE endpoints via the shared useAiChat hook.
 
 import { useEffect, useRef, useState } from "react";
 import { useAiChat } from "@/lib/ai/useAiChat";
@@ -14,6 +15,7 @@ import {
   SendIcon,
   RefreshIcon,
   StateNotice,
+  type OnCite,
 } from "@/components/ai/chatUi";
 
 interface Props {
@@ -21,16 +23,26 @@ interface Props {
   courseTitle: string;
   lessonId: string;
   lessonTitle: string;
+  /**
+   * Section the active lesson belongs to. The lesson tutor is section-scoped,
+   * so the conversation is keyed by section — switching lessons WITHIN the same
+   * section (e.g. clicking a citation for a sibling lesson) keeps the chat.
+   */
+  sectionId?: string;
+  /** Course tutor is unlocked only for full-course owners. */
+  fullCourseOwned: boolean;
+  /** Seek the player in-place when a citation timestamp is clicked. */
+  onCite?: OnCite;
 }
 
 type Scope = "lesson" | "course";
 
 const SUGGESTIONS: Record<Scope, string[]> = {
   lesson: [
-    "Summarize this lesson",
+    "Summarize this section",
+    "Where is X explained? Give me the timestamp",
     "Explain it like I'm a beginner",
-    "Give me a real-world example",
-    "Quiz me on the key points",
+    "Quiz me on this section's key points",
   ],
   course: [
     "What should I focus on in this course?",
@@ -45,19 +57,26 @@ export default function AiTutorPanel({
   courseTitle,
   lessonId,
   lessonTitle,
+  sectionId,
+  fullCourseOwned,
+  onCite,
 }: Props) {
   const [scope, setScope] = useState<Scope>("lesson");
   const [input, setInput] = useState("");
 
-  // The hook re-keys (resets + reconnects) whenever `resetKey` changes — so
-  // switching scope, or switching lessons while in lesson scope, starts fresh.
-  // Course scope is keyed only by courseId, so it survives lesson changes.
+  // The hook re-keys (resets + reconnects) whenever `resetKey` changes. The
+  // lesson tutor is section-scoped, so it's keyed by SECTION — switching lessons
+  // within the same section (e.g. clicking a sibling-lesson citation) keeps the
+  // conversation; only crossing into another section (or scope) starts fresh.
+  // `context.lessonId` still tracks the active lesson so each request hits the
+  // right endpoint (the backend resolves the section from it). Course scope is
+  // keyed only by courseId, so it survives lesson changes.
   const config =
     scope === "lesson"
       ? {
           event: "lesson_chat" as const,
           context: { lessonId },
-          resetKey: `lesson:${lessonId}`,
+          resetKey: `section:${sectionId ?? lessonId}`,
         }
       : {
           event: "course_chat" as const,
@@ -119,7 +138,7 @@ export default function AiTutorPanel({
               />
               {connection === "connected"
                 ? scope === "lesson"
-                  ? "Grounded in this lesson"
+                  ? "Grounded in this section"
                   : "Spanning the whole course"
                 : connection === "connecting"
                   ? "Connecting…"
@@ -141,22 +160,48 @@ export default function AiTutorPanel({
         )}
       </div>
 
-      {/* Scope toggle */}
+      {/* Scope toggle — "This course" is locked unless the full course is owned */}
       <div className="flex flex-shrink-0 gap-1 border-b border-slate-100 bg-slate-50/70 px-3 py-2">
-        {(["lesson", "course"] as Scope[]).map((s) => (
-          <button
-            key={s}
-            type="button"
-            onClick={() => setScope(s)}
-            className={`flex-1 rounded-lg px-3 py-1.5 text-[12px] font-semibold transition-all ${
-              scope === s
-                ? "bg-white text-[#3B1892] shadow-sm ring-1 ring-slate-200"
-                : "text-slate-500 hover:text-slate-700"
-            }`}
-          >
-            {s === "lesson" ? "This lesson" : "This course"}
-          </button>
-        ))}
+        {(["lesson", "course"] as Scope[]).map((s) => {
+          const locked = s === "course" && !fullCourseOwned;
+          const active = scope === s;
+          return (
+            <button
+              key={s}
+              type="button"
+              onClick={() => {
+                if (!locked) setScope(s);
+              }}
+              disabled={locked}
+              aria-disabled={locked}
+              title={
+                locked ? "Buy the full course to use the course tutor" : undefined
+              }
+              className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-semibold transition-all ${
+                active
+                  ? "bg-white text-[#3B1892] shadow-sm ring-1 ring-slate-200"
+                  : locked
+                    ? "cursor-not-allowed text-slate-300"
+                    : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              {locked && (
+                <svg
+                  className="h-3 w-3"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2.2}
+                  aria-hidden
+                >
+                  <rect x="5" y="11" width="14" height="10" rx="2" />
+                  <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+                </svg>
+              )}
+              {s === "lesson" ? "This section" : "This course"}
+            </button>
+          );
+        })}
       </div>
 
       {/* Messages */}
@@ -181,7 +226,9 @@ export default function AiTutorPanel({
             disabled={connection !== "connected"}
           />
         ) : (
-          messages.map((m) => <MessageBubble key={m.id} message={m} />)
+          messages.map((m) => (
+            <MessageBubble key={m.id} message={m} onCite={onCite} />
+          ))
         )}
       </div>
 
@@ -199,7 +246,7 @@ export default function AiTutorPanel({
           placeholder={
             connection === "connected"
               ? scope === "lesson"
-                ? "Ask about this lesson…"
+                ? "Ask about this section…"
                 : "Ask about this course…"
               : "Connecting…"
           }
@@ -247,7 +294,8 @@ function EmptyState({
       <p className="mx-auto mt-1.5 max-w-[260px] text-[12.5px] leading-relaxed text-slate-500">
         {scope === "lesson" ? "Ask anything about" : "Ask anything across"}{" "}
         <span className="font-medium text-slate-600">“{target}”</span> — grounded
-        in {scope === "lesson" ? "this lesson" : "the material you've unlocked"}.
+        in {scope === "lesson" ? "this whole section" : "the whole course"}, with
+        timestamps to jump to.
       </p>
 
       <div className="mt-5 flex w-full flex-col gap-2">

@@ -43,7 +43,7 @@ export default function TranscriptPanel({ segments, onSeekTo, getCurrentTime }: 
   }, [activeIdx]);
 
   return (
-    <div className="h-full overflow-y-auto px-2 py-3">
+    <div className="flex h-full max-h-[440px] overflow-y-auto px-2 py-3">
       <ul className="space-y-0.5">
         {segments.map((seg, i) => {
           const active = i === activeIdx;

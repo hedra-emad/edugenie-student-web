@@ -18,9 +18,45 @@ import Button from "@/components/ui/Button";
 const LINK_CLASS =
   "font-semibold text-[#3B1892] underline decoration-[#3B1892]/30 underline-offset-2 transition-colors hover:decoration-[#3B1892]";
 
-const mdComponents: Components = {
+/** Callback for a tutor citation deep-link, so the click seeks the player
+ *  in-place instead of navigating (which would reload + reset the chat). */
+export type OnCite = (lessonId: string, seconds: number) => void;
+
+/**
+ * Match an in-player citation link `/learn/<courseId>?lesson=<id>&t=<sec>`
+ * (the tutor's "Jump to" footer). Returns the lesson id + timestamp, or null
+ * for any other link (course recs `/courses/id`, external URLs, etc.).
+ */
+function parseCite(url: string): { lessonId: string; seconds: number } | null {
+  const q = url.match(/^\/learn\/[^?]+\?(.+)$/);
+  if (!q) return null;
+  const params = new URLSearchParams(q[1]);
+  const lessonId = params.get("lesson");
+  if (!lessonId) return null;
+  const t = params.get("t");
+  const seconds = t != null && t !== "" ? Number(t) : NaN;
+  return { lessonId, seconds: Number.isFinite(seconds) ? seconds : 0 };
+}
+
+function buildMdComponents(onCite?: OnCite): Components {
+  return {
   a: ({ href, children }) => {
     const url = href ?? "";
+    // In-player citation → seek in place, no navigation (keeps the chat alive).
+    if (onCite) {
+      const cite = parseCite(url);
+      if (cite) {
+        return (
+          <button
+            type="button"
+            onClick={() => onCite(cite.lessonId, cite.seconds)}
+            className={LINK_CLASS}
+          >
+            {children}
+          </button>
+        );
+      }
+    }
     if (url.startsWith("/")) {
       return (
         <Link href={url} className={LINK_CLASS}>
@@ -81,13 +117,14 @@ const mdComponents: Components = {
       {children}
     </pre>
   ),
-};
+  };
+}
 
-function Markdown({ content }: { content: string }) {
+function Markdown({ content, onCite }: { content: string; onCite?: OnCite }) {
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm, remarkBreaks]}
-      components={mdComponents}
+      components={buildMdComponents(onCite)}
     >
       {content}
     </ReactMarkdown>
@@ -160,7 +197,13 @@ export function TypingDots() {
 
 // ── Message bubble ───────────────────────────────────────────────────────────
 
-export function MessageBubble({ message }: { message: AiChatMessage }) {
+export function MessageBubble({
+  message,
+  onCite,
+}: {
+  message: AiChatMessage;
+  onCite?: OnCite;
+}) {
   const isUser = message.role === "user";
 
   if (isUser) {
@@ -196,7 +239,7 @@ export function MessageBubble({ message }: { message: AiChatMessage }) {
           <TypingDots />
         ) : (
           <div className="break-words">
-            <Markdown content={message.content} />
+            <Markdown content={message.content} onCite={onCite} />
             {message.pending && (
               <span className="ml-0.5 inline-block h-3.5 w-[2px] translate-y-0.5 animate-pulse bg-[#3B1892]" />
             )}
