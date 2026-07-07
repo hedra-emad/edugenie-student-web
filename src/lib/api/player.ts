@@ -339,5 +339,17 @@ function normaliseLesson(raw: Record<string, unknown>, sectionUnlocked: boolean)
       typeof raw.watchedDuration === "number" ? raw.watchedDuration : 0,
     transcript:
       accessible && typeof raw.transcript === "string" ? raw.transcript : undefined,
+    transcriptSegments:
+      accessible && Array.isArray(raw.transcriptSegments)
+        ? (raw.transcriptSegments as unknown[])
+            .map((s) => {
+              const o = (s ?? {}) as Record<string, unknown>;
+              return {
+                start: typeof o.start === "number" ? o.start : 0,
+                text: typeof o.text === "string" ? o.text : "",
+              };
+            })
+            .filter((s) => s.text.length > 0)
+        : undefined,
   };
 }

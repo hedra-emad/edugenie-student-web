@@ -24,10 +24,10 @@ export default async function LearnPage({
   searchParams,
 }: {
   params: Promise<{ courseId: string }>;
-  searchParams: Promise<{ lesson?: string }>;
+  searchParams: Promise<{ lesson?: string; t?: string }>;
 }) {
   const { courseId } = await params;
-  const { lesson: requestedLessonId } = await searchParams;
+  const { lesson: requestedLessonId, t } = await searchParams;
 
   // Read JWT from cookies for server-side authenticated requests
   const cookieStore = await cookies();
@@ -69,8 +69,15 @@ export default async function LearnPage({
     "";
 
   // Resume's watched-duration only applies to the resumed lesson, not a
-  // deep-linked one.
-  const initialWatchedDuration = deepLinked ? 0 : (resume?.watchedDuration ?? 0);
+  // deep-linked one. A `?t=<seconds>` deep-link (from a search-result timestamp
+  // chip) opens the lesson AND seeks there — reusing the resume-seek path, which
+  // applies `initialWatchedDuration` to the video on load.
+  const seekSeconds = t !== undefined ? Math.max(0, Math.floor(Number(t))) : NaN;
+  const initialWatchedDuration = deepLinked
+    ? Number.isFinite(seekSeconds)
+      ? seekSeconds
+      : 0
+    : (resume?.watchedDuration ?? 0);
 
   if (!startLessonId) redirect("/courses");
 

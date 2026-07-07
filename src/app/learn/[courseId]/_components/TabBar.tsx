@@ -14,10 +14,11 @@ interface Props {
   onNextLesson: () => void;
 }
 
-type Tab = "overview" | "notes";
+type Tab = "overview"  | "notes";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "overview", label: "Overview" },
+
   { id: "notes", label: "Notes" },
 ];
 
@@ -127,6 +128,8 @@ export default function TabBar({
             )}
           </div>
         )}
+
+       
 
         {activeTab === "notes" && (
           <NotesSidebar

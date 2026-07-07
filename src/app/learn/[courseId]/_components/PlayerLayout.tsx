@@ -12,6 +12,7 @@ import Button from "@/components/ui/Button";
 import PlayerHeader from "./PlayerHeader";
 import VideoPlayer, { type VideoPlayerHandle } from "./VideoPlayer";
 import LessonSidebar from "./LessonSidebar";
+import TranscriptPanel from "./TranscriptPanel";
 import TabBar from "./TabBar";
 import AiTutorPanel from "./AiTutorPanel";
 import PracticeQuizModal from "@/components/ai/PracticeQuizModal";
@@ -316,7 +317,17 @@ const handleProgressResponse = useCallback(
               {rightTab === "transcript" && (
                 activeSectionNotPurchased ? (
                   notPurchasedPanel
+                ) : activeLesson.transcriptSegments &&
+                  activeLesson.transcriptSegments.length > 0 ? (
+                  // Time-coded: clickable, seek-on-click, active-line highlight.
+                  <TranscriptPanel
+                    key={activeLesson.id}
+                    segments={activeLesson.transcriptSegments}
+                    onSeekTo={handleSeekTo}
+                    getCurrentTime={getCurrentTime}
+                  />
                 ) : (
+                  // Legacy plain-text transcript (or none) — non-clickable.
                   <div className="h-full overflow-y-auto px-4 py-4">
                     {activeLesson.transcript ? (
                       <p className="text-sm text-slate-600 leading-relaxed">
