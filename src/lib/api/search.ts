@@ -1,15 +1,19 @@
-// Semantic in-course lesson search — vector search over the transcripts of the
-// courses the student can access. Returns lesson hits that deep-link into the
-// player. Client-side via the BFF proxy (JWT cookie attached there).
+// Semantic lesson search across the whole published catalog — vector search
+// over lesson transcripts, returning course + section + lesson titles. Public
+// (no enrollment required). Client-side via the BFF proxy.
 
 const PROXY = process.env.NEXT_PUBLIC_API_BASE || '/api/proxy';
 
 export interface LessonHit {
   courseId: string;
+  courseTitle: string;
   lessonId: string;
   lessonTitle: string;
   sectionTitle: string;
-  snippet: string;
+  /** Start time (seconds) of the matched moment, when the transcript is time-coded. */
+  start?: number;
+  /** True when the signed-in student can open this lesson (drives the seek chip). */
+  owned: boolean;
   score: number;
 }
 

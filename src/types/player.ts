@@ -3,6 +3,13 @@ export type LessonState = "locked" | "available" | "in_progress" | "completed";
 
 /** Why a section is locked (mirrors backend `applyStudentAccess`). */
 export type SectionLockReason = "not_purchased" | "locked_progress" | null;
+
+/** One time-coded transcript segment (clickable → seek the player). */
+export interface TranscriptSegment {
+  start: number; // seconds into the video
+  text: string;
+}
+
 export interface PlayerLesson {
   id: string;
   title: string;
@@ -12,6 +19,8 @@ export interface PlayerLesson {
   state: LessonState;
   watchedDuration: number; // seconds already watched
   transcript?: string;
+  /** Present only for time-coded transcripts; legacy lessons have text only. */
+  transcriptSegments?: TranscriptSegment[];
 }
 
 export interface PlayerSection {

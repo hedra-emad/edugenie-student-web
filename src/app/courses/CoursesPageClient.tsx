@@ -6,7 +6,6 @@ import { useQuery } from '@tanstack/react-query';
 import { useCourses } from '@/hooks/useCourses';
 import { CategoryOption } from '@/lib/api/courses';
 import { searchLessons } from '@/lib/api/search';
-import { useSession } from '@/providers/SessionProvider';
 import CoursesFilterBar from '@/components/courses/CoursesFilterBar';
 import CoursesGrid from '@/components/courses/CoursesGrid';
 import CoursesPagination from '@/components/courses/CoursesPagination';
@@ -30,13 +29,13 @@ export default function CoursesPageClient({ categories }: Props) {
     activeFilterCount,
   } = useCourses();
 
-  // Semantic lesson search inside the student's own courses (auth-only strip).
-  const { isAuthenticated } = useSession();
+  // Semantic lesson search across the whole published catalog (open to everyone,
+  // enrollment not required).
   const q = (filters.search ?? '').trim();
   const { data: lessonHits } = useQuery({
     queryKey: ['lesson-search', q],
     queryFn: () => searchLessons(q),
-    enabled: isAuthenticated && q.length > 1,
+    enabled: q.length > 1,
     staleTime: 60_000,
   });
 

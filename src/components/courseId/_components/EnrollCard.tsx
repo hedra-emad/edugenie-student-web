@@ -537,10 +537,8 @@ export default function EnrollCard({ course }: { course: Course }) {
 
             {/* AI placement test — "buy only what you need" */}
             {!isFullyOwned && availableSections.length > 0 && (
-              <Button
-                variant="secondary"
-                size="sm"
-                fullWidth
+              <button
+                type="button"
                 onClick={() => {
                   if (!isAuthenticated) {
                     router.push("/login");
@@ -548,15 +546,29 @@ export default function EnrollCard({ course }: { course: Course }) {
                   }
                   setShowPlacement(true);
                 }}
-                leftIcon={
-                  <svg className="w-[15px] h-[15px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                className="group mt-2.5 flex w-full items-center gap-3 rounded-xl border border-dashed
+                           border-[#3B1892]/30 bg-gradient-to-r from-violet-50 to-indigo-50/60 px-3.5 py-2.5
+                           text-left transition-all duration-200 hover:border-[#3B1892]/60
+                           hover:from-violet-100 hover:to-indigo-100/60 active:translate-y-px
+                           focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#3B1892]"
+              >
+                <span
+                  className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg
+                             bg-[#3B1892] text-white shadow-sm transition-transform group-hover:scale-105"
+                >
+                  <svg className="h-[17px] w-[17px]" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
                     <path d="M12 2l1.9 5.7L20 9.5l-5.1 2L12 17l-1.9-5.5L5 9.5l5.1-1.8L12 2z" />
                   </svg>
-                }
-                className="mt-2.5"
-              >
-                Take the AI placement test — skip what you know
-              </Button>
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[13px] font-bold leading-tight text-[#3B1892]">
+                    Take the AI placement test
+                  </span>
+                  <span className="block text-[11.5px] font-medium leading-tight text-slate-500">
+                    Skip what you already know
+                  </span>
+                </span>
+              </button>
             )}
 
             {showPlacement && (
