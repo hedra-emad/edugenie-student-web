@@ -6,6 +6,7 @@ import CourseHero from "../../../components/courseId/_components/CourseHero";
 import CourseCurriculum from "../../../components/courseId/_components/CourseCurriculum";
 import CourseDescription from "../../../components/courseId/_components/CourseDescription";
 import CourseInstructor from "../../../components/courseId/_components/CourseInstructor";
+import CourseReviews from "../../../components/courseId/_components/CourseReviews";
 import EnrollCard from "../../../components/courseId/_components/EnrollCard";
 import { CourseAccessProvider } from "../../../components/courseId/_components/CourseAccessProvider";
 import { resolveApiBase } from "@/lib/apiBase";
@@ -187,6 +188,7 @@ export default async function CourseDetailPage({
               requirements={course.requirements}
             />
             <CourseInstructor instructor={course.instructorId} />
+            <CourseReviews sections={course.sections} courseId={course.id} />
           </div>
 
           <div className="lg:sticky lg:top-6">
