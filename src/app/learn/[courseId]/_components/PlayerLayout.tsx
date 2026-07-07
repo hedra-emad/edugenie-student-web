@@ -118,8 +118,37 @@ export default function PlayerLayout({
     sectionTitle: string;
   } | null>(null);
 
+  // The section a user manually opened a rating card for via the sidebar's
+  // star icon (SectionAccordion). Lifted up here — shared with the auto
+  // prompt below — so the two triggers can never both have a *live*
+  // SectionRatingCard mounted for the same section at once (each instance
+  // owns its own rating/comment draft, so two mounted at once for the same
+  // section would be a lost-update race even though the backend itself
+  // can't end up with duplicate review documents).
+  const [manualRatingSectionId, setManualRatingSectionId] = useState<
+    string | null
+  >(null);
+
+  // Bumped whenever a rating is saved (either trigger), so any
+  // SectionAccordion instance for that section can flip its star icon to the
+  // "reviewed" state immediately, without a page reload.
+  const [justReviewedSectionId, setJustReviewedSectionId] = useState<
+    string | null
+  >(null);
+
+  const toggleManualRating = useCallback((sectionId: string) => {
+    setManualRatingSectionId((prev) => {
+      if (prev === sectionId) return null; // toggle closed
+      // Manual open takes precedence over an auto-prompt for the same
+      // section, so only one card is ever mounted for it.
+      setRatingPrompt((p) => (p?.sectionId === sectionId ? null : p));
+      return sectionId;
+    });
+  }, []);
+
   const maybeShowRatingPrompt = useCallback(
     (sectionId: string, sectionTitle: string) => {
+      if (manualRatingSectionId === sectionId) return; // already open manually
       if (isRatingDismissedThisSession(sectionId)) return;
       if (reviewedSectionIdsRef.current.has(sectionId)) return;
 
@@ -135,7 +164,7 @@ export default function PlayerLayout({
           // Network hiccup — not worth surfacing an error for an opportunistic prompt.
         });
     },
-    [],
+    [manualRatingSectionId],
   );
 
   const dismissRatingPrompt = useCallback(() => {
@@ -145,11 +174,9 @@ export default function PlayerLayout({
     });
   }, []);
 
-  const handleRatingSubmitted = useCallback(() => {
-    setRatingPrompt((prev) => {
-      if (prev) reviewedSectionIdsRef.current.add(prev.sectionId);
-      return prev;
-    });
+  const handleRatingSubmitted = useCallback((sectionId: string) => {
+    reviewedSectionIdsRef.current.add(sectionId);
+    setJustReviewedSectionId(sectionId);
   }, []);
 
 const handleProgressResponse = useCallback(
@@ -333,7 +360,7 @@ const handleProgressResponse = useCallback(
                   sectionId={ratingPrompt.sectionId}
                   sectionTitle={ratingPrompt.sectionTitle}
                   onDismiss={dismissRatingPrompt}
-                  onSubmitted={handleRatingSubmitted}
+                  onSubmitted={() => handleRatingSubmitted(ratingPrompt.sectionId)}
                 />
               </div>
             )}
@@ -394,6 +421,9 @@ const handleProgressResponse = useCallback(
                   completedLessons={completedLessons}
                   onLessonClick={handleLessonClick}
                   onQuizSection={openQuiz}
+                  manualRatingSectionId={manualRatingSectionId}
+                  onToggleRating={toggleManualRating}
+                  justReviewedSectionId={justReviewedSectionId}
                 />
               )}
               {rightTab === "ai" && (
@@ -464,6 +494,9 @@ const handleProgressResponse = useCallback(
               completedLessons={completedLessons}
               onLessonClick={handleLessonClick}
               onQuizSection={openQuiz}
+              manualRatingSectionId={manualRatingSectionId}
+              onToggleRating={toggleManualRating}
+              justReviewedSectionId={justReviewedSectionId}
             />
           </div>
         </div>

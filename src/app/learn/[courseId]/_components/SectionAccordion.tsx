@@ -1,12 +1,13 @@
 "use client";
 // _components/SectionAccordion.tsx
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Star } from "lucide-react";
 import type { PlayerSection, PlayerLesson } from "@/types/player";
 import LessonItem from "./LessonItem";
 import SectionRatingCard from "./SectionRatingCard";
+import { fetchSectionReviewStatus } from "@/lib/api/reviews";
 
 interface Props {
   section: PlayerSection;
@@ -18,6 +19,11 @@ interface Props {
   completedLessons?: Set<string>;
   onLessonClick: (lesson: PlayerLesson) => void;
   onQuizSection: (sectionId: string, label: string) => void;
+  /** Controlled from PlayerLayout so the manual and auto rating triggers never both have a card open for the same section. */
+  ratingCardOpen?: boolean;
+  onToggleRatingCard?: () => void;
+  /** True right after this section was rated (either trigger) — flips the star icon without a reload. */
+  justReviewed?: boolean;
 }
 
 function formatSectionDuration(sections: PlayerSection["lessons"]): string {
@@ -61,9 +67,12 @@ export default function SectionAccordion({
   completedLessons,
   onLessonClick,
   onQuizSection,
+  ratingCardOpen = false,
+  onToggleRatingCard,
+  justReviewed = false,
 }: Props) {
   const [open, setOpen] = useState(defaultOpen);
-  const [ratingCardOpen, setRatingCardOpen] = useState(false);
+  const [hasReviewed, setHasReviewed] = useState(false);
 
   // Lock state (backend `applyStudentAccess`).
   const notPurchased = section.lockReason === "not_purchased" || !section.isOwned;
@@ -73,6 +82,28 @@ export default function SectionAccordion({
   const isDone = (l: PlayerLesson) =>
     completedLessons?.has(l.id) || l.state === "completed";
   const completedInSection = section.lessons.filter(isDone).length;
+
+  // Fetch this section's review status once (only relevant for owned
+  // sections — the star trigger doesn't render otherwise) so the star icon
+  // can reflect "already reviewed" before the user ever opens the card.
+  useEffect(() => {
+    if (!section.isOwned) return;
+    let cancelled = false;
+    fetchSectionReviewStatus(section.id)
+      .then((status) => {
+        if (!cancelled) setHasReviewed(status.hasReviewed);
+      })
+      .catch(() => {
+        // Leave the icon in its default state — not worth surfacing an error for this.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [section.id, section.isOwned]);
+
+  // A rating just landed for this section (via either trigger) — reflect it
+  // immediately without waiting for a re-fetch.
+  const isReviewed = hasReviewed || justReviewed;
 
   return (
     <div className="border border-slate-200 rounded-lg overflow-hidden">
@@ -126,12 +157,19 @@ export default function SectionAccordion({
           {section.isOwned && !locked && (
             <button
               type="button"
-              onClick={() => setRatingCardOpen((v) => !v)}
-              aria-label="Rate this section"
-              title="Rate this section"
-              className="p-1 rounded-md text-slate-400 hover:text-amber-500 hover:bg-amber-100/60 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3B1892]"
+              onClick={() => onToggleRatingCard?.()}
+              aria-label={isReviewed ? "Edit your rating for this section" : "Rate this section"}
+              title={isReviewed ? "Edit your rating for this section" : "Rate this section"}
+              className={`p-1 rounded-md transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3B1892]
+                ${isReviewed
+                  ? "text-amber-500 hover:bg-amber-100/60"
+                  : "text-slate-400 hover:text-amber-500 hover:bg-amber-100/60"
+                }`}
             >
-              <Star className="w-3.5 h-3.5" />
+              <Star
+                className="w-3.5 h-3.5"
+                fill={isReviewed ? "#F59E0B" : "none"}
+              />
             </button>
           )}
           <button
@@ -153,7 +191,8 @@ export default function SectionAccordion({
             courseId={courseId}
             sectionId={section.id}
             sectionTitle={section.title}
-            onDismiss={() => setRatingCardOpen(false)}
+            onDismiss={() => onToggleRatingCard?.()}
+            onSubmitted={() => setHasReviewed(true)}
           />
         </div>
       )}
