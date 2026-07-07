@@ -9,6 +9,7 @@ import { CartProvider } from "@/contexts/CartContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import NotificationToast from "@/components/ui/NotificationToast";
 import { SessionProvider } from "@/providers/SessionProvider";
+import OnboardingGate from "@/components/onboarding/OnboardingGate";
 
 const hankenGrotesk = Hanken_Grotesk({
   variable: "--font-hanken-grotesk",
@@ -51,6 +52,7 @@ export default async function RootLayout({
                   {children}
                 </SiteShell>
                 <NotificationToast />
+                <OnboardingGate />
               </NotificationProvider>
             </CartProvider>
           </QueryProvider>

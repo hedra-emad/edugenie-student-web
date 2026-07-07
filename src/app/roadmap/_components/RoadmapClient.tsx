@@ -64,7 +64,12 @@ export default function RoadmapClient({ firstName = "" }: { firstName?: string }
   const [phase, setPhase] = useState<Phase>("intake");
   const [roadmap, setRoadmap] = useState<Roadmap | null>(null);
   const [error, setError] = useState("");
+  // Per-roadmap AI budget (fixed 30-day window).
   const [remaining, setRemaining] = useState<number | null>(null);
+  const [resetsAt, setResetsAt] = useState<string | null>(null);
+  const [aiMax, setAiMax] = useState(3);
+  // Confirmation before an AI generation/regeneration (which spends an attempt).
+  const [confirmBuild, setConfirmBuild] = useState(false);
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState("");
 
@@ -87,17 +92,29 @@ export default function RoadmapClient({ firstName = "" }: { firstName?: string }
   // from a course link (or a page reload) shows the saved plan, not the wizard.
   useEffect(() => {
     getRoadmapQuota()
-      .then(setRemaining)
+      .then((quota) => {
+        setRemaining(quota.remaining);
+        setResetsAt(quota.resetsAt);
+        setAiMax(quota.max);
+      })
       .catch(() => setRemaining(0));
     getActiveRoadmap()
       .then((r) => {
         if (r) {
           setRoadmap(r);
+          syncBudget(r);
           setPhase("result");
         }
       })
       .catch(() => {});
   }, []);
+
+  // Mirror a roadmap's own AI budget into the header/gate state.
+  const syncBudget = (r: Roadmap) => {
+    if (typeof r.aiRemaining === "number") setRemaining(r.aiRemaining);
+    if (r.aiResetsAt !== undefined) setResetsAt(r.aiResetsAt ?? null);
+    if (typeof r.aiMax === "number") setAiMax(r.aiMax);
+  };
 
   // Refresh per-item ownership whenever the roadmap's items change (build,
   // rehydrate, save) — also picks up newly-owned items after returning from a
@@ -122,6 +139,19 @@ export default function RoadmapClient({ firstName = "" }: { firstName?: string }
   }, [courseIdsKey]);
 
   const left = remaining ?? 0;
+  const resetDateLabel = resetsAt
+    ? new Date(resetsAt).toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : null;
+  // AI generation/regeneration spends an attempt → confirm first. Manual edits
+  // and saving never come through here, so they stay free & unconfirmed.
+  const confirmAndBuild = () => {
+    setConfirmBuild(false);
+    void build();
+  };
   const canBuild =
     phase !== "building" &&
     left > 0 &&
@@ -150,15 +180,16 @@ export default function RoadmapClient({ firstName = "" }: { firstName?: string }
         notes: specifics.trim() || undefined,
       });
       setRoadmap(r);
-      if (typeof r.generationsRemaining === "number") {
-        setRemaining(r.generationsRemaining);
-      }
+      syncBudget(r);
       setPhase("result");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't build your roadmap.");
       setPhase("error");
       getRoadmapQuota()
-        .then(setRemaining)
+        .then((quota) => {
+          setRemaining(quota.remaining);
+          setResetsAt(quota.resetsAt);
+        })
         .catch(() => {});
     }
   };
@@ -291,6 +322,14 @@ export default function RoadmapClient({ firstName = "" }: { firstName?: string }
     setSavingPlan(true);
     try {
       await saveRoadmap(roadmap.id);
+      // Saving frees the active slot — the next build is a NEW roadmap with a
+      // fresh AI budget. Refresh so the intake reflects that.
+      getRoadmapQuota()
+        .then((quota) => {
+          setRemaining(quota.remaining);
+          setResetsAt(quota.resetsAt);
+        })
+        .catch(() => {});
       return true;
     } catch (e) {
       setEditError(e instanceof Error ? e.message : "Couldn't save the roadmap.");
@@ -343,8 +382,23 @@ export default function RoadmapClient({ firstName = "" }: { firstName?: string }
           </p>
         </div>
         {remaining !== null && (
-          <span className="flex-shrink-0 rounded-full bg-violet-50 px-3 py-1 text-[11.5px] font-semibold text-[#3B1892]">
-            {left} of 3 left this month
+          <span
+            className={`flex-shrink-0 rounded-full px-3 py-1 text-[11.5px] font-semibold ${
+              left > 0
+                ? "bg-violet-50 text-[#3B1892]"
+                : "bg-amber-50 text-amber-700"
+            }`}
+            title={
+              left <= 0 && resetDateLabel
+                ? `AI attempts reset on ${resetDateLabel}`
+                : undefined
+            }
+          >
+            {left > 0
+              ? `${left} of ${aiMax} AI generations left`
+              : resetDateLabel
+                ? `No AI attempts · resets ${resetDateLabel}`
+                : "No AI attempts left"}
           </span>
         )}
       </div>
@@ -355,6 +409,37 @@ export default function RoadmapClient({ firstName = "" }: { firstName?: string }
           onClose={() => setAddToMilestone(null)}
           onPick={(item) => addItemToMilestone(addToMilestone, item)}
         />
+      )}
+
+      {/* AI-spend confirmation (generation/regeneration costs 1 attempt) */}
+      {confirmBuild && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setConfirmBuild(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="confirm-build-title"
+        >
+          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <p id="confirm-build-title" className="text-[15px] font-bold text-slate-900">
+              Use 1 AI generation?
+            </p>
+            <p className="mt-1.5 text-[13px] leading-relaxed text-slate-500">
+              This will use <span className="font-semibold text-slate-700">1 of your {aiMax}</span>{" "}
+              AI generations for this roadmap. You have{" "}
+              <span className="font-semibold text-slate-700">{left}</span> left. Manual
+              edits are always free.
+            </p>
+            <div className="mt-4 flex flex-col gap-2">
+              <Button fullWidth onClick={confirmAndBuild} leftIcon={<RouteIcon className="h-4 w-4" />}>
+                Continue
+              </Button>
+              <Button variant="ghost" fullWidth size="sm" onClick={() => setConfirmBuild(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Start-new confirmation (the active draft is unsaved) */}
@@ -414,6 +499,7 @@ export default function RoadmapClient({ firstName = "" }: { firstName?: string }
               editing={editing}
               editMs={editMs}
               remaining={left}
+              resetDateLabel={resetDateLabel}
               onMoveMilestone={moveMilestone}
               onRemoveMilestone={removeMilestone}
               onMoveItem={moveItem}
@@ -579,7 +665,7 @@ export default function RoadmapClient({ firstName = "" }: { firstName?: string }
             )}
             <Button
               fullWidth
-              onClick={build}
+              onClick={() => setConfirmBuild(true)}
               disabled={!canBuild}
               leftIcon={<RouteIcon className="h-4 w-4" />}
             >
@@ -587,7 +673,7 @@ export default function RoadmapClient({ firstName = "" }: { firstName?: string }
             </Button>
             <p className="mt-2 text-center text-[11.5px] text-slate-400">
               {left <= 0
-                ? "You've used all 3 roadmap builds this month."
+                ? `No AI attempts left${resetDateLabel ? ` — they reset on ${resetDateLabel}` : ""}.`
                 : "Pick your goal, level, time, and timeline to continue."}
             </p>
           </div>
@@ -605,6 +691,7 @@ interface ResultProps {
   editing: boolean;
   editMs: RoadmapMilestone[];
   remaining: number;
+  resetDateLabel: string | null;
   onMoveMilestone: (mi: number, dir: -1 | 1) => void;
   onRemoveMilestone: (mi: number) => void;
   onMoveItem: (mi: number, ii: number, dir: -1 | 1) => void;
@@ -618,6 +705,7 @@ function RoadmapResult({
   editing,
   editMs,
   remaining,
+  resetDateLabel,
   onMoveMilestone,
   onRemoveMilestone,
   onMoveItem,
@@ -791,7 +879,9 @@ function RoadmapResult({
       )}
       {remaining <= 0 && !editing && (
         <p className="text-center text-[11.5px] text-slate-400">
-          No rebuilds left this month — you can still edit this plan.
+          No AI attempts left
+          {resetDateLabel ? ` — they reset on ${resetDateLabel}` : ""}. You can
+          still edit this plan for free.
         </p>
       )}
     </div>

@@ -18,9 +18,11 @@ interface SiteShellProps {
 export default function SiteShell({ header, children }: SiteShellProps) {
   const pathname = usePathname();
   const isPlayer = pathname.startsWith("/learn/") || pathname === "/learn";
+  // Onboarding is a focused, full-screen flow (no nav to escape the gate).
+  const isOnboarding = pathname === "/onboarding";
 
-  if (isPlayer) {
-    // Player pages manage their own layout — skip the site shell entirely.
+  if (isPlayer || isOnboarding) {
+    // These pages manage their own layout — skip the site shell entirely.
     return <>{children}</>;
   }
 
