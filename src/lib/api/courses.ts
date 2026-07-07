@@ -15,7 +15,7 @@ export function buildCoursesQuery(filters: CourseFilters): string {
   const params = new URLSearchParams();
   // console.log(filters.page)
   if (filters.search) params.set("search", filters.search);
-  if (filters.category) params.set("categoryId", filters.category);
+  if (filters.category) params.set("category", filters.category);
   if (filters.level) params.set("level", filters.level);
   if (filters.minPrice !== "") params.set("minPrice", String(filters.minPrice));
   if (filters.maxPrice !== "") params.set("maxPrice", String(filters.maxPrice));
