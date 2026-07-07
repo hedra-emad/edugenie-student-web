@@ -16,6 +16,31 @@ import TranscriptPanel from "./TranscriptPanel";
 import TabBar from "./TabBar";
 import AiTutorPanel from "./AiTutorPanel";
 import PracticeQuizModal from "@/components/ai/PracticeQuizModal";
+import SectionRatingCard from "./SectionRatingCard";
+import { fetchSectionReviewStatus } from "@/lib/api/reviews";
+
+// Suppresses the contextual rating prompt for a section once dismissed, for
+// the rest of this browser session — a fresh visit (new tab/session) can
+// still see it again if the section remains unreviewed.
+const RATING_DISMISSED_KEY_PREFIX = "eg:rating-dismissed:";
+
+function isRatingDismissedThisSession(sectionId: string): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return sessionStorage.getItem(RATING_DISMISSED_KEY_PREFIX + sectionId) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markRatingDismissedThisSession(sectionId: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(RATING_DISMISSED_KEY_PREFIX + sectionId, "1");
+  } catch {
+    // Storage unavailable (private mode, quota) — worst case the prompt can reappear.
+  }
+}
 
 interface Props {
   course: PlayerCourse;
@@ -84,6 +109,76 @@ export default function PlayerLayout({
     return initial;
   });
 
+  // ── Contextual "rate this section" prompt ─────────────────────────────────
+  // Sections confirmed reviewed already this session — skip the status fetch
+  // for them entirely on any later completion event.
+  const reviewedSectionIdsRef = useRef<Set<string>>(new Set());
+  const [ratingPrompt, setRatingPrompt] = useState<{
+    sectionId: string;
+    sectionTitle: string;
+  } | null>(null);
+
+  // The section a user manually opened a rating card for via the sidebar's
+  // star icon (SectionAccordion). Lifted up here — shared with the auto
+  // prompt below — so the two triggers can never both have a *live*
+  // SectionRatingCard mounted for the same section at once (each instance
+  // owns its own rating/comment draft, so two mounted at once for the same
+  // section would be a lost-update race even though the backend itself
+  // can't end up with duplicate review documents).
+  const [manualRatingSectionId, setManualRatingSectionId] = useState<
+    string | null
+  >(null);
+
+  // Bumped whenever a rating is saved (either trigger), so any
+  // SectionAccordion instance for that section can flip its star icon to the
+  // "reviewed" state immediately, without a page reload.
+  const [justReviewedSectionId, setJustReviewedSectionId] = useState<
+    string | null
+  >(null);
+
+  const toggleManualRating = useCallback((sectionId: string) => {
+    setManualRatingSectionId((prev) => {
+      if (prev === sectionId) return null; // toggle closed
+      // Manual open takes precedence over an auto-prompt for the same
+      // section, so only one card is ever mounted for it.
+      setRatingPrompt((p) => (p?.sectionId === sectionId ? null : p));
+      return sectionId;
+    });
+  }, []);
+
+  const maybeShowRatingPrompt = useCallback(
+    (sectionId: string, sectionTitle: string) => {
+      if (manualRatingSectionId === sectionId) return; // already open manually
+      if (isRatingDismissedThisSession(sectionId)) return;
+      if (reviewedSectionIdsRef.current.has(sectionId)) return;
+
+      fetchSectionReviewStatus(sectionId)
+        .then((status) => {
+          if (status.hasReviewed) {
+            reviewedSectionIdsRef.current.add(sectionId);
+            return;
+          }
+          setRatingPrompt({ sectionId, sectionTitle });
+        })
+        .catch(() => {
+          // Network hiccup — not worth surfacing an error for an opportunistic prompt.
+        });
+    },
+    [manualRatingSectionId],
+  );
+
+  const dismissRatingPrompt = useCallback(() => {
+    setRatingPrompt((prev) => {
+      if (prev) markRatingDismissedThisSession(prev.sectionId);
+      return null;
+    });
+  }, []);
+
+  const handleRatingSubmitted = useCallback((sectionId: string) => {
+    reviewedSectionIdsRef.current.add(sectionId);
+    setJustReviewedSectionId(sectionId);
+  }, []);
+
 const handleProgressResponse = useCallback(
   (res: ProgressResponse) => {
     // Mark lesson as completed
@@ -98,6 +193,17 @@ const handleProgressResponse = useCallback(
       queryClient.invalidateQueries({
         queryKey: ["certificates"],
       });
+    }
+
+    // A section just finished — offer the lightweight rating prompt for it
+    // (only for owned sections; skipped entirely if already reviewed/dismissed).
+    if (res.sectionCompleted) {
+      const finishedSection = course.sections.find((s) =>
+        s.lessons.some((l) => l.id === activeLesson.id),
+      );
+      if (finishedSection?.isOwned) {
+        maybeShowRatingPrompt(finishedSection.id, finishedSection.title);
+      }
     }
 
     // Redirect to section quiz only once
@@ -116,8 +222,10 @@ const handleProgressResponse = useCallback(
   [
     activeLesson.id,
     course.id,
+    course.sections,
     router,
     queryClient,
+    maybeShowRatingPrompt,
   ]
 
 );
@@ -305,6 +413,19 @@ const handleProgressResponse = useCallback(
               />
             </div>
 
+            {/* Contextual "rate this section" prompt — non-blocking, dismissible */}
+            {ratingPrompt && (
+              <div className="shrink-0">
+                <SectionRatingCard
+                  courseId={course.id}
+                  sectionId={ratingPrompt.sectionId}
+                  sectionTitle={ratingPrompt.sectionTitle}
+                  onDismiss={dismissRatingPrompt}
+                  onSubmitted={() => handleRatingSubmitted(ratingPrompt.sectionId)}
+                />
+              </div>
+            )}
+
             {/* TabBar — fills remaining left column height */}
             <div className="flex-1 overflow-hidden bg-white rounded-lg">
               <TabBar
@@ -361,6 +482,9 @@ const handleProgressResponse = useCallback(
                   completedLessons={completedLessons}
                   onLessonClick={handleLessonClick}
                   onQuizSection={openQuiz}
+                  manualRatingSectionId={manualRatingSectionId}
+                  onToggleRating={toggleManualRating}
+                  justReviewedSectionId={justReviewedSectionId}
                 />
               )}
               {rightTab === "ai" && (
@@ -434,6 +558,9 @@ const handleProgressResponse = useCallback(
               completedLessons={completedLessons}
               onLessonClick={handleLessonClick}
               onQuizSection={openQuiz}
+              manualRatingSectionId={manualRatingSectionId}
+              onToggleRating={toggleManualRating}
+              justReviewedSectionId={justReviewedSectionId}
             />
           </div>
         </div>

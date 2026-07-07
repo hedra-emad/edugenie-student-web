@@ -10,6 +10,11 @@ interface Props {
   completedLessons?: Set<string>;
   onLessonClick: (lesson: PlayerLesson) => void;
   onQuizSection: (sectionId: string, label: string) => void;
+  /** Section id whose rating card is currently open via the manual star trigger, if any. */
+  manualRatingSectionId?: string | null;
+  onToggleRating?: (sectionId: string) => void;
+  /** Section id that was just successfully rated — lets the icon update without a reload. */
+  justReviewedSectionId?: string | null;
 }
 
 /** Skeleton for the sidebar while loading */
@@ -45,6 +50,9 @@ export default function LessonSidebar({
   completedLessons,
   onLessonClick,
   onQuizSection,
+  manualRatingSectionId,
+  onToggleRating,
+  justReviewedSectionId,
 }: Props) {
   // Scope-aware counts — only sections the student owns count toward progress.
   const ownedSections = course.sections.filter((s) => s.isOwned);
@@ -99,6 +107,9 @@ export default function LessonSidebar({
             completedLessons={completedLessons}
             onLessonClick={onLessonClick}
             onQuizSection={onQuizSection}
+            ratingCardOpen={manualRatingSectionId === section.id}
+            onToggleRatingCard={() => onToggleRating?.(section.id)}
+            justReviewed={justReviewedSectionId === section.id}
           />
         ))}
       </div>
