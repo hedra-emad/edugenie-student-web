@@ -1,18 +1,6 @@
-"use client";
-import {
-  Zap,
-  Atom,
-  Code2,
-  Palette,
-  LucideIcon,
-  Flame,
-  Sparkles,
-  Trophy,
-} from "lucide-react";
-import { useState } from "react";
+import { LucideIcon, Flame, Sparkles, Trophy } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
-import Button from "@/components/ui/Button";
+import SearchBar from "@/components/sections/SearchBar";
 
 // ─── Types ────
 interface TrendingTag {
@@ -20,15 +8,15 @@ interface TrendingTag {
   href: string;
 }
 
-interface MiniCourse {
-  // emoji: string;
+export interface MiniCourse {
+  id: string;
   icon: LucideIcon;
   gradient: string;
   title: string;
   instructor: string;
   lessons: number;
   rating: number;
-  badge: "hot" | "new" | "top";
+  badge: "new";
 }
 
 // ─── Static Data
@@ -38,49 +26,6 @@ const trendingTags: TrendingTag[] = [
   { label: "Python", href: "/courses?q=python" },
   { label: "UI/UX Design", href: "/courses?q=uiux" },
   { label: "Machine Learning", href: "/courses?q=ml" },
-];
-
-const miniCourses: MiniCourse[] = [
-  {
-    // emoji: "⚡",
-    icon: Code2,
-    gradient: "from-violet-800 to-blue-700",
-    title: "Full-Stack NestJS + TypeScript",
-    instructor: "Kareem Hassan",
-    lessons: 24,
-    rating: 4.9,
-    badge: "hot",
-  },
-  {
-    // emoji: "⚛️",
-    icon: Atom,
-    gradient: "from-cyan-800 to-sky-600",
-    title: "React 19 & Next.js 15 Mastery",
-    instructor: "Aliaa Samir",
-    lessons: 32,
-    rating: 4.8,
-    badge: "new",
-  },
-  {
-    // emoji: "🐍",
-    icon: Zap,
-    gradient: "from-emerald-900 to-emerald-600",
-    title: "Python for Data Science & AI",
-    instructor: "Nada Fouad",
-    lessons: 28,
-    rating: 4.9,
-    badge: "top",
-  },
-  {
-    // emoji: "🎨",
-    icon: Palette,
-    gradient: "from-purple-800 to-pink-600",
-    title: "UI/UX Design with Figma 2025",
-    instructor: "Hedra Wagdy",
-    lessons: 20,
-    rating: 4.7,
-    badge: "new",
-  },
 ];
 
 const stats = [
@@ -117,7 +62,7 @@ function MiniCourseCard({ course }: { course: MiniCourse }) {
   const BadgeIcon = badge.icon;
   return (
     <Link
-      href="/courses"
+      href={`/courses/${course.id}`}
       className="
         flex items-center gap-3 px-4 py-3
         bg-white/[0.06] hover:bg-white/[0.10]
@@ -166,61 +111,12 @@ function MiniCourseCard({ course }: { course: MiniCourse }) {
   );
 }
 
-function SearchBar() {
-  const [query, setQuery] = useState("");
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (query.trim()) {
-      window.location.href = `/courses?q=${encodeURIComponent(query.trim())}`;
-    }
-  };
-
-  return (
-    <form
-      onSubmit={handleSearch}
-      className="
-        flex items-center
-        bg-white rounded-2xl shadow-2xl shadow-black/30
-        p-1.5 pl-3 sm:p-2 sm:pl-5
-        w-full
-      "
-    >
-      {/* Search Icon */}
-      <svg
-        className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400 flex-shrink-0"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        strokeWidth={2}
-      >
-        <circle cx="11" cy="11" r="8" />
-        <path d="m21 21-4.35-4.35" />
-      </svg>
-
-      {/* Input */}
-      <input
-        type="text"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="What do you want to learn today?"
-        className="
-          flex-1 min-w-0 text-slate-800 text-[14px] sm:text-[15px] bg-transparent outline-none
-          placeholder:text-slate-400 font-medium px-2 sm:px-3
-        "
-      />
-
-      {/* Button */}
-      <Button type="submit" className="flex-shrink-0">
-        <span className="sm:hidden">Search</span>
-        <span className="hidden sm:inline">Search Courses</span>
-      </Button>
-    </form>
-  );
-}
-
 // ─── Main Component
-export default function HeroBanner() {
+export default function HeroBanner({
+  miniCourses,
+}: {
+  miniCourses: MiniCourse[];
+}) {
   return (
     <section
       className="
@@ -236,15 +132,16 @@ export default function HeroBanner() {
         className="
           pointer-events-none absolute -top-32 -right-32 w-[560px] h-[560px]
           rounded-full
-          bg-[radial-gradient(circle,rgba(109,40,217,0.28)_0%,transparent_70%)]
-        "
+          
+          "
+        // #3B1892
       />
       <div
         aria-hidden
         className="
           pointer-events-none absolute bottom-0 left-[20%] w-[360px] h-[360px]
           rounded-full
-          bg-[radial-gradient(circle,rgba(37,99,235,0.18)_0%,transparent_70%)]
+        
         "
       />
       {/* Subtle grid texture */}

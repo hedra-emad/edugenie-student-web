@@ -316,13 +316,13 @@ export default function WhyChooseUs() {
         <div
           className="
             mt-14 rounded-2xl overflow-hidden
-            bg-gradient-to-r from-violet-600 via-violet-700 to-blue-700
+            bg-[#3B1892]
             p-px
           "
         >
           <div
             className="
-              rounded-[15px] bg-gradient-to-r from-violet-600/20 via-[#0d1117] to-blue-600/20
+              rounded-[15px] bg-[#3B1892]
               px-6 py-8 sm:px-10 sm:py-10
               flex flex-col sm:flex-row items-center justify-between gap-6
             "
