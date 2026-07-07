@@ -3,8 +3,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Star } from "lucide-react";
 import type { PlayerSection, PlayerLesson } from "@/types/player";
 import LessonItem from "./LessonItem";
+import SectionRatingCard from "./SectionRatingCard";
 
 interface Props {
   section: PlayerSection;
@@ -61,6 +63,7 @@ export default function SectionAccordion({
   onQuizSection,
 }: Props) {
   const [open, setOpen] = useState(defaultOpen);
+  const [ratingCardOpen, setRatingCardOpen] = useState(false);
 
   // Lock state (backend `applyStudentAccess`).
   const notPurchased = section.lockReason === "not_purchased" || !section.isOwned;
@@ -74,49 +77,86 @@ export default function SectionAccordion({
   return (
     <div className="border border-slate-200 rounded-lg overflow-hidden">
       {/* Section header */}
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className={`w-full flex items-start gap-3 px-4 py-3 text-left bg-slate-50
-                   border-b border-slate-200 transition-colors focus:outline-none
-                   focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#3B1892]
+      <div
+        className={`w-full flex items-start gap-2 px-4 py-3 bg-slate-50
+                   border-b border-slate-200 transition-colors
                    ${locked ? "opacity-70" : ""}`}
-        aria-expanded={open}
       >
-        <div className="flex-1 min-w-0 text-left flex flex-col gap-2">
-          <div className="flex items-start gap-1.5">
-            <p className="text-[13px] font-bold text-slate-800 leading-snug">
-              {section.title}
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="flex-1 min-w-0 flex items-start gap-3 text-left focus:outline-none
+                     focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#3B1892] rounded"
+          aria-expanded={open}
+        >
+          <div className="flex-1 min-w-0 text-left flex flex-col gap-2">
+            <div className="flex items-start gap-1.5">
+              <p className="text-[13px] font-bold text-slate-800 leading-snug">
+                {section.title}
+              </p>
+              {locked && <LockIcon />}
+            </div>
+            <p className="text-[11px] text-slate-400">
+              {section.lessons.length} lessons
+              {section.lessons.length > 0 &&
+                ` · ${formatSectionDuration(section.lessons)}`}
+              {section.isOwned &&
+                !locked &&
+                section.lessons.length > 0 &&
+                ` · ${completedInSection}/${section.lessons.length} done`}
             </p>
-            {locked && <LockIcon />}
+            {/* Status chip */}
+            {notPurchased ? (
+              <span className="self-start inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
+                Not purchased
+              </span>
+            ) : progressLocked ? (
+              <span className="self-start inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                Locked · pass previous quiz
+              </span>
+            ) : section.hasQuiz ? (
+              <span className="self-start inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-[#3B1892]">
+                Quiz gate
+              </span>
+            ) : null}
           </div>
-          <p className="text-[11px] text-slate-400">
-            {section.lessons.length} lessons
-            {section.lessons.length > 0 &&
-              ` · ${formatSectionDuration(section.lessons)}`}
-            {section.isOwned &&
-              !locked &&
-              section.lessons.length > 0 &&
-              ` · ${completedInSection}/${section.lessons.length} done`}
-          </p>
-          {/* Status chip */}
-          {notPurchased ? (
-            <span className="self-start inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
-              Not purchased
-            </span>
-          ) : progressLocked ? (
-            <span className="self-start inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
-              Locked · pass previous quiz
-            </span>
-          ) : section.hasQuiz ? (
-            <span className="self-start inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-[#3B1892]">
-              Quiz gate
-            </span>
-          ) : null}
-        </div>
+        </button>
 
-        <ChevronIcon open={open} />
-      </button>
+        <div className="flex items-center gap-0.5 flex-shrink-0 mt-0.5">
+          {section.isOwned && !locked && (
+            <button
+              type="button"
+              onClick={() => setRatingCardOpen((v) => !v)}
+              aria-label="Rate this section"
+              title="Rate this section"
+              className="p-1 rounded-md text-slate-400 hover:text-amber-500 hover:bg-amber-100/60 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3B1892]"
+            >
+              <Star className="w-3.5 h-3.5" />
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-label={open ? "Collapse section" : "Expand section"}
+            aria-expanded={open}
+            className="p-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3B1892] rounded"
+          >
+            <ChevronIcon open={open} />
+          </button>
+        </div>
+      </div>
+
+      {/* Manual "rate this section" fallback — independent of the auto-trigger */}
+      {ratingCardOpen && (
+        <div className="px-3 py-3 border-b border-slate-100 bg-white">
+          <SectionRatingCard
+            courseId={courseId}
+            sectionId={section.id}
+            sectionTitle={section.title}
+            onDismiss={() => setRatingCardOpen(false)}
+          />
+        </div>
+      )}
 
       {/* Body */}
       {open && (

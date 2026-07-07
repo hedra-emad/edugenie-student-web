@@ -16,6 +16,31 @@ import TranscriptPanel from "./TranscriptPanel";
 import TabBar from "./TabBar";
 import AiTutorPanel from "./AiTutorPanel";
 import PracticeQuizModal from "@/components/ai/PracticeQuizModal";
+import SectionRatingCard from "./SectionRatingCard";
+import { fetchSectionReviewStatus } from "@/lib/api/reviews";
+
+// Suppresses the contextual rating prompt for a section once dismissed, for
+// the rest of this browser session — a fresh visit (new tab/session) can
+// still see it again if the section remains unreviewed.
+const RATING_DISMISSED_KEY_PREFIX = "eg:rating-dismissed:";
+
+function isRatingDismissedThisSession(sectionId: string): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return sessionStorage.getItem(RATING_DISMISSED_KEY_PREFIX + sectionId) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markRatingDismissedThisSession(sectionId: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(RATING_DISMISSED_KEY_PREFIX + sectionId, "1");
+  } catch {
+    // Storage unavailable (private mode, quota) — worst case the prompt can reappear.
+  }
+}
 
 interface Props {
   course: PlayerCourse;
@@ -84,6 +109,49 @@ export default function PlayerLayout({
     return initial;
   });
 
+  // ── Contextual "rate this section" prompt ─────────────────────────────────
+  // Sections confirmed reviewed already this session — skip the status fetch
+  // for them entirely on any later completion event.
+  const reviewedSectionIdsRef = useRef<Set<string>>(new Set());
+  const [ratingPrompt, setRatingPrompt] = useState<{
+    sectionId: string;
+    sectionTitle: string;
+  } | null>(null);
+
+  const maybeShowRatingPrompt = useCallback(
+    (sectionId: string, sectionTitle: string) => {
+      if (isRatingDismissedThisSession(sectionId)) return;
+      if (reviewedSectionIdsRef.current.has(sectionId)) return;
+
+      fetchSectionReviewStatus(sectionId)
+        .then((status) => {
+          if (status.hasReviewed) {
+            reviewedSectionIdsRef.current.add(sectionId);
+            return;
+          }
+          setRatingPrompt({ sectionId, sectionTitle });
+        })
+        .catch(() => {
+          // Network hiccup — not worth surfacing an error for an opportunistic prompt.
+        });
+    },
+    [],
+  );
+
+  const dismissRatingPrompt = useCallback(() => {
+    setRatingPrompt((prev) => {
+      if (prev) markRatingDismissedThisSession(prev.sectionId);
+      return null;
+    });
+  }, []);
+
+  const handleRatingSubmitted = useCallback(() => {
+    setRatingPrompt((prev) => {
+      if (prev) reviewedSectionIdsRef.current.add(prev.sectionId);
+      return prev;
+    });
+  }, []);
+
 const handleProgressResponse = useCallback(
   (res: ProgressResponse) => {
     // Mark lesson as completed
@@ -98,6 +166,17 @@ const handleProgressResponse = useCallback(
       queryClient.invalidateQueries({
         queryKey: ["certificates"],
       });
+    }
+
+    // A section just finished — offer the lightweight rating prompt for it
+    // (only for owned sections; skipped entirely if already reviewed/dismissed).
+    if (res.sectionCompleted) {
+      const finishedSection = course.sections.find((s) =>
+        s.lessons.some((l) => l.id === activeLesson.id),
+      );
+      if (finishedSection?.isOwned) {
+        maybeShowRatingPrompt(finishedSection.id, finishedSection.title);
+      }
     }
 
     // Redirect to section quiz only once
@@ -116,8 +195,10 @@ const handleProgressResponse = useCallback(
   [
     activeLesson.id,
     course.id,
+    course.sections,
     router,
     queryClient,
+    maybeShowRatingPrompt,
   ]
 
 );
@@ -243,6 +324,19 @@ const handleProgressResponse = useCallback(
                 }}
               />
             </div>
+
+            {/* Contextual "rate this section" prompt — non-blocking, dismissible */}
+            {ratingPrompt && (
+              <div className="shrink-0">
+                <SectionRatingCard
+                  courseId={course.id}
+                  sectionId={ratingPrompt.sectionId}
+                  sectionTitle={ratingPrompt.sectionTitle}
+                  onDismiss={dismissRatingPrompt}
+                  onSubmitted={handleRatingSubmitted}
+                />
+              </div>
+            )}
 
             {/* TabBar — fills remaining left column height */}
             <div className="flex-1 overflow-hidden bg-white rounded-lg">
