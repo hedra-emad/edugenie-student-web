@@ -24,13 +24,6 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
 
 const RATINGS = [4.5, 4.0, 3.5, 3.0];
 
-const DURATIONS: { value: number; label: string }[] = [
-  { value: 3, label: "Under 3 hours" },
-  { value: 6, label: "Under 6 hours" },
-  { value: 10, label: "Under 10 hours" },
-  { value: 20, label: "Under 20 hours" },
-];
-
 interface Props {
   filters: CourseFilters;
   categories: CategoryOption[];
@@ -43,10 +36,12 @@ interface Props {
 function FilterSelect<T extends string | number>({
   value,
   onChange,
+  ariaLabel,
   children,
 }: {
   value: T | "";
   onChange: (v: T | "") => void;
+  ariaLabel?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -54,6 +49,7 @@ function FilterSelect<T extends string | number>({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value as T | "")}
+        aria-label={ariaLabel}
         className="
           appearance-none w-full bg-white border border-slate-200
           text-slate-700 text-sm font-medium
@@ -80,7 +76,7 @@ export default function CoursesFilterBar({
   onFilterChange,
   onReset,
 }: Props) {
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [localSearch, setLocalSearch] = useState(filters.search || "");
 
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -93,7 +89,6 @@ export default function CoursesFilterBar({
     prevSearchRef.current = filters.search;
   }, [filters.search]);
 
-  // Cleanup عند الـ unmount
   useEffect(() => {
     return () => {
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
@@ -122,6 +117,7 @@ export default function CoursesFilterBar({
             value={localSearch}
             onChange={(e) => handleSearch(e.target.value)}
             placeholder="Search courses, topics, instructors…"
+            aria-label="Search courses, topics, instructors"
             className="
               w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200
               text-sm text-slate-700 placeholder:text-slate-400
@@ -138,6 +134,7 @@ export default function CoursesFilterBar({
           <FilterSelect
             value={filters.sort}
             onChange={(v) => onFilterChange({ sort: v as SortOption })}
+            ariaLabel="Sort courses"
           >
             {SORT_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
@@ -151,9 +148,11 @@ export default function CoursesFilterBar({
           type="button"
           variant="outline"
           size="sm"
-          onClick={() => setMobileOpen((p) => !p)}
-          className="flex-shrink-0"
+          onClick={() => setFiltersOpen((p) => !p)}
+          className="flex-shrink-0 relative"
           leftIcon={<SlidersHorizontal size={15} />}
+          aria-expanded={filtersOpen}
+          aria-controls="courses-filters-panel"
         >
           <span className="hidden sm:inline">Filters</span>
           {activeFilterCount > 0 && (
@@ -177,16 +176,18 @@ export default function CoursesFilterBar({
         )}
       </div>
 
-      {/* EXPANDABLE FILTERS */}
+      {/* EXPANDABLE FILTERS — يتحكم فيها زرار Filters بس، في كل المقاسات */}
       <div
-        className={`transition-all duration-300 overflow-hidden
-          ${mobileOpen ? "max-h-[600px]" : "max-h-0"}
-          lg:max-h-[600px]`}
+        id="courses-filters-panel"
+        className={`transition-all duration-300 overflow-hidden ${
+          filtersOpen ? "max-h-[600px]" : "max-h-0"
+        }`}
       >
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 p-4">
           <FilterSelect
             value={filters.category}
             onChange={(v) => onFilterChange({ category: v })}
+            ariaLabel="Filter by category"
           >
             <option key="all-categories" value="">All Categories</option>
             {categories.map((c) => (
@@ -204,6 +205,7 @@ export default function CoursesFilterBar({
           <FilterSelect
             value={filters.level}
             onChange={(v) => onFilterChange({ level: v as CourseLevel | "" })}
+            ariaLabel="Filter by level"
           >
             {LEVELS.map((l) => (
               <option key={l.value} value={l.value}>
@@ -213,13 +215,11 @@ export default function CoursesFilterBar({
           </FilterSelect>
 
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
-              
-            </span>
             <input
               type="number"
               min={0}
               placeholder="Min price"
+              aria-label="Minimum price"
               value={filters.minPrice}
               onChange={(e) =>
                 onFilterChange({
@@ -227,7 +227,7 @@ export default function CoursesFilterBar({
                 })
               }
               className="
-                w-full pl-7 pr-3 py-2.5 rounded-xl border border-slate-200
+                w-full pl-3 pr-3 py-2.5 rounded-xl border border-slate-200
                 text-sm text-slate-700 placeholder:text-slate-400
                 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-[#3B1892]
                 transition-colors duration-150 hover:border-[#3B1892]
@@ -236,13 +236,11 @@ export default function CoursesFilterBar({
           </div>
 
           <div className="relative">
-            {/* <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
-              
-            </span> */}
             <input
               type="number"
               min={0}
               placeholder="Max price"
+              aria-label="Maximum price"
               value={filters.maxPrice}
               onChange={(e) =>
                 onFilterChange({
@@ -250,7 +248,7 @@ export default function CoursesFilterBar({
                 })
               }
               className="
-                w-full pl-7 pr-3 py-2.5 rounded-xl border border-slate-200
+                w-full pl-3 pr-3 py-2.5 rounded-xl border border-slate-200
                 text-sm text-slate-700 placeholder:text-slate-400
                 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-[#3B1892]
                 transition-colors duration-150 hover:border-[#3B1892]
@@ -263,6 +261,7 @@ export default function CoursesFilterBar({
             onChange={(v) =>
               onFilterChange({ minRating: v === "" ? "" : Number(v) })
             }
+            ariaLabel="Filter by minimum rating"
           >
             <option key="any-rating" value="">Any Rating</option>
             {RATINGS.map((r) => (
@@ -272,24 +271,11 @@ export default function CoursesFilterBar({
             ))}
           </FilterSelect>
 
-          <FilterSelect
-            value={filters.maxDuration}
-            onChange={(v) =>
-              onFilterChange({ maxDuration: v === "" ? "" : Number(v) })
-            }
-          >
-            <option key="any-duration" value="">Any Duration</option>
-            {DURATIONS.map((d) => (
-              <option key={d.value} value={d.value}>
-                {d.label}
-              </option>
-            ))}
-          </FilterSelect>
-
           <div className="sm:hidden">
             <FilterSelect
               value={filters.sort}
               onChange={(v) => onFilterChange({ sort: v as SortOption })}
+              ariaLabel="Sort courses"
             >
               {SORT_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>
@@ -333,12 +319,6 @@ export default function CoursesFilterBar({
               <Chip
                 label={`★ ${filters.minRating}+`}
                 onRemove={() => onFilterChange({ minRating: "" })}
-              />
-            )}
-            {filters.maxDuration !== "" && (
-              <Chip
-                label={`< ${filters.maxDuration}h`}
-                onRemove={() => onFilterChange({ maxDuration: "" })}
               />
             )}
           </div>
