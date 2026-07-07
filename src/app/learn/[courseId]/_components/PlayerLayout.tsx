@@ -1,8 +1,8 @@
 "use client";
 // _components/PlayerLayout.tsx
 
-import { useCallback, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import type { PlayerCourse, PlayerLesson, ProgressResponse } from "@/types/player";
@@ -159,6 +159,67 @@ const handleProgressResponse = useCallback(
     videoPlayerRef.current?.seekTo(seconds);
   }, []);
 
+  // ── Deep-link sync (chat citations / search chips) ────────────────────────
+  // Links like `/learn/:courseId?lesson=<id>&t=<seconds>` soft-navigate while
+  // the player is already mounted — only the query changes, nothing remounts,
+  // so the useState-seeded lesson/seek never update on their own. React to the
+  // query here. Read the current lesson via a ref so this fires ONLY on a real
+  // URL change (a sidebar click mutates activeLesson without touching the URL
+  // and must not be reverted back to the stale `?lesson`).
+  const searchParams = useSearchParams();
+  const activeLessonIdRef = useRef(activeLesson.id);
+  useEffect(() => {
+    activeLessonIdRef.current = activeLesson.id;
+  }, [activeLesson.id]);
+  useEffect(() => {
+    const lessonParam = searchParams.get("lesson");
+    const tParam = searchParams.get("t");
+    const seconds =
+      tParam != null && tParam !== ""
+        ? Math.max(0, Math.floor(Number(tParam)))
+        : NaN;
+
+    if (lessonParam && lessonParam !== activeLessonIdRef.current) {
+      const target = findLesson(lessonParam);
+      if (target && target.state !== "locked") {
+        // Different lesson: the <video> src changes and reloads, so carry the
+        // seek via watchedDuration — VideoPlayer seeks to it on loadedmetadata
+        // (an imperative seekTo here would race the reload and be discarded).
+        setActiveLesson(
+          Number.isFinite(seconds)
+            ? { ...target, watchedDuration: seconds }
+            : target,
+        );
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+      return;
+    }
+
+    // Same lesson already loaded: loadedmetadata won't refire, so seek now.
+    if (Number.isFinite(seconds)) {
+      videoPlayerRef.current?.seekTo(seconds);
+    }
+  }, [searchParams, findLesson]);
+
+  // Tutor citation click ("Jump to <lesson> — m:ss"): seek the player IN PLACE —
+  // never navigate (a route change reloads + wipes the chat). Same lesson →
+  // imperative seek; a different (unlocked) lesson → swap the active lesson and
+  // carry the seek via watchedDuration. The chat panel stays mounted throughout.
+  const handleCite = useCallback(
+    (lessonId: string, seconds: number) => {
+      const secs = Math.max(0, Math.floor(seconds));
+      if (lessonId === activeLessonIdRef.current) {
+        videoPlayerRef.current?.seekTo(secs);
+      } else {
+        const target = findLesson(lessonId);
+        if (!target || target.state === "locked") return;
+        setActiveLesson({ ...target, watchedDuration: secs });
+      }
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    },
+    [findLesson],
+  );
+
   // ── Derived ───────────────────────────────────────────────────────────────
   // Scope-aware: only owned sections count toward the header progress.
   const totalLessons = course.sections.reduce(
@@ -311,6 +372,9 @@ const handleProgressResponse = useCallback(
                     courseTitle={course.title}
                     lessonId={activeLesson.id}
                     lessonTitle={activeLesson.title}
+                    sectionId={activeSection?.id}
+                    fullCourseOwned={course.sections.every((s) => s.isOwned)}
+                    onCite={handleCite}
                   />
                 )
               )}
