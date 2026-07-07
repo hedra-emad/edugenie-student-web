@@ -32,6 +32,17 @@ export interface Roadmap {
   purchasedAt?: string | null;
   createdAt?: string | null;
   generationsRemaining?: number;
+  // Per-roadmap AI budget (fixed 30-day window).
+  aiRemaining?: number;
+  aiAttemptsUsed?: number;
+  aiMax?: number;
+  aiResetsAt?: string | null;
+}
+
+export interface RoadmapQuota {
+  remaining: number;
+  resetsAt: string | null;
+  max: number;
 }
 
 /** Item shape the edit endpoint accepts (ids + type only; server re-prices). */
@@ -65,16 +76,21 @@ async function readError(res: Response): Promise<string> {
   return "Something went wrong. Please try again.";
 }
 
-export async function getRoadmapQuota(): Promise<number> {
+/** AI attempts left for the user's ACTIVE roadmap (+ reset date). */
+export async function getRoadmapQuota(): Promise<RoadmapQuota> {
   try {
     const res = await fetch(`${PROXY}/ai/roadmap/quota`, {
       credentials: "include",
     });
-    if (!res.ok) return 0;
-    const d = (await res.json()) as { remaining?: number };
-    return typeof d.remaining === "number" ? d.remaining : 0;
+    if (!res.ok) return { remaining: 0, resetsAt: null, max: 3 };
+    const d = (await res.json()) as Partial<RoadmapQuota>;
+    return {
+      remaining: typeof d.remaining === "number" ? d.remaining : 0,
+      resetsAt: d.resetsAt ?? null,
+      max: typeof d.max === "number" ? d.max : 3,
+    };
   } catch {
-    return 0;
+    return { remaining: 0, resetsAt: null, max: 3 };
   }
 }
 

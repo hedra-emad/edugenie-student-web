@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { verifyEmail, verifyExchangeToken, handoffCode } from "@/lib/api/auth";
+import { getOnboardingStatus } from "@/lib/api/onboarding";
 
 const ANGULAR_URL =
   process.env.NEXT_PUBLIC_ANGULAR_APP_URL || "http://localhost:4200";
@@ -56,11 +57,16 @@ function VerifyEmailContent() {
           return;
         }
 
-        // Student: finalize the httpOnly session cookie, then go home logged in.
+        // Student: finalize the httpOnly session cookie, then route by onboarding
+        // status — a freshly-registered student must complete onboarding first,
+        // so send them straight to /onboarding (no home flash). Already-onboarded
+        // students (re-verify) go home. null (endpoint unreachable/unknown) →
+        // default to /onboarding, since first-registration is the common case.
         if (exchangeToken) {
           await verifyExchangeToken({ token: exchangeToken });
           queryClient.invalidateQueries({ queryKey: ["profile"] });
-          router.replace("/");
+          const status = await getOnboardingStatus().catch(() => null);
+          router.replace(status?.hasOnboarded ? "/" : "/onboarding");
           router.refresh();
           return;
         }
