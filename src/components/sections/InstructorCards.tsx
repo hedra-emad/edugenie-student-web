@@ -1,27 +1,21 @@
 "use client";
 
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Button from "@/components/ui/Button";
+import { TopInstructor } from "@/lib/api/instructors";
 
 // ─── Types
 
-interface Instructor {
-  id: number;
-  name: string;
-  role: string;
-  avatar: string;
-  fallbackInitials: string;
-  fallbackGradient: string;
-  rating: number;
-  reviews: number;
-  students: string;
-  courses: number;
-  badge: string;
-  badgeBg: string;
-  skills: string[];
-  quote: string;
-}
+// Fallback avatar gradient (no gradient comes from the API — cycle through the
+// same set the design already uses, keyed by grid position).
+const FALLBACK_GRADIENTS = [
+  "from-violet-600 to-blue-600",
+  "from-sky-500 to-cyan-400",
+  "from-emerald-600 to-teal-400",
+  "from-pink-600 to-orange-400",
+];
 
 interface Testimonial {
   id: number;
@@ -35,77 +29,6 @@ interface Testimonial {
 }
 
 // ─── Data
-
-const INSTRUCTORS: Instructor[] = [
-  {
-    id: 1,
-    name: "Hedra Emad",
-    role: "Senior Backend Engineer",
-    avatar: "/images/instructors/hedra.jpg",
-    fallbackInitials: "HE",
-    fallbackGradient: "from-violet-600 to-blue-600",
-    rating: 4.9,
-    reviews: 3241,
-    students: "8.2K",
-    courses: 4,
-    badge: "Top Instructor",
-    badgeBg: "bg-violet-100 text-violet-700",
-    skills: ["NestJS", "TypeScript", "MongoDB"],
-    quote:
-      "I design every lesson so that by the end, you could ship it to production tomorrow.",
-  },
-  {
-    id: 2,
-    name: "Aliaa Mohammed",
-    role: "Frontend Lead @ TechCorp",
-    avatar: "/images/instructors/aliaa.jpg",
-    fallbackInitials: "AM",
-    fallbackGradient: "from-sky-500 to-cyan-400",
-    rating: 4.8,
-    reviews: 1876,
-    students: "6.1K",
-    courses: 3,
-    badge: "Staff Pick",
-    badgeBg: "bg-sky-100 text-sky-700",
-    skills: ["React 19", "Next.js 15", "Tailwind"],
-    quote:
-      "Modern frontend moves fast. My courses keep you ahead of the curve, always.",
-  },
-  {
-    id: 3,
-    name: "Nada Elhawary",
-    role: "Data Scientist & AI Researcher",
-    avatar: "/images/instructors/nada.jpg",
-    fallbackInitials: "NH",
-    fallbackGradient: "from-emerald-600 to-teal-400",
-    rating: 4.9,
-    reviews: 2540,
-    students: "7.4K",
-    courses: 5,
-    badge: "Top Instructor",
-    badgeBg: "bg-emerald-100 text-emerald-700",
-    skills: ["Python", "Pandas", "ML"],
-    quote:
-      "Data is just numbers until you learn to make it tell a story. That's what I teach.",
-  },
-  {
-    id: 4,
-    name: "Fatma Mohamed",
-    role: "Senior UI/UX Designer",
-    avatar: "/images/instructors/fatma.jpg",
-    fallbackInitials: "FM",
-    fallbackGradient: "from-pink-600 to-orange-400",
-    rating: 4.7,
-    reviews: 1102,
-    students: "4.8K",
-    courses: 2,
-    badge: "Rising Star",
-    badgeBg: "bg-pink-100 text-pink-700",
-    skills: ["Figma", "Design Systems", "UX Research"],
-    quote:
-      "Great design is invisible. I'll teach you to build products people love without knowing why.",
-  },
-];
 
 const TESTIMONIALS: Testimonial[] = [
   {
@@ -168,11 +91,30 @@ function Stars({
 
 // ─── Instructor Card
 
-function InstructorCard({ instructor }: { instructor: Instructor }) {
+function InstructorCard({
+  instructor,
+  fallbackGradient,
+}: {
+  instructor: TopInstructor;
+  fallbackGradient: string;
+}) {
   const [imgError, setImgError] = useState(false);
+  const router = useRouter();
+
+  const name = `${instructor.firstName} ${instructor.lastName}`.trim();
+  const fallbackInitials =
+    `${instructor.firstName?.[0] ?? ""}${instructor.lastName?.[0] ?? ""}`.toUpperCase();
+  const rating = instructor.rating ?? 0;
+  const studentsCount = instructor.studentsCount ?? 0;
+  const students =
+    studentsCount >= 1000 ? `${(studentsCount / 1000).toFixed(1)}K` : String(studentsCount);
+  const skills = instructor.skills ?? [];
+
+  const goToProfile = () => router.push(`/instructors/${instructor.id}`);
 
   return (
     <article
+      onClick={goToProfile}
       className="
         group bg-white rounded-2xl border border-slate-200 overflow-hidden
         flex flex-col
@@ -194,10 +136,10 @@ function InstructorCard({ instructor }: { instructor: Instructor }) {
 
       {/* ── Avatar area  ·  fixed h-[160px] ── */}
       <div className="relative h-[160px] w-full flex-shrink-0 overflow-hidden bg-slate-100">
-        {!imgError ? (
+        {instructor.avatar && !imgError ? (
           <Image
             src={instructor.avatar}
-            alt={instructor.name}
+            alt={name}
             fill
             sizes="(max-width:640px) 100vw,(max-width:1024px) 50vw,25vw"
             className="object-cover object-top"
@@ -207,61 +149,41 @@ function InstructorCard({ instructor }: { instructor: Instructor }) {
           <div
             className={`
               absolute inset-0 flex items-end justify-center pb-4
-              bg-gradient-to-br ${instructor.fallbackGradient}
+              bg-gradient-to-br ${fallbackGradient}
             `}
           >
             <span className="text-5xl font-black text-white/30 select-none">
-              {instructor.fallbackInitials}
+              {fallbackInitials}
             </span>
           </div>
         )}
         {/* dark scrim at bottom for readability */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
-
-        {/* badge */}
-        <span
-          className={`
-            absolute top-3 right-3 z-10
-            text-[10px] font-bold px-2.5 py-1 rounded-full
-            ${instructor.badgeBg}
-          `}
-        >
-          {instructor.badge}
-        </span>
       </div>
 
       {/* ── Body ── */}
       <div className="flex flex-col px-4 pt-4 pb-0 flex-1 overflow-hidden">
-        {/* Name + Role  ·  fixed h-[52px] */}
+        {/* Name  ·  fixed h-[52px] */}
         <div className="h-[52px] flex-shrink-0 overflow-hidden mb-3">
           <h3
             className="text-base text-slate-900 leading-tight line-clamp-1"
             style={{ fontWeight: 700 }}
           >
-            {instructor.name}
+            {name}
           </h3>
-          <p
-            className="text-xs text-slate-400 mt-1 leading-tight line-clamp-2"
-            style={{ fontWeight: 500 }}
-          >
-            {instructor.role}
-          </p>
         </div>
 
         {/* Rating row  ·  fixed h-[22px] */}
         <div className="h-[22px] flex items-center gap-1.5 flex-shrink-0 mb-3">
-          <Stars rating={instructor.rating} />
+          <Stars rating={rating} />
           <span className="text-xs font-bold text-amber-800 leading-none">
-            {instructor.rating.toFixed(1)}
-          </span>
-          <span className="text-xs text-slate-400 leading-none">
-            ({instructor.reviews.toLocaleString("en-US")})
+            {rating.toFixed(1)}
           </span>
         </div>
 
         {/* Skills  ·  fixed h-[26px] */}
         <div className="h-[26px] flex items-center gap-1.5 flex-shrink-0 overflow-hidden mb-3">
-          {instructor.skills.map((s) => (
+          {skills.map((s) => (
             <span
               key={s}
               className="
@@ -272,13 +194,6 @@ function InstructorCard({ instructor }: { instructor: Instructor }) {
               {s}
             </span>
           ))}
-        </div>
-
-        {/* Quote  ·  fixed h-[56px] */}
-        <div className="h-14 flex-shrink-0 overflow-hidden mb-0">
-          <p className="text-xs text-slate-500 leading-relaxed italic line-clamp-3">
-            "{instructor.quote}"
-          </p>
         </div>
       </div>
 
@@ -292,7 +207,7 @@ function InstructorCard({ instructor }: { instructor: Instructor }) {
         <div className="flex items-center gap-3">
           <div className="flex flex-col items-center">
             <span className="text-sm font-black text-slate-900 leading-none">
-              {instructor.students}
+              {students}
             </span>
             <span className="text-[10px] text-slate-400 leading-none mt-0.5">
               students
@@ -301,7 +216,7 @@ function InstructorCard({ instructor }: { instructor: Instructor }) {
           <div className="w-px h-6 bg-slate-100" />
           <div className="flex flex-col items-center">
             <span className="text-sm font-black text-slate-900 leading-none">
-              {instructor.courses}
+              {instructor.coursesCount ?? 0}
             </span>
             <span className="text-[10px] text-slate-400 leading-none mt-0.5">
               courses
@@ -309,9 +224,17 @@ function InstructorCard({ instructor }: { instructor: Instructor }) {
           </div>
         </div>
 
-        <Button variant="secondary" size="sm" className="whitespace-nowrap">
+        {/* <Button
+          variant="secondary"
+          size="sm"
+          className="whitespace-nowrap"
+          onClick={(e) => {
+            e.stopPropagation();
+            goToProfile();
+          }}
+        >
           View Profile
-        </Button>
+        </Button> */}
       </div>
     </article>
   );
@@ -368,7 +291,11 @@ function TestimonialCard({ t }: { t: Testimonial }) {
 
 // ─── Main Section
 
-export default function InstructorsSpotlight() {
+export default function InstructorsSpotlight({
+  instructors = [],
+}: {
+  instructors?: TopInstructor[];
+}) {
   return (
     <section className="bg-[#f0f2f5] py-20 px-4 sm:px-6 lg:px-8">
       <div className="max-w-[1200px] mx-auto">
@@ -396,7 +323,7 @@ export default function InstructorsSpotlight() {
             </p>
           </div>
 
-          <a
+          {/* <a
             href="/instructors"
             className="
               text-sm font-bold text-violet-600 hover:text-violet-800
@@ -405,13 +332,17 @@ export default function InstructorsSpotlight() {
             "
           >
             View All Instructors →
-          </a>
+          </a> */}
         </div>
 
         {/* ── INSTRUCTORS GRID ── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-14">
-          {INSTRUCTORS.map((instructor) => (
-            <InstructorCard key={instructor.id} instructor={instructor} />
+          {instructors.map((instructor, index) => (
+            <InstructorCard
+              key={instructor.id}
+              instructor={instructor}
+              fallbackGradient={FALLBACK_GRADIENTS[index % FALLBACK_GRADIENTS.length]}
+            />
           ))}
         </div>
 
