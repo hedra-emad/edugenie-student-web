@@ -6,6 +6,7 @@ import ChooseUs from "@/components/sections/ChooseUs";
 import InstructorCards from "@/components/sections/InstructorCards";
 import FinalCTA from "@/components/sections/FinalCTA";
 import { fetchCoursesForHome } from "@/lib/api/courses";
+import { fetchTopInstructors } from "@/lib/api/instructors";
 import { Course } from "@/types/course";
 
 const ICON_GRADIENT_PAIRS: { icon: LucideIcon; gradient: string }[] = [
@@ -43,6 +44,7 @@ export default async function Home() {
   // Public featured courses — fetch only what we render (9), cached via ISR.
   const courses = await fetchCoursesForHome(9);
   const miniCourses = toMiniCourses(courses);
+  const instructors = await fetchTopInstructors(4);
 
   return (
     <div>
@@ -50,7 +52,7 @@ export default async function Home() {
       {/* <CategoriesSection /> */}
       <FeaturedCourses courses={courses} limit={9} />
       <ChooseUs />
-      <InstructorCards />
+      <InstructorCards instructors={instructors} />
       <FinalCTA />
     </div>
   );
