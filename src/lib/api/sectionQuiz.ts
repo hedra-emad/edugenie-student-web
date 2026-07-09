@@ -20,7 +20,7 @@ export interface SectionQuizQuestion {
 
 export interface SectionQuiz {
   quizId: string;
-  timeLimit: number; // minutes
+  timeLimit: number; // seconds — backend expires the attempt at elapsedSeconds > timeLimit
   passingScore: number; // percent
   attemptNumber: number;
   maxAttempts: number;
@@ -32,7 +32,7 @@ export interface SectionQuiz {
 export interface QuizStart {
   attemptId: string;
   startedAt: string;
-  timeLimit: number;
+  timeLimit: number; // seconds
 }
 
 export interface QuizSubmitResult {

@@ -2,7 +2,7 @@
 // src/hooks/useVideoProgress.ts
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { saveProgress } from "@/lib/api/player";
+import { progressLessonUrl, saveProgress } from "@/lib/api/player";
 import type { ProgressResponse } from "@/types/player";
 
 const SAVE_INTERVAL_MS = 30_000; // 30 seconds
@@ -106,8 +106,10 @@ export function useVideoProgress(
     video.addEventListener("play", handlePlay);
     video.addEventListener("pause", handlePause);
 
-    // Beacon on page unload — synchronous best-effort
-    const handleBeforeUnload = () => {
+    // Best-effort save when the page goes away. `sendBeacon` survives unload
+    // where `fetch` does not, and carries the same-origin session cookie to the
+    // proxy on its own — so no auth header is needed.
+    const sendProgressBeacon = () => {
       const v = videoRef.current;
       if (!v || !lessonId) return;
       const watchedDuration = Math.floor(v.currentTime);
@@ -115,19 +117,29 @@ export function useVideoProgress(
         v.duration > 0 &&
         v.currentTime / v.duration >= COMPLETION_THRESHOLD;
 
-      // Use sendBeacon for reliability during unload
       const body = JSON.stringify({ lessonId, watchedDuration, isCompleted });
-      const base =
-        typeof window !== "undefined" ? "/auth" : "";
-      navigator.sendBeacon(`${base}/progress/lesson`, body);
+      // A raw string body would be sent as `text/plain`, which the backend's
+      // ValidationPipe won't parse — the Blob forces `application/json`.
+      navigator.sendBeacon?.(
+        progressLessonUrl(),
+        new Blob([body], { type: "application/json" }),
+      );
     };
 
-    window.addEventListener("beforeunload", handleBeforeUnload);
+    // `beforeunload` doesn't fire reliably on mobile / BFCache; a hidden
+    // visibility transition is the one signal those platforms do emit.
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") sendProgressBeacon();
+    };
+
+    window.addEventListener("beforeunload", sendProgressBeacon);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       video.removeEventListener("play", handlePlay);
       video.removeEventListener("pause", handlePause);
-      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("beforeunload", sendProgressBeacon);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       stopInterval();
     };
   }, [lessonId, videoRef, doSave, startInterval, stopInterval]);
