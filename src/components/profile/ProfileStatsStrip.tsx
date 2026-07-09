@@ -67,16 +67,20 @@ function StatCell({ stat }: { stat: StatItem }) {
 
 interface Props {
   profile: UserProfile;
-  /** Number of enrolled courses — pass 0 as placeholder until endpoint is ready */
+  /** Number of enrolled courses — from `useEnrollments()`. */
   enrolledCount?: number;
-  /** Certificates count — pass 0 as placeholder until endpoint is ready */
-  certCount?: number;
+  /**
+   * Certificates count. Required, and must be derived from the same
+   * `useCertificates()` query the Certificates tab renders — a default here
+   * once silently showed "0 Certificates" next to a populated list.
+   */
+  certCount: number;
 }
 
 export default function ProfileStatsStrip({
   profile,
   enrolledCount = 0,
-  certCount = 0,
+  certCount,
 }: Props) {
   const stats: StatItem[] = [
     { value: enrolledCount, label: "Courses Enrolled", isNumeric: true },

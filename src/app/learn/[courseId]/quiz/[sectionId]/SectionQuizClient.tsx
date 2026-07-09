@@ -25,9 +25,16 @@ type Phase =
   | "result"
   | "error";
 
-function formatMinutes(min: number): string {
-  if (!min || min <= 0) return "No limit";
-  return min === 1 ? "1 minute" : `${min} minutes`;
+// `timeLimit` arrives in SECONDS — the backend expires an attempt with
+// `elapsedSeconds > attempt.timeLimit` (quizzes.service.ts). Rendering it as
+// minutes is what made a 10-minute quiz advertise itself as "600 minutes".
+function formatDuration(seconds: number): string {
+  if (!seconds || seconds <= 0) return "No limit";
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  if (m === 0) return s === 1 ? "1 second" : `${s} seconds`;
+  const minutes = m === 1 ? "1 minute" : `${m} minutes`;
+  return s === 0 ? minutes : `${minutes} ${s}s`;
 }
 
 function formatClock(seconds: number): string {
@@ -107,7 +114,7 @@ export default function SectionQuizClient({
     try {
       const started = await startSectionQuiz(sectionId);
       setAttemptId(started.attemptId);
-      setRemaining((started.timeLimit || quiz.timeLimit) * 60);
+      setRemaining(started.timeLimit || quiz.timeLimit);
       setPhase("taking");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't start the quiz.");
@@ -336,7 +343,7 @@ function QuizIntro({
 
       <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatTile label="Questions" value={String(quiz.questions.length)} />
-        <StatTile label="Time limit" value={formatMinutes(quiz.timeLimit)} />
+        <StatTile label="Time limit" value={formatDuration(quiz.timeLimit)} />
         <StatTile label="Pass mark" value={`${quiz.passingScore}%`} />
         <StatTile
           label="Attempt"

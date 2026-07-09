@@ -142,6 +142,16 @@ export async function getResumePosition(
 // ─── Client-side helpers ──────────────────────────────────────────────────────
 
 /**
+ * The progress endpoint, resolved against the same base as every other call
+ * (proxy in the browser, direct API on the server). Exported so the unload
+ * beacon in `useVideoProgress` hits the exact same URL as `saveProgress` —
+ * they must never drift apart.
+ */
+export function progressLessonUrl(): string {
+  return `${baseUrl()}/progress/lesson`;
+}
+
+/**
  * Save watch progress.  Called from the client every 30 s and on pause/unload.
  * Uses `credentials: "include"` so the session cookie is sent automatically.
  */
@@ -149,7 +159,7 @@ export async function saveProgress(
   data: ProgressPayload,
 ): Promise<ProgressResponse | null> {
   try {
-    const res = await fetch(`${baseUrl()}/progress/lesson`, {
+    const res = await fetch(progressLessonUrl(), {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },

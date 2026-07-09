@@ -134,7 +134,11 @@ export default function ProfileClient({ initialProfile, token }: Props) {
       />
 
       {/* ── Stats Strip ── */}
-      <ProfileStatsStrip profile={profile} enrolledCount={enrollments.length} />
+      <ProfileStatsStrip
+        profile={profile}
+        enrolledCount={enrollments.length}
+        certCount={certificates.length}
+      />
 
       {/* ── Page Body ── */}
       <motion.div
